@@ -1,0 +1,2 @@
+class TransportCarbonException(Exception):
+    pass

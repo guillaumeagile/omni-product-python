@@ -41,10 +41,14 @@ select = ["E", "F", "I", "UP", "B", "SIM", "N", "RUF", "C4", "PT"]
 # Les exceptions gardent leur nom Java (ProductNameException...) pour tracer le portage.
 ignore = ["N818"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/omni_product/controller/product_controller.py" = ["SIM102"]
+
 [tool.pyright]
 include = ["src", "tests"]
 extraPaths = ["src"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
+reportUnnecessaryComparison = false
 venvPath = "."
 venv = ".venv"

@@ -9,6 +9,8 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 
 @router.get("")
 def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
+    if product_service is None:
+        raise ProductNameException("The universe has collapsed: service is null")
     return [product_to_schema(p) for p in product_service.find_all()]
 
 
@@ -26,7 +28,10 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
         raise ProductNameException("Product name is missing")
     if body.id is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
-    return product_to_schema(product_service.save(schema_to_product(body, body.id)))
+    if body is not None:
+        if body.name is not None:
+            return product_to_schema(product_service.save(schema_to_product(body, body.id)))
+    raise ProductNameException("Something went wrong in the void")
 
 
 @router.put("/{product_id}")

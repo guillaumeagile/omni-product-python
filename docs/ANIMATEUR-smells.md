@@ -45,7 +45,7 @@ ils ne servent à rien aujourd'hui. À supprimer ou à garder comme bruit, au ch
 | `typeCheckingMode = "strict"` | Aucun `Any` implicite, tout est annoté | On veut des smells de **design**, pas des trous de typage. Gardé strict à dessein |
 | `reportUnnecessaryComparison = false` | Autorise `if service is None` sur un paramètre non optionnel, et `if body is not None` sur un modèle Pydantic | Nécessaire pour garder les null-checks inutiles (S-C1, S-C3) |
 
-Pragmas `# pyright: ignore` restants dans le code : `main.py` (2), `supplier_repository.py` (1) et
+Pragmas `# pyright: ignore` restants dans le code : `main.py` (2), `supplier_dal.py` (1) et
 `domain/model/transport_request.py` (2). Les deux de `transport_request.py` sont **devenus redondants** depuis que
 `reportUnnecessaryComparison` est désactivé globalement ; ils peuvent être retirés. Les autres sont de la plomberie
 (import pour enregistrer les tables, handler enregistré par décorateur, critère SQLAlchemy), pas des smells.
@@ -88,13 +88,28 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 
 | ID | Smell | Où | Détail |
 |---|---|---|---|
-| S-S1 | Intermédiaire sans valeur (middle man) | `service/product_service.py` | Quatre méthodes qui délèguent telles quelles au dépôt |
+| S-S1 | Intermédiaire sans valeur (middle man) | `service/product_service.py` | Quatre méthodes qui délèguent telles quelles à `product_dal` |
 | S-S2 | Longue liste de paramètres, paramètres de même type | `SupplierService.create_supplier` / `update_supplier` | Six `str \| None` consécutifs : on peut permuter `country` et `region` sans erreur de type. Le même groupe de six champs est répété dans `SupplierRequest`, `SupplierUpdateRequest`, le contrôleur, le service et l'entité (data clump) |
 | S-S3 | Exceptions génériques pour des cas métier | `SupplierService` | `ValueError("Supplier not found: ...")` : aucun handler, donc l'API répond 500 au lieu de 404 |
-| S-S4 | Dépendance entre agrégats | `SupplierService` | Dépend de `ProductRepository` pour un seul contrôle d'existence |
-| S-S5 | Code mort | `repository/*`, `service/product_transport_service.py`, `dependencies.py` | `find_by_name`, `find_by_slug`, `exists_by_slug`, `delete_by_slug` jamais appelés. `ProductTransportService` et `get_product_transport_service` sont câblés mais aucune route ne les utilise |
-| S-S6 | Frontière transactionnelle dans le dépôt | `repository/*` | Chaque `save` / `delete` fait son propre `commit`. `update_supplier` (lire puis modifier puis sauver) n'est pas atomique, et rien ne permet une transaction englobant plusieurs opérations |
+| S-S4 | Dépendance entre agrégats | `SupplierService` | Appelle `product_dal` (avec la session) pour un seul contrôle d'existence |
+| S-S5 | Code mort | `dal/*`, `service/product_transport_service.py`, `dependencies.py` | `find_by_name`, `find_by_slug`, `exists_by_slug`, `delete_by_slug` jamais appelés. `ProductTransportService` et `get_product_transport_service` sont câblés mais aucune route ne les utilise |
+| S-S6 | Frontière transactionnelle dans la DAL | `dal/*` | Chaque `save` / `delete` fait son propre `commit`. `update_supplier` (lire puis modifier puis sauver) n'est pas atomique, et rien ne permet une transaction englobant plusieurs opérations |
 | S-S7 | Primitives à la frontière du service | `ProductTransportService.calculate_shipment_carbon` | Prend `str, float, float` puis construit `TransportRequest` lui-même |
+| S-S8 | Session passée à chaque appel de DAL | `service/*`, `dal/*` | Les services gardent la `Session` et la transmettent à chaque fonction DAL. Pas de point d'injection : tester sans base suppose de patcher le module. Voir la section suivante |
+
+#### Repository vs DAL : le choix de design
+
+Le code avait des classes `*Repository` (héritant de `SessionRepository`). Elles ont été remplacées par une DAL à l'ancienne : des fonctions de module qui prennent la `Session` en premier argument. Le comportement est identique.
+
+| | Repository (avant) | DAL (après) |
+|---|---|---|
+| Session | stockée dans l'instance, injectée une fois | passée à chaque appel |
+| Point d'injection | `ProductRepository` / `SupplierRepository` injectés dans les services | aucun : les services reçoivent la session |
+| Test en isolation | un faux repository se passe au service | monkeypatch du module, ou vraie base |
+| Duplication | `find_all`, `find_by_id`, `delete_all` répétés par classe | identiques, sans classe de base |
+
+**Verdict** : pour du code legacy volontaire, la DAL est cohérente, et le gain en design est faible. Le couplage à SQLAlchemy ne change pas, et le repository n'abstrayait déjà pas la persistance. Ce qui disparaît, c'est le seam d'injection : les services ne peuvent plus recevoir une doublure, et la session traverse toutes les signatures. Le repository était plus cohérent avec les ports de `domain/port/`.
+
 
 ### Predictable / Composable : infrastructure et câblage
 
@@ -117,7 +132,7 @@ Aucun de ces smells n'est visible pour ruff ni pyright : l'héritage est valide,
 | S-H3 | La base connaît ses enfants | `Product.is_perishable`, `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | La classe de base fait `isinstance(self, PerishableProduct)` ; la conversion refait un switch sur le type à deux endroits. Chaque nouveau type oblige à toucher la base et les schémas |
 | S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas/supplier.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
 | S-H5 | Racine d'exceptions vide et mal rangée | `exception/business_exception.py` | `BusinessException` n'a ni message ni comportement. `TransportCarbonException` (domaine) en dépend, donc le domaine importe depuis `exception/` ; `ProductNameException` reste dans un autre paquet que l'exception du domaine |
-| S-H6 | Socle de dépôt pour trois lignes | `repository/session_repository.py` | `SessionRepository` ne porte que la session et deux helpers. `find_all`, `find_by_id` et `delete_all` restent dupliqués dans chaque dépôt, donc le socle ne mutualise pas grand-chose |
+| S-H6 | Socle de dépôt pour trois lignes (résolu) | `dal/` (ex-`repository/session_repository.py`) | `SessionRepository` a été supprimé avec le pattern Repository. La DAL n'a plus de classe de base : `find_all`, `find_by_id` et `delete_all` restent dupliqués par agrégat, par choix |
 | S-H7 | Violation de Liskov au niveau du comportement | `model/product.py` (`is_perishable`), `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
 
 #### S-H7 : pourquoi c'est un smell de comportement, pas seulement de structure

@@ -1,9 +1,11 @@
-from datetime import date
-from typing import Literal
-
-from pydantic import BaseModel, ConfigDict
-from pydantic.alias_generators import to_camel
-
+from omni_product.controller.schemas.product import (
+    PriceSchema,
+    ProductKind,
+    ProductSchema,
+    RegionSupplierSchema,
+    WarehouseSchema,
+)
+from omni_product.controller.schemas.supplier import SupplierSchema
 from omni_product.model import (
     NonExpiringProduct,
     PerishableProduct,
@@ -13,67 +15,6 @@ from omni_product.model import (
     Supplier,
     Warehouse,
 )
-
-
-class CamelModel(BaseModel):
-    """JSON en camelCase comme Jackson, attributs Python en snake_case."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, from_attributes=True)
-
-
-class PriceSchema(CamelModel):
-    base: float | None = None
-    tax: float | None = None
-    tax_rate: float | None = None
-
-
-class WarehouseSchema(CamelModel):
-    location: str | None = None
-
-
-class RegionSupplierSchema(CamelModel):
-    name: str | None = None
-    siren: str | None = None
-    tva_id: str | None = None
-
-
-ProductKind = Literal["standard", "perishable", "non_expiring"]
-
-
-class ProductSchema(CamelModel):
-    id: str | None = None
-    kind: ProductKind | None = None
-    name: str | None = None
-    slug: str | None = None
-    price: PriceSchema | None = None
-    discounts: list[str] | None = None
-    images: dict[str, str | None] | None = None
-    suppliers_regions: dict[str, RegionSupplierSchema] | None = None
-    kilos: float | None = None
-    volume: str | None = None
-    quantity: int | None = None
-    stock: int | None = None
-    warehouse: WarehouseSchema | None = None
-    supplier_id: str | None = None
-    # Champs de PerishableProduct, à plat : le client doit savoir lesquels ont un sens pour `kind`.
-    expiration_date: date | None = None
-    shelf_life_days: int | None = None
-
-
-class SupplierUpdateRequest(CamelModel):
-    name: str | None = None
-    contact_email: str | None = None
-    contact_phone: str | None = None
-    country: str | None = None
-    region: str | None = None
-
-
-class SupplierRequest(SupplierUpdateRequest):
-    id: str
-
-
-class SupplierSchema(SupplierRequest):
-    """Même forme que la requête de création, pour ne pas recopier les cinq champs."""
 
 
 def _kind_of(product: Product) -> ProductKind:

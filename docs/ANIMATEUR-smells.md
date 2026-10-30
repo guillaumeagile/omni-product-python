@@ -114,11 +114,11 @@ Aucun de ces smells n'est visible pour ruff ni pyright : l'héritage est valide,
 |---|---|---|---|
 | S-H1 | Sous-classe vide | `model/product.py`, `NonExpiringProduct` | Aucun champ ni comportement propre : la classe ne sert qu'à porter un `isinstance`. Le type `non_expiring` pourrait être une valeur de colonne |
 | S-H2 | Colonnes de sous-classe dans la table parente | `model/product.py`, `PerishableProduct` | Héritage mono-table : `expiration_date` et `shelf_life_days` sont nullables pour tous les produits, aucune invariante « périssable ⇒ date » |
-| S-H3 | La base connaît ses enfants | `Product.is_perishable`, `controller/schemas.py` (`_kind_of`, `schema_to_product`) | La classe de base fait `isinstance(self, PerishableProduct)` ; la conversion refait un switch sur le type à deux endroits. Chaque nouveau type oblige à toucher la base et les schémas |
-| S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
+| S-H3 | La base connaît ses enfants | `Product.is_perishable`, `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | La classe de base fait `isinstance(self, PerishableProduct)` ; la conversion refait un switch sur le type à deux endroits. Chaque nouveau type oblige à toucher la base et les schémas |
+| S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas/supplier.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
 | S-H5 | Racine d'exceptions vide et mal rangée | `exception/business_exception.py` | `BusinessException` n'a ni message ni comportement. `TransportCarbonException` (domaine) en dépend, donc le domaine importe depuis `exception/` ; `ProductNameException` reste dans un autre paquet que l'exception du domaine |
 | S-H6 | Socle de dépôt pour trois lignes | `repository/session_repository.py` | `SessionRepository` ne porte que la session et deux helpers. `find_all`, `find_by_id` et `delete_all` restent dupliqués dans chaque dépôt, donc le socle ne mutualise pas grand-chose |
-| S-H7 | Violation de Liskov au niveau du comportement | `model/product.py` (`is_perishable`), `controller/schemas.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
+| S-H7 | Violation de Liskov au niveau du comportement | `model/product.py` (`is_perishable`), `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
 
 #### S-H7 : pourquoi c'est un smell de comportement, pas seulement de structure
 
@@ -160,7 +160,7 @@ le `ClassVar` provoquerait une erreur pyright, car SQLAlchemy déclare cet attri
 
 À connaître avant l'atelier, car ils changent ce que le harnais verra :
 
-1. **DTO au lieu d'entités exposées.** Java sérialisait les entités JPA directement. Ici `controller/schemas.py`
+1. **DTO au lieu d'entités exposées.** Java sérialisait les entités JPA directement. Ici `controller/schemas/`
    (Pydantic) s'interpose. Le smell « l'entité fuit dans l'API » n'existe donc plus. Si on le veut, il faut le
    réintroduire (par exemple en renvoyant les entités depuis les routes).
 2. **Le lazy loading n'est pas reproduit.** `LAZY_LOADING_ISSUE.md` n'a pas d'équivalent : `get_suppliers_by_product`

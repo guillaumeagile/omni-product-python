@@ -7,8 +7,6 @@ from sqlalchemy.orm import Session
 
 from omni_product.config import Settings
 from omni_product.main import create_app
-from omni_product.repository.product_repository import ProductRepository
-from omni_product.repository.supplier_repository import SupplierRepository
 
 
 @pytest.fixture
@@ -29,13 +27,3 @@ def client(app: FastAPI) -> Iterator[TestClient]:
 def session(app: FastAPI) -> Iterator[Session]:
     with app.state.session_factory() as db_session:
         yield db_session
-
-
-@pytest.fixture
-def supplier_repository(session: Session) -> SupplierRepository:
-    return SupplierRepository(session)
-
-
-@pytest.fixture
-def product_repository(session: Session) -> ProductRepository:
-    return ProductRepository(session)

@@ -1,16 +1,14 @@
 import pytest
+from sqlalchemy.orm import Session
 
+from omni_product.dal import product_dal
 from omni_product.model import Product
-from omni_product.repository.product_repository import ProductRepository
-from omni_product.repository.supplier_repository import SupplierRepository
 from omni_product.service.supplier_service import SupplierService
 
 
 @pytest.fixture
-def supplier_service(
-    supplier_repository: SupplierRepository, product_repository: ProductRepository
-) -> SupplierService:
-    return SupplierService(supplier_repository, product_repository)
+def supplier_service(session: Session) -> SupplierService:
+    return SupplierService(session)
 
 
 def _create(
@@ -111,26 +109,27 @@ def test_should_raise_when_deleting_non_existent_supplier(
 
 
 def test_should_cascade_delete_products_when_supplier_deleted(
-    supplier_service: SupplierService, product_repository: ProductRepository
+    supplier_service: SupplierService, session: Session
 ) -> None:
     _create(supplier_service, "sup1", "Supplier A")
-    product_repository.save(
-        Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+    product_dal.save(
+        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
     )
-    assert product_repository.find_by_id("prod1") is not None
+    assert product_dal.find_by_id(session, "prod1") is not None
 
     supplier_service.delete_supplier("sup1")
 
-    assert product_repository.find_by_id("prod1") is None
+    assert product_dal.find_by_id(session, "prod1") is None
 
 
 def test_should_get_suppliers_by_product(
-    supplier_service: SupplierService, product_repository: ProductRepository
+    supplier_service: SupplierService, session: Session
 ) -> None:
     """Désactivé en Java (LAZY_LOADING_ISSUE.md) : une requête SQL évite le lazy loading."""
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
-    product_repository.save(
+    product_dal.save(
+        session,
         Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
     )
 

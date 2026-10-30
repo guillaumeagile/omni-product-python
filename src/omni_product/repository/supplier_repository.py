@@ -1,14 +1,11 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from omni_product.model import Product, Supplier
+from omni_product.repository.session_repository import SessionRepository
 
 
-class SupplierRepository:
+class SupplierRepository(SessionRepository):
     """Équivalent de `JpaRepository<Supplier, String>`."""
-
-    def __init__(self, session: Session) -> None:
-        self._session = session
 
     def find_all(self) -> list[Supplier]:
         return list(self._session.scalars(select(Supplier).order_by(Supplier.id)))
@@ -30,13 +27,10 @@ class SupplierRepository:
         return self._find_all_where(Supplier.products.any(Product.id == product_id))
 
     def save(self, supplier: Supplier) -> Supplier:
-        saved = self._session.merge(supplier)
-        self._session.commit()
-        return saved
+        return self._merge_and_commit(supplier)
 
     def delete(self, supplier: Supplier) -> None:
-        self._session.delete(supplier)
-        self._session.commit()
+        self._delete_and_commit(supplier)
 
     def delete_all(self) -> None:
         for supplier in self.find_all():

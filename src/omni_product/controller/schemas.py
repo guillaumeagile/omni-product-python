@@ -1,7 +1,18 @@
+from datetime import date
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
-from omni_product.model import Price, Product, RegionSupplier, Supplier, Warehouse
+from omni_product.model import (
+    NonExpiringProduct,
+    PerishableProduct,
+    Price,
+    Product,
+    RegionSupplier,
+    Supplier,
+    Warehouse,
+)
 
 
 class CamelModel(BaseModel):
@@ -26,8 +37,12 @@ class RegionSupplierSchema(CamelModel):
     tva_id: str | None = None
 
 
+ProductKind = Literal["standard", "perishable", "non_expiring"]
+
+
 class ProductSchema(CamelModel):
     id: str | None = None
+    kind: ProductKind | None = None
     name: str | None = None
     slug: str | None = None
     price: PriceSchema | None = None
@@ -40,24 +55,9 @@ class ProductSchema(CamelModel):
     stock: int | None = None
     warehouse: WarehouseSchema | None = None
     supplier_id: str | None = None
-
-
-class SupplierSchema(CamelModel):
-    id: str
-    name: str | None = None
-    contact_email: str | None = None
-    contact_phone: str | None = None
-    country: str | None = None
-    region: str | None = None
-
-
-class SupplierRequest(CamelModel):
-    id: str
-    name: str | None = None
-    contact_email: str | None = None
-    contact_phone: str | None = None
-    country: str | None = None
-    region: str | None = None
+    # Champs de PerishableProduct, à plat : le client doit savoir lesquels ont un sens pour `kind`.
+    expiration_date: date | None = None
+    shelf_life_days: int | None = None
 
 
 class SupplierUpdateRequest(CamelModel):
@@ -68,11 +68,31 @@ class SupplierUpdateRequest(CamelModel):
     region: str | None = None
 
 
+class SupplierRequest(SupplierUpdateRequest):
+    id: str
+
+
+class SupplierSchema(SupplierRequest):
+    """Même forme que la requête de création, pour ne pas recopier les cinq champs."""
+
+
+def _kind_of(product: Product) -> ProductKind:
+    if isinstance(product, PerishableProduct):
+        return "perishable"
+    if isinstance(product, NonExpiringProduct):
+        return "non_expiring"
+    return "standard"
+
+
 def product_to_schema(product: Product) -> ProductSchema:
+    perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
+        kind=_kind_of(product),
         name=product.name,
         slug=product.slug,
+        expiration_date=perishable.expiration_date if perishable else None,
+        shelf_life_days=perishable.shelf_life_days if perishable else None,
         price=PriceSchema.model_validate(product.price) if product.price else None,
         discounts=list(product.discounts),
         images=dict(product.images),
@@ -91,16 +111,24 @@ def product_to_schema(product: Product) -> ProductSchema:
 
 def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
     """Construit une entité neuve ; `save` la fusionne avec l'existante (comme `PUT` en Java)."""
-    product = Product(
-        id=product_id,
-        name=schema.name,
-        slug=schema.slug,
-        kilos=schema.kilos,
-        volume=schema.volume,
-        quantity=schema.quantity,
-        stock=schema.stock,
-        supplier_id=schema.supplier_id,
-    )
+    match schema.kind:
+        case "perishable":
+            product = PerishableProduct(
+                id=product_id,
+                name=schema.name,
+                slug=schema.slug,
+                expiration_date=schema.expiration_date,
+                shelf_life_days=schema.shelf_life_days,
+            )
+        case "non_expiring":
+            product = NonExpiringProduct(id=product_id, name=schema.name, slug=schema.slug)
+        case _:
+            product = Product(id=product_id, name=schema.name, slug=schema.slug)
+    product.kilos = schema.kilos
+    product.volume = schema.volume
+    product.quantity = schema.quantity
+    product.stock = schema.stock
+    product.supplier_id = schema.supplier_id
     if schema.price is not None:
         product.price = Price(**schema.price.model_dump())
     if schema.warehouse is not None:

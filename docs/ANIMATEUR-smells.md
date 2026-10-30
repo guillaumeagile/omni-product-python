@@ -106,6 +106,22 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 | S-I4 | Effet de bord à l'import | `main.py` | `app = create_app()` au niveau du module crée le moteur de base dès l'import |
 | S-I5 | Configuration bruyante par défaut | `config.py` | `show_sql = True` par défaut, comme `show-sql: true` dans `application.yml` |
 
+### Héritage : hiérarchies superficielles (ajoutées pour l'atelier)
+
+Aucun de ces smells n'est visible pour ruff ni pyright : l'héritage est valide, il est juste mal motivé.
+
+| ID | Smell | Où | Détail |
+|---|---|---|---|
+| S-H1 | Sous-classe vide | `model/product.py`, `NonExpiringProduct` | Aucun champ ni comportement propre : la classe ne sert qu'à porter un `isinstance`. Le type `non_expiring` pourrait être une valeur de colonne |
+| S-H2 | Colonnes de sous-classe dans la table parente | `model/product.py`, `PerishableProduct` | Héritage mono-table : `expiration_date` et `shelf_life_days` sont nullables pour tous les produits, aucune invariante « périssable ⇒ date » |
+| S-H3 | La base connaît ses enfants | `Product.is_perishable`, `controller/schemas.py` (`_kind_of`, `schema_to_product`) | La classe de base fait `isinstance(self, PerishableProduct)` ; la conversion refait un switch sur le type à deux endroits. Chaque nouveau type oblige à toucher la base et les schémas |
+| S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
+| S-H5 | Racine d'exceptions vide et mal rangée | `exception/business_exception.py` | `BusinessException` n'a ni message ni comportement. `TransportCarbonException` (domaine) en dépend, donc le domaine importe depuis `exception/` ; `ProductNameException` reste dans un autre paquet que l'exception du domaine |
+| S-H6 | Socle de dépôt pour trois lignes | `repository/session_repository.py` | `SessionRepository` ne porte que la session et deux helpers. `find_all`, `find_by_id` et `delete_all` restent dupliqués dans chaque dépôt, donc le socle ne mutualise pas grand-chose |
+
+Point d'attention : `# noqa: RUF012` sur les trois `__mapper_args__`. C'est l'idiome SQLAlchemy (dict de classe) ;
+le `ClassVar` provoquerait une erreur pyright, car SQLAlchemy déclare cet attribut en variable d'instance.
+
 ### Tests
 
 | ID | Smell | Où | Détail |
@@ -140,7 +156,7 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 ```bash
 uv run ruff check .      # doit rester vert : c'est voulu
 uv run pyright           # idem
-uv run pytest            # 37 tests verts : le comportement est figé
+uv run pytest            # 40 tests verts : le comportement est figé
 ```
 
 Un linter vert ne veut pas dire code sain ici. Il garantit seulement que le comportement testé reste identique

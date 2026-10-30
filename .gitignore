@@ -57,3 +57,7 @@ htmlcov/
 # Système
 .DS_Store
 Thumbs.db
+
+# mutmut (mutation testing)
+mutants/
+.mutmut-cache

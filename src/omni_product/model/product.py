@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import Date, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, composite, mapped_column, relationship
 from sqlalchemy.orm.collections import attribute_keyed_dict
@@ -82,8 +83,14 @@ _ROW_CASCADE = "all, delete-orphan"
 
 class Product(Base):
     __tablename__ = "products"
+    # Héritage mono-table : toutes les sous-classes partagent la table `products`.
+    __mapper_args__ = {  # noqa: RUF012
+        "polymorphic_on": "kind",
+        "polymorphic_identity": "standard",
+    }
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
 
@@ -121,3 +128,22 @@ class Product(Base):
     suppliers_regions: AssociationProxy[dict[str, RegionSupplier]] = association_proxy(
         "supplier_region_rows", "supplier", creator=ProductSupplierRegion
     )
+
+    def is_perishable(self) -> bool:
+        # La classe de base connaît sa sous-classe : une branche de plus à chaque nouveau type.
+        return isinstance(self, PerishableProduct)
+
+
+class PerishableProduct(Product):
+    """Produit périssable. Ses colonnes sont dans `products`, donc nulles pour les autres types."""
+
+    __mapper_args__ = {"polymorphic_identity": "perishable"}  # noqa: RUF012
+
+    expiration_date: Mapped[date | None] = mapped_column(Date)
+    shelf_life_days: Mapped[int | None] = mapped_column(Integer)
+
+
+class NonExpiringProduct(Product):
+    """Produit sans date limite. Aucun champ propre : la classe ne sert qu'à porter un type."""
+
+    __mapper_args__ = {"polymorphic_identity": "non_expiring"}  # noqa: RUF012

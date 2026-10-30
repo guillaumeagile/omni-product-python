@@ -106,6 +106,48 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 | S-I4 | Effet de bord à l'import | `main.py` | `app = create_app()` au niveau du module crée le moteur de base dès l'import |
 | S-I5 | Configuration bruyante par défaut | `config.py` | `show_sql = True` par défaut, comme `show-sql: true` dans `application.yml` |
 
+### Héritage : hiérarchies superficielles (ajoutées pour l'atelier)
+
+Aucun de ces smells n'est visible pour ruff ni pyright : l'héritage est valide, il est juste mal motivé.
+
+| ID | Smell | Où | Détail |
+|---|---|---|---|
+| S-H1 | Sous-classe vide | `model/product.py`, `NonExpiringProduct` | Aucun champ ni comportement propre : la classe ne sert qu'à porter un `isinstance`. Le type `non_expiring` pourrait être une valeur de colonne |
+| S-H2 | Colonnes de sous-classe dans la table parente | `model/product.py`, `PerishableProduct` | Héritage mono-table : `expiration_date` et `shelf_life_days` sont nullables pour tous les produits, aucune invariante « périssable ⇒ date » |
+| S-H3 | La base connaît ses enfants | `Product.is_perishable`, `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | La classe de base fait `isinstance(self, PerishableProduct)` ; la conversion refait un switch sur le type à deux endroits. Chaque nouveau type oblige à toucher la base et les schémas |
+| S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas/supplier.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
+| S-H5 | Racine d'exceptions vide et mal rangée | `exception/business_exception.py` | `BusinessException` n'a ni message ni comportement. `TransportCarbonException` (domaine) en dépend, donc le domaine importe depuis `exception/` ; `ProductNameException` reste dans un autre paquet que l'exception du domaine |
+| S-H6 | Socle de dépôt pour trois lignes | `repository/session_repository.py` | `SessionRepository` ne porte que la session et deux helpers. `find_all`, `find_by_id` et `delete_all` restent dupliqués dans chaque dépôt, donc le socle ne mutualise pas grand-chose |
+| S-H7 | Violation de Liskov au niveau du comportement | `model/product.py` (`is_perishable`), `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
+
+#### S-H7 : pourquoi c'est un smell de comportement, pas seulement de structure
+
+Côté base de données, le modèle est juste : `PerishableProduct` est une ligne de `products` avec `kind = 'perishable'`,
+et l'héritage SQLAlchemy la recharge dans la bonne classe. Mais côté code actif, le principe de substitution de
+Liskov n'est pas respecté : un `Product` doit pouvoir être remplacé par un `PerishableProduct` sans que le programme
+change de comportement, et ce n'est pas le cas.
+
+- **Deux sources de vérité.** La colonne `kind` et la classe Python peuvent diverger. Vérifié à l'exécution (SQLite en
+  mémoire) : on crée un `Product`, on met `kind = "perishable"`, on commit. Au commit, `is_perishable()` répond
+  `False`. Rechargé depuis la base, le même objet devient un `PerishableProduct` et répond `True`. Le même objet donne
+  donc deux réponses selon qu'il a été rechargé ou non, et l'erreur n'apparaît qu'à l'exécution.
+- **Le comportement dépend du type.** Pour que le code marche, il faut tester la classe : `isinstance` dans
+  `is_perishable` et `_kind_of`, `match` sur `kind` dans `schema_to_product`. C'est exactement ce que le polymorphisme
+  devait éviter : on ne dit plus à l'objet ce qu'il sait faire, on demande à quelle sous-classe il appartient.
+- **Un nouveau type casse les appelants silencieusement.** Il faut penser à ajouter la branche dans chaque `isinstance`
+  et chaque `match`. Le `case _:` de `schema_to_product` renvoie alors un `Product` sans erreur, et l'oubli ne se voit
+  qu'au test métier, pas au linter ni au type checker.
+- **Le sous-type n'ajoute aucune garantie.** `PerishableProduct` sans date est accepté : il n'est donc pas plus
+  contraint que la base, et un appelant ne peut pas raisonner sur « un périssable a une date limite ».
+
+Piste pour l'animateur (ne pas donner aux participants) : soit un polymorphisme réel, où chaque sous-classe implémente
+le comportement et la base ne teste jamais le type ; soit une composition, où `Product` porte une valeur optionnelle
+`shelf_life: ShelfLife | None` (un objet dont la présence a un sens) au lieu d'une sous-classe. Dans les deux cas,
+l'invariant « périssable ⇒ date » devient vérifiable par le type ou par le constructeur, ce que le smell S-H2 n'offre pas.
+
+Point d'attention : `# noqa: RUF012` sur les trois `__mapper_args__`. C'est l'idiome SQLAlchemy (dict de classe) ;
+le `ClassVar` provoquerait une erreur pyright, car SQLAlchemy déclare cet attribut en variable d'instance.
+
 ### Tests
 
 | ID | Smell | Où | Détail |
@@ -118,7 +160,7 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 
 À connaître avant l'atelier, car ils changent ce que le harnais verra :
 
-1. **DTO au lieu d'entités exposées.** Java sérialisait les entités JPA directement. Ici `controller/schemas.py`
+1. **DTO au lieu d'entités exposées.** Java sérialisait les entités JPA directement. Ici `controller/schemas/`
    (Pydantic) s'interpose. Le smell « l'entité fuit dans l'API » n'existe donc plus. Si on le veut, il faut le
    réintroduire (par exemple en renvoyant les entités depuis les routes).
 2. **Le lazy loading n'est pas reproduit.** `LAZY_LOADING_ISSUE.md` n'a pas d'équivalent : `get_suppliers_by_product`
@@ -140,7 +182,7 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 ```bash
 uv run ruff check .      # doit rester vert : c'est voulu
 uv run pyright           # idem
-uv run pytest            # 37 tests verts : le comportement est figé
+uv run pytest            # 40 tests verts : le comportement est figé
 ```
 
 Un linter vert ne veut pas dire code sain ici. Il garantit seulement que le comportement testé reste identique

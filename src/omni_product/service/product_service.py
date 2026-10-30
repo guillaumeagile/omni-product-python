@@ -1,19 +1,21 @@
+from sqlalchemy.orm import Session
+
+from omni_product.dal import product_dal
 from omni_product.model import Product
-from omni_product.repository.product_repository import ProductRepository
 
 
 class ProductService:
-    def __init__(self, product_repository: ProductRepository) -> None:
-        self._product_repository = product_repository
+    def __init__(self, session: Session) -> None:
+        self._session = session
 
     def find_all(self) -> list[Product]:
-        return self._product_repository.find_all()
+        return product_dal.find_all(self._session)
 
     def find_by_id(self, product_id: str) -> Product | None:
-        return self._product_repository.find_by_id(product_id)
+        return product_dal.find_by_id(self._session, product_id)
 
     def save(self, product: Product) -> Product:
-        return self._product_repository.save(product)
+        return product_dal.save(self._session, product)
 
     def delete_by_id(self, product_id: str) -> None:
-        self._product_repository.delete_by_id(product_id)
+        product_dal.delete_by_id(self._session, product_id)

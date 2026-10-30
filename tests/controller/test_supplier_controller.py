@@ -1,9 +1,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from omni_product.dal import product_dal, supplier_dal
 from omni_product.model import Product, Supplier
-from omni_product.repository.product_repository import ProductRepository
-from omni_product.repository.supplier_repository import SupplierRepository
 
 
 def _supplier(
@@ -39,10 +38,8 @@ def test_should_create_supplier(client: TestClient) -> None:
     assert response.json()["contactEmail"] == "contact@suppliera.com"
 
 
-def test_should_get_supplier_by_id(
-    client: TestClient, supplier_repository: SupplierRepository
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
+def test_should_get_supplier_by_id(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
 
     response = client.get("/api/suppliers/sup1")
 
@@ -55,11 +52,9 @@ def test_should_return_not_found_for_non_existent_supplier(client: TestClient) -
     assert client.get("/api/suppliers/nonexistent").status_code == 404
 
 
-def test_should_get_all_suppliers(
-    client: TestClient, supplier_repository: SupplierRepository
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
-    supplier_repository.save(_supplier("sup2", "Supplier B", "Spain", "Madrid"))
+def test_should_get_all_suppliers(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
+    supplier_dal.save(session, _supplier("sup2", "Supplier B", "Spain", "Madrid"))
 
     response = client.get("/api/suppliers")
 
@@ -67,11 +62,9 @@ def test_should_get_all_suppliers(
     assert [s["name"] for s in response.json()] == ["Supplier A", "Supplier B"]
 
 
-def test_should_get_suppliers_by_country(
-    client: TestClient, supplier_repository: SupplierRepository
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
-    supplier_repository.save(_supplier("sup2", "Supplier B", "Spain", "Madrid"))
+def test_should_get_suppliers_by_country(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
+    supplier_dal.save(session, _supplier("sup2", "Supplier B", "Spain", "Madrid"))
 
     response = client.get("/api/suppliers/country/France")
 
@@ -79,11 +72,9 @@ def test_should_get_suppliers_by_country(
     assert [s["name"] for s in response.json()] == ["Supplier A"]
 
 
-def test_should_get_suppliers_by_region(
-    client: TestClient, supplier_repository: SupplierRepository
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
-    supplier_repository.save(_supplier("sup2", "Supplier B", region="Provence"))
+def test_should_get_suppliers_by_region(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
+    supplier_dal.save(session, _supplier("sup2", "Supplier B", region="Provence"))
 
     response = client.get("/api/suppliers/region/Île-de-France")
 
@@ -91,15 +82,11 @@ def test_should_get_suppliers_by_region(
     assert [s["name"] for s in response.json()] == ["Supplier A"]
 
 
-def test_should_get_suppliers_by_product(
-    client: TestClient,
-    supplier_repository: SupplierRepository,
-    product_repository: ProductRepository,
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
-    supplier_repository.save(_supplier("sup2", "Supplier B"))
-    product_repository.save(
-        Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+def test_should_get_suppliers_by_product(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
+    supplier_dal.save(session, _supplier("sup2", "Supplier B"))
+    product_dal.save(
+        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
     )
 
     response = client.get("/api/suppliers/product/prod1")
@@ -108,10 +95,8 @@ def test_should_get_suppliers_by_product(
     assert [s["id"] for s in response.json()] == ["sup1"]
 
 
-def test_should_update_supplier(
-    client: TestClient, supplier_repository: SupplierRepository
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
+def test_should_update_supplier(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
 
     response = client.put(
         "/api/suppliers/sup1",
@@ -129,24 +114,19 @@ def test_should_update_supplier(
     assert response.json()["country"] == "Germany"
 
 
-def test_should_delete_supplier(
-    client: TestClient, supplier_repository: SupplierRepository
-) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
+def test_should_delete_supplier(client: TestClient, session: Session) -> None:
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
 
     assert client.delete("/api/suppliers/sup1").status_code == 204
     assert client.get("/api/suppliers/sup1").status_code == 404
 
 
 def test_should_cascade_delete_products_when_supplier_deleted(
-    client: TestClient,
-    supplier_repository: SupplierRepository,
-    product_repository: ProductRepository,
-    session: Session,
+    client: TestClient, session: Session
 ) -> None:
-    supplier_repository.save(_supplier("sup1", "Supplier A"))
-    product_repository.save(
-        Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+    supplier_dal.save(session, _supplier("sup1", "Supplier A"))
+    product_dal.save(
+        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
     )
 
     assert client.delete("/api/suppliers/sup1").status_code == 204

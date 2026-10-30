@@ -11,8 +11,6 @@ from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2A
 from omni_product.infrastructure.adapter.impact_co2_transport_adapter import (
     ImpactCo2TransportAdapter,
 )
-from omni_product.repository.product_repository import ProductRepository
-from omni_product.repository.supplier_repository import SupplierRepository
 from omni_product.service.product_service import ProductService
 from omni_product.service.product_transport_service import ProductTransportService
 from omni_product.service.supplier_service import SupplierService
@@ -27,26 +25,12 @@ def get_session(request: Request) -> Iterator[Session]:
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-def get_product_repository(session: SessionDep) -> ProductRepository:
-    return ProductRepository(session)
+def get_product_service(session: SessionDep) -> ProductService:
+    return ProductService(session)
 
 
-def get_supplier_repository(session: SessionDep) -> SupplierRepository:
-    return SupplierRepository(session)
-
-
-ProductRepositoryDep = Annotated[ProductRepository, Depends(get_product_repository)]
-SupplierRepositoryDep = Annotated[SupplierRepository, Depends(get_supplier_repository)]
-
-
-def get_product_service(product_repository: ProductRepositoryDep) -> ProductService:
-    return ProductService(product_repository)
-
-
-def get_supplier_service(
-    supplier_repository: SupplierRepositoryDep, product_repository: ProductRepositoryDep
-) -> SupplierService:
-    return SupplierService(supplier_repository, product_repository)
+def get_supplier_service(session: SessionDep) -> SupplierService:
+    return SupplierService(session)
 
 
 def get_transport_carbon_port(request: Request) -> TransportCarbonPort:

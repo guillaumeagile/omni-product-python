@@ -6,7 +6,7 @@ Port de `omni-product-spring-boot-java-bdxio-phase1` : FastAPI + SQLAlchemy 2 + 
 |---|---|
 | Spring Boot / MVC | FastAPI |
 | JPA / Hibernate | SQLAlchemy 2.0 (`@Embeddable` → `composite`, `@ElementCollection` → tables enfants + `association_proxy`) |
-| Spring Data `JpaRepository` | classes `*Repository` (Session SQLAlchemy) |
+| Spring Data `JpaRepository` | couche DAL à l'ancienne : fonctions `*_dal.py` prenant la Session SQLAlchemy |
 | H2 | SQLite en mémoire |
 | RestTemplate | httpx |
 | Jackson | Pydantic (JSON en camelCase) |

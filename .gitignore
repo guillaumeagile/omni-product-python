@@ -1,8 +1,59 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
-.pytest_cache/
-.ruff_cache/
-.coverage
-.idea/
+*.py[cod]
+*$py.class
+*.so
+
+# Environnements virtuels (uv crée .venv ; uv.lock, lui, est versionné)
+.venv/
+venv/
+env/
+.python-version.local
+
+# Build et packaging
+build/
 dist/
+*.egg-info/
+.eggs/
+*.egg
+wheels/
+pip-wheel-metadata/
+
+# Tests, couverture, caches des outils
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.cache/
+.ruff_cache/
+.pyright/
+.mypy_cache/
+.hypothesis/
+.tox/
+.nox/
+
+# Base de données locale (la config par défaut est en mémoire)
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration locale et secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude Code (réglages personnels)
+.claude/settings.local.json
+
+# Système
+.DS_Store
+Thumbs.db

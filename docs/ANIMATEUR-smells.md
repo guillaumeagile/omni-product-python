@@ -118,6 +118,32 @@ Aucun de ces smells n'est visible pour ruff ni pyright : l'héritage est valide,
 | S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
 | S-H5 | Racine d'exceptions vide et mal rangée | `exception/business_exception.py` | `BusinessException` n'a ni message ni comportement. `TransportCarbonException` (domaine) en dépend, donc le domaine importe depuis `exception/` ; `ProductNameException` reste dans un autre paquet que l'exception du domaine |
 | S-H6 | Socle de dépôt pour trois lignes | `repository/session_repository.py` | `SessionRepository` ne porte que la session et deux helpers. `find_all`, `find_by_id` et `delete_all` restent dupliqués dans chaque dépôt, donc le socle ne mutualise pas grand-chose |
+| S-H7 | Violation de Liskov au niveau du comportement | `model/product.py` (`is_perishable`), `controller/schemas.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
+
+#### S-H7 : pourquoi c'est un smell de comportement, pas seulement de structure
+
+Côté base de données, le modèle est juste : `PerishableProduct` est une ligne de `products` avec `kind = 'perishable'`,
+et l'héritage SQLAlchemy la recharge dans la bonne classe. Mais côté code actif, le principe de substitution de
+Liskov n'est pas respecté : un `Product` doit pouvoir être remplacé par un `PerishableProduct` sans que le programme
+change de comportement, et ce n'est pas le cas.
+
+- **Deux sources de vérité.** La colonne `kind` et la classe Python peuvent diverger. Vérifié à l'exécution (SQLite en
+  mémoire) : on crée un `Product`, on met `kind = "perishable"`, on commit. Au commit, `is_perishable()` répond
+  `False`. Rechargé depuis la base, le même objet devient un `PerishableProduct` et répond `True`. Le même objet donne
+  donc deux réponses selon qu'il a été rechargé ou non, et l'erreur n'apparaît qu'à l'exécution.
+- **Le comportement dépend du type.** Pour que le code marche, il faut tester la classe : `isinstance` dans
+  `is_perishable` et `_kind_of`, `match` sur `kind` dans `schema_to_product`. C'est exactement ce que le polymorphisme
+  devait éviter : on ne dit plus à l'objet ce qu'il sait faire, on demande à quelle sous-classe il appartient.
+- **Un nouveau type casse les appelants silencieusement.** Il faut penser à ajouter la branche dans chaque `isinstance`
+  et chaque `match`. Le `case _:` de `schema_to_product` renvoie alors un `Product` sans erreur, et l'oubli ne se voit
+  qu'au test métier, pas au linter ni au type checker.
+- **Le sous-type n'ajoute aucune garantie.** `PerishableProduct` sans date est accepté : il n'est donc pas plus
+  contraint que la base, et un appelant ne peut pas raisonner sur « un périssable a une date limite ».
+
+Piste pour l'animateur (ne pas donner aux participants) : soit un polymorphisme réel, où chaque sous-classe implémente
+le comportement et la base ne teste jamais le type ; soit une composition, où `Product` porte une valeur optionnelle
+`shelf_life: ShelfLife | None` (un objet dont la présence a un sens) au lieu d'une sous-classe. Dans les deux cas,
+l'invariant « périssable ⇒ date » devient vérifiable par le type ou par le constructeur, ce que le smell S-H2 n'offre pas.
 
 Point d'attention : `# noqa: RUF012` sur les trois `__mapper_args__`. C'est l'idiome SQLAlchemy (dict de classe) ;
 le `ClassVar` provoquerait une erreur pyright, car SQLAlchemy déclare cet attribut en variable d'instance.

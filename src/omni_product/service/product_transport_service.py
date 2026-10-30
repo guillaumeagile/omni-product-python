@@ -10,5 +10,5 @@ class ProductTransportService:
     def calculate_shipment_carbon(
         self, transport_mode: str, distance_km: float, weight_kg: float
     ) -> TransportCarbonMetrics:
-        request = TransportRequest(transport_mode, distance_km, weight_kg)
+        request = TransportRequest(transport_mode, round(distance_km), weight_kg)
         return self._transport_carbon_port.calculate_emissions(request)

@@ -85,7 +85,7 @@ prix_ttc = (
 
 Si `trouver` échoue, l'enchaînement s'arrête et `prix_ttc` porte l'erreur. Le code se lit comme une suite de
 transformations. Les deux premiers exemples sont du Python courant. Le troisième est un parti pris de l'atelier, que la
-section « Python face à la tendance » assume et discute.
+section « FP: a New Hope in Idioms » assume et discute.
 
 **D, Domain-based.** `price: float` devient `Prix`, `str` devient `ProductId`. Le code utilise les mots du métier, et
 les types interdisent de mélanger un prix avec une quantité.
@@ -103,7 +103,7 @@ possibles, comme `Retire | StockInsuffisant`), les données sont immuables, les 
 remplace les enchaînements de `if`. Le style fonctionnel répond naturellement à CUPID : une fonction pure se compose,
 se prévoit et se lit.
 
-## Python face à la tendance
+## FP: a New Hope in Idioms
 
 L'atelier prend position : le style de programmation évolue vers plus de fonctionnel, de types précis et d'immuabilité,
 et Python gagne à suivre ce mouvement. Il faut dire que sur certains points, une partie de la communauté Python pense

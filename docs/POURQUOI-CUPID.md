@@ -84,7 +84,8 @@ prix_ttc = (
 ```
 
 Si `trouver` échoue, l'enchaînement s'arrête et `prix_ttc` porte l'erreur. Le code se lit comme une suite de
-transformations.
+transformations. Les deux premiers exemples sont du Python courant. Le troisième est un parti pris de l'atelier, que la
+section « Python face à la tendance » assume et discute.
 
 **D, Domain-based.** `price: float` devient `Prix`, `str` devient `ProductId`. Le code utilise les mots du métier, et
 les types interdisent de mélanger un prix avec une quantité.
@@ -101,6 +102,48 @@ moderne (I). Chaque étape corrige un défaut et enseigne une lettre.
 possibles, comme `Retire | StockInsuffisant`), les données sont immuables, les fonctions sont pures, le `match`
 remplace les enchaînements de `if`. Le style fonctionnel répond naturellement à CUPID : une fonction pure se compose,
 se prévoit et se lit.
+
+## Python face à la tendance
+
+L'atelier prend position : le style de programmation évolue vers plus de fonctionnel, de types précis et d'immuabilité,
+et Python gagne à suivre ce mouvement. Il faut dire que sur certains points, une partie de la communauté Python pense
+autrement.
+
+**Là où tout le monde est d'accord.** Compréhensions et générateurs, `@dataclass(frozen=True)`, annotations de type
+vérifiées par `pyright` ou `mypy`, `match`, unions `A | B`. Ces idiomes sont mainstream, et ce sont eux qui portent la
+lettre **I** (règle 8).
+
+**Là où la communauté se divise.**
+
+| Pratique | Position de l'atelier | Une partie de la communauté Python |
+|---|---|---|
+| `lambda`, `map`, `filter`, `reduce` | Utiles, en petites doses. Sur une liste, la compréhension reste préférée (règle 8). | Guido van Rossum a voulu les retirer de Python 3 ; `reduce` est allé dans `functools`. |
+| Enchaînement fluide (`.map(...).map(...)`) | Un style qui se lit comme une suite de transformations. | Les listes n'ont pas de `.map()` natif : ce style n'est pas naturel. |
+| `Result` et `Option` (monades) | Un échec métier est une valeur (règles 5 et 7). | Le style attendu est de lever une exception et de la rattraper (EAFP). |
+
+**La question que pose l'atelier : pourquoi Python ferait-il de la résistance ?**
+
+Le mouvement existe déjà ailleurs :
+
+- **Rust :** `Result`, `Option` et `match` sont le cœur du langage.
+- **Java :** `Optional`, `Stream`, les `record`, les classes `sealed` et le `switch` par motifs.
+- **C# :** les `record`, les expressions `switch` et LINQ.
+- **Kotlin :** les classes `sealed`, `Result`, `map` et `filter` sur les collections.
+
+Python a lui-même fait la moitié du chemin : les compréhensions viennent de Haskell, et `match`, les dataclasses
+`frozen` et les annotations de type sont arrivés ces dernières années. Les résistances ont des raisons historiques
+plutôt que techniques :
+
+- **Un langage né pour le script**, où lever une exception est le geste le plus court.
+- **Une culture de la lisibilité immédiate** (« il devrait y avoir une façon évidente de le faire »), qui préfère
+  la boucle ou la compréhension à un enchaînement de lambdas.
+- **Un typage longtemps facultatif**, qui rendait les unions fermées et le `match` exhaustif peu utiles.
+
+Ce dernier frein a disparu : avec `pyright` en mode strict, un `match` qui oublie un cas est signalé. C'est ce qui
+rend les `Result` et les ADT intéressants en Python aujourd'hui.
+
+L'atelier ne cherche pas à convertir tout le monde. Il propose d'essayer ce style sur un code réel, de mesurer ce
+qu'il apporte avec la scorecard, et de juger sur pièces.
 
 ## CUTE : la lettre qui manque
 

@@ -29,7 +29,7 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 - **Du stratégique avant le tactique.** L'atelier porte d'abord sur des choix de découpage (DDD stratégique), puis sur
   des focus tactiques courts (ADT, immutabilité).
 
-## Les 8 règles
+## Les 9 règles
 
 | # | Règle (la question) | Principale | Aussi | Refactoring attendu | Comment on vérifie |
 |---|---|:-:|:-:|---|---|
@@ -40,7 +40,8 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 | 5 | Un échec métier est-il **une valeur** ? | **P** | C, D | Un `raise` métier devient un résultat. Exemple : `withdraw` rend `Withdrawn \| InsufficientStock`. | `ast` : pas de `raise` métier dans `model/` et `service/`. Pyright : `match` exhaustif sur le résultat. |
 | 6 | Les **effets impurs** sont-ils expulsés du cœur ? | **P** | C, D, U | Heure, aléatoire, UUID, fichiers, réseau et base sortent du cœur du domaine. Le cœur les reçoit en paramètre, ou par un port nommé dans le métier (`Clock`, `IdGenerator`) qu'on injecte. Le cœur devient pur et ses tests se font avec de simples faux, sans `patch`. | `ast` : `model/` n'appelle pas `date.today`, `datetime.now`, `time.time`, `uuid4`, `random.*`, `open`, `print`, ni `requests` ou `httpx`. Les tests n'utilisent ni `patch` ni `freezegun`. |
 | 7 | **Un état illégal est-il impossible à construire ?** | **P** | D, C | Remplacer les combinaisons incohérentes (drapeaux, `None` qui vont par paires) par un ADT : une union fermée de dataclasses frozen. Exemple : `Perishable(sell_by, use_by)` ou `NonExpiring(best_before)`. L'invariant (`sell_by <= use_by`) est validé par une fabrique qui rend un résultat. | `ast` : pas de champ booléen `is_*` ou `has_*` stocké, pas de plusieurs champs `X \| None` qui vont ensemble, pas de `raise` dans `__init__` ou `__post_init__`. Pyright : `match` exhaustif sur l'ADT. |
-| 8 | Le code est-il **idiomatique** ? | **I** | P, U | Boucles remplacées par des compréhensions, retours anticipés, `match`, dataclasses. | ruff durci (`C90`, `PLR0913`, `BLE`, `A`). En appui : complexité cognitive. |
+| 8 | Le code adopte-t-il **les idiomes modernes, fonctionnels d'abord** ? | **I** | P, U | Aller au-delà de la syntaxe correcte : exprimer *quoi* plutôt que *comment*. Les boucles qui remplissent une liste ou un compteur deviennent des compréhensions, `sum`, `any`, `all`, `filter`, `map` ou `reduce`. Les chaînes de `if` deviennent un `match` ou une table. Les retours anticipés remplacent l'imbrication. Chaque branche en moins fait baisser la complexité cyclomatique. | ruff durci (`PERF`, `C4`, `SIM`, `C90`), sans code maison : `PERF401` repère la boucle qui remplit une liste. En appui, sur la scorecard : `boucles`, complexités cyclomatique et cognitive. |
+| 9 | Les dépendances **pointent-elles vers le cœur** (architecture en oignon, ports et adaptateurs) ? | **C** | P, D | Sortir de l'architecture en couches `controller → service → dal → base`. Le cœur (modèle et cas d'usage) ne connaît que des **ports**, des `Protocol` écrits dans le langage du métier (`ProductRepository`, `Clock`). Les **adaptateurs** (FastAPI, SQLAlchemy) sont à l'extérieur, implémentent les ports, et sont branchés à un seul endroit (la composition root). Le `dal/` disparaît au profit d'adaptateurs. | `import-linter` : contrats de couches (le cœur n'importe ni `controller`, ni `dal`, ni `infrastructure`, ni `fastapi`, ni `sqlalchemy`). Test : les cas d'usage se testent avec des faux en mémoire, sans base ni HTTP. |
 
 ### Notes sur les règles
 
@@ -52,6 +53,16 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
   on les expulse du cœur par injection de dépendance pour que le cœur se teste facilement.
 - **Règles 4 et 7** : la même union (`ShelfLife`) peut satisfaire les deux, mais ce sont deux questions distinctes.
   La 4 demande de composer au lieu d'hériter. La 7 demande que l'incohérent ne puisse pas se construire.
+- **Règle 8 ✅** : elle va plus loin que le style. Elle impose le style fonctionnel (compréhensions, `sum`, `any`,
+  `all`, `filter`, `map`, `reduce`), qui supprime des branches et donc de la complexité cyclomatique. Précision pour
+  Python : on préfère la compréhension à `map` ou `filter` avec un `lambda`, et `reduce` reste rare, car `sum`, `any`
+  et `all` couvrent l'essentiel.
+- **Règle 9 ✅** : elle généralise la règle 3. La règle 3 sort le stockage du modèle, la règle 9 organise tout le
+  projet autour du cœur. Le port `domain/port` et l'adaptateur `infrastructure/adapter`, déjà présents pour le
+  transport carbone, sont le modèle à reproduire pour le reste. La règle 3 devient donc la première marche de la 9.
+- **La testabilité n'est pas une lettre de CUPID** : c'est le bénéfice commun des règles 3, 6 et 9. Ces trois
+  règles rendent le cœur testable sans base, sans horloge et sans réseau. Pour la règle 9, je l'ai rangée sous **C**
+  (Composable : on branche et on débranche les adaptateurs), avec P et D en annexes.
 - **Règle 4 dépend de la règle 3** : tant que le modèle est mappé par SQLAlchemy, supprimer l'héritage oblige à
   toucher au mapping.
 
@@ -66,8 +77,9 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 | HA2 (données immuables) | **Règle 2** (Value Objects frozen). |
 | HA4.2, HA4.4, HA4.5 (échecs en valeurs, ADT, `switch` exhaustif) | **Règles 5 et 7.** L'exhaustivité est vérifiée par pyright. |
 | HA4.6 (horloge), HA10 (pas de service au constructeur) | **Règle 6.** |
-| HA1 (idiomes) | **Règle 8.** |
-| HA4.7 (retrait après `canSell`), HA4.8 (pipeline, pas de boucle), HA4.9 (validation en chaîne) | **Supprimées.** HA4.8 reste en métrique (`boucles`). HA4.7 et HA4.9 imposent un style trop précis pour être expliquées en une phrase. |
+| HA1 (idiomes), HA4.8 (pipeline, pas de boucle) | **Règle 8**, plus loin : idiomes fonctionnels. |
+| (aucune : nouveauté de la version Python) | **Règle 9** : architecture en oignon. |
+| HA4.7 (retrait après `canSell`), HA4.9 (validation en chaîne) | **Supprimées.** HA4.7 et HA4.9 imposent un style trop précis pour être expliquées en une phrase. |
 
 ## Stratégique, puis tactique
 
@@ -80,6 +92,8 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
   La scorecard montre ce que chaque chemin a coûté. Le débrief compare les trois : c'est là que se trouve la leçon.
 - **Phase 2, tactique : règles 4 à 8.** Des focus courts (ADT, échecs en valeurs, effets, idiomes) sur du code déjà
   bien découpé.
+- **Règle 9, l'aboutissement** : elle réorganise tout le projet, donc elle vient en dernier (phase 3), une fois le
+  cœur bien découpé et pur. ❓ à confirmer.
 
 ## Les ADT : quelle bibliothèque ❓
 
@@ -104,7 +118,9 @@ reste, avec la bibliothèque standard. L'absence d'une valeur reste `X | None`.
 4. **Bibliothèque d'ADT** : `result` + unions de dataclasses, ou autre chose ?
 5. **Règle 7** : les heuristiques `ast` (booléens stockés, `None` par paires) sont-elles assez fiables, ou faut-il
    les accompagner d'un test par propriétés (`hypothesis`) ?
-6. **Moteur de règles maison** : `ast` de la bibliothèque standard, ou tree-sitter ? Plus on s'éloigne du Python seul
+6. **Règle 9** : en phase 3, ou dès la phase 1 comme quatrième stratégie (« par architecture ») ? Et `import-linter`
+   comme outil de vérification, ou une règle `ast` maison ?
+7. **Moteur de règles maison** : `ast` de la bibliothèque standard, ou tree-sitter ? Plus on s'éloigne du Python seul
    (autres langages, requêtes déclaratives), plus tree-sitter se justifie.
 
 ## Prochaines étapes

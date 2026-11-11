@@ -61,7 +61,7 @@ def retirer(self, quantite):
 def retirer(self, quantite) -> Retire | StockInsuffisant: ...
 ```
 
-**I, Idiomatic.** Le code s'ouvre vers des expressions plus fonctionnelles et plus fluides : compréhensions,
+**I++, Idiomatic FP.** Le code s'ouvre vers des expressions plus fonctionnelles et plus fluides : compréhensions,
 lambdas, enchaînements de transformations, et jusqu'aux monades (`Result`, `Option`). On décrit ce qu'on veut, et
 non les étapes pour y arriver.
 
@@ -98,28 +98,30 @@ Le parcours d'apprentissage se fait en deux temps.
 les classes (U), paramétrer au lieu de coder en dur (C), retirer les comportements cachés (P), écrire en Python
 moderne (I). Chaque étape corrige un défaut et enseigne une lettre.
 
-**Virage 2, de l'objet au fonctionnel.** On change de paradigme : un résultat est une valeur (une union de cas
+**Virage 2, de l'objet au fonctionnel avec I++** On change de paradigme : un résultat est une valeur (une union de cas
 possibles, comme `Retire | StockInsuffisant`), les données sont immuables, les fonctions sont pures, le `match`
 remplace les enchaînements de `if`. Le style fonctionnel répond naturellement à CUPID : une fonction pure se compose,
 se prévoit et se lit.
 
-## FP: a New Hope in Idioms
+## I 🔜  FP: a New Hope in Idioms
 
-L'atelier prend position : le style de programmation évolue vers plus de fonctionnel, de types précis et d'immuabilité,
-et Python gagne à suivre ce mouvement. Il faut dire que sur certains points, une partie de la communauté Python pense
+L'atelier prend position : le style d'un grand nombre de langages de programmation évolue vers plus de fonctionnel, de types précis et d'immuabilité .
+Nous pensons que Python gagnerait à suivre ce mouvement.
+Il faut dire que sur certains points, une partie de la communauté Python pense
 autrement.
 
 **Là où tout le monde est d'accord.** Compréhensions et générateurs, `@dataclass(frozen=True)`, annotations de type
 vérifiées par `pyright` ou `mypy`, `match`, unions `A | B`. Ces idiomes sont mainstream, et ce sont eux qui portent la
-lettre **I** (règle 8).
+lettre **I** (règle 8). La règle 9, que l'on appelle **I++**, pousse plus loin vers le fonctionnel : c'est elle qui
+prend position.
 
 **Là où la communauté se divise.**
 
 | Pratique | Position de l'atelier | Une partie de la communauté Python |
 |---|---|---|
-| `lambda`, `map`, `filter`, `reduce` | Utiles, en petites doses. Sur une liste, la compréhension reste préférée (règle 8). | Guido van Rossum a voulu les retirer de Python 3 ; `reduce` est allé dans `functools`. |
+| `lambda`, `map`, `filter`, `reduce` | Utiles, en petites doses. Sur une liste, la compréhension reste préférée (règles 8 et 9). | Guido van Rossum a voulu les retirer de Python 3 ; `reduce` est allé dans `functools`. |
 | Enchaînement fluide (`.map(...).map(...)`) | Un style qui se lit comme une suite de transformations. | Les listes n'ont pas de `.map()` natif : ce style n'est pas naturel. |
-| `Result` et `Option` (monades) | Un échec métier est une valeur (règles 5 et 7). | Le style attendu est de lever une exception et de la rattraper (EAFP). |
+| `Result` et `Option` (monades) | Un échec métier est une valeur (règles 5, 7 et 9). | Le style attendu est de lever une exception et de la rattraper (EAFP). |
 
 **La question que pose l'atelier : pourquoi Python ferait-il de la résistance ?**
 

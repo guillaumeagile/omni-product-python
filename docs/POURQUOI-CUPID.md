@@ -61,20 +61,30 @@ def retirer(self, quantite):
 def retirer(self, quantite) -> Retire | StockInsuffisant: ...
 ```
 
-**I, Idiomatic.** Le code s'écrit comme un développeur Python le ferait aujourd'hui. Le même calcul, deux écritures :
+**I, Idiomatic.** Le code s'ouvre vers des expressions plus fonctionnelles et plus fluides : compréhensions,
+lambdas, enchaînements de transformations, et jusqu'aux monades (`Result`, `Option`). On décrit ce qu'on veut, et
+non les étapes pour y arriver.
 
 ```python
-# avant : on décrit comment faire, étape par étape
+# avant : étape par étape, avec une variable qui change à chaque tour
 perimes = []
 for produit in produits:
     if produit.est_perime():
         perimes.append(produit.nom)
 
-# après : on décrit ce qu'on veut
+# après : une expression
 perimes = [produit.nom for produit in produits if produit.est_perime()]
+
+# plus loin : un enchaînement fluide sur un résultat (monade), sans `if` ni `try`
+prix_ttc = (
+    trouver(produit_id)                   # Ok(produit) ou Err(Introuvable)
+    .map(lambda produit: produit.prix)
+    .map(lambda prix: prix * 1.2)
+)
 ```
 
-La seconde version est plus courte, n'a pas de variable qui change à chaque tour, et se lit d'un coup d'œil.
+Si `trouver` échoue, l'enchaînement s'arrête et `prix_ttc` porte l'erreur. Le code se lit comme une suite de
+transformations.
 
 **D, Domain-based.** `price: float` devient `Prix`, `str` devient `ProductId`. Le code utilise les mots du métier, et
 les types interdisent de mélanger un prix avec une quantité.

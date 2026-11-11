@@ -61,7 +61,20 @@ def retirer(self, quantite):
 def retirer(self, quantite) -> Retire | StockInsuffisant: ...
 ```
 
-**I, Idiomatic.** Une boucle qui remplit une liste s'écrit mieux en compréhension, et une chaîne de `if` en `match`.
+**I, Idiomatic.** Le code s'écrit comme un développeur Python le ferait aujourd'hui. Le même calcul, deux écritures :
+
+```python
+# avant : on décrit comment faire, étape par étape
+perimes = []
+for produit in produits:
+    if produit.est_perime():
+        perimes.append(produit.nom)
+
+# après : on décrit ce qu'on veut
+perimes = [produit.nom for produit in produits if produit.est_perime()]
+```
+
+La seconde version est plus courte, n'a pas de variable qui change à chaque tour, et se lit d'un coup d'œil.
 
 **D, Domain-based.** `price: float` devient `Prix`, `str` devient `ProductId`. Le code utilise les mots du métier, et
 les types interdisent de mélanger un prix avec une quantité.

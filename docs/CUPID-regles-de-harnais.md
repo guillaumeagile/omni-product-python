@@ -23,10 +23,11 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
   règle qu'on ne peut pas écrire ainsi n'entre pas dans le harnais.
 - **Une lettre principale, et des lettres annexes.** Une règle peut servir plusieurs lettres. La principale
   range la règle dans le parcours, les annexes disent ce que la règle apporte en plus.
-- **Les lettres viennent de CUPID, complétées par CUTE** ([`cute-ddd.md`](../../Cute-KanDDDinsky-2026/slides/markdown/cute-ddd.md)).
-  CUPID n'a pas de lettre pour la testabilité, CUTE la nomme : **T** (Testable). On emprunte aussi **E** (Expressive :
-  le code dit l'intention métier). Les lettres **C**, **U** et **D** gardent leur sens CUPID (Composable, Unix,
-  Domain-based) ; leurs cousines CUTE (Contextual, Ubiquitous) se retrouvent dans les règles 1 et 2.
+- **Deux familles de lettres, jamais mélangées.** Les lettres sont celles de **CUPID** (Composable, Unix, Predictable,
+  Idiomatic, Domain-based) : *comment le code est construit*. Une colonne **CUTE**
+  ([`cute-ddd.md`](../../Cute-KanDDDinsky-2026/slides/markdown/cute-ddd.md)) les complète, en emojis pour ne pas
+  confondre ses C et U avec ceux de CUPID : 🗺️ Contextual, 🗣️ Ubiquitous, 🧪 Testable, 📖 Expressive. CUTE dit *ce que
+  le code apporte à l'équipe*. CUPID n'a pas de lettre pour la testabilité, CUTE la nomme.
 - **Les métriques sont le thermomètre, les règles sont les portes.** La scorecard montre le mouvement, la règle dit
   quand une étape est franchie.
 - **Chaque règle dit le refactoring attendu**, pas seulement ce qui est interdit, et comment vérifier qu'il a eu lieu.
@@ -35,17 +36,17 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 
 ## Les 9 règles
 
-| # | Règle (la question) | Principale | Aussi | Refactoring attendu | Comment on vérifie |
-|---|---|:-:|:-:|---|---|
-| 1 | Chaque classe parle-t-elle d'**un seul contexte borné** ? | **U** | D, C | Éclater `Product` en classes par contexte (Catalog, Pricing, Storage, Supplier, Transport). Les liens passent par des identifiants. | `ast` + [`ubiquitous-language-map.json`](ubiquitous-language-map.json). En appui : LCOM*, WMC et CBO. |
-| 2 | Tout type du domaine est-il **une entité (identifiant obligatoire) ou un Value Object** ? | **D** | P, U, E | Classer chaque classe du modèle dans l'une des deux familles.<br>**Entité :** un champ `id` d'un type dédié (`ProductId`, pas `str`).<br>**Value Object :** `dataclass(frozen=True)`, sans identité.<br>Les primitives du domaine (`price`, `slug`, `quantity`) deviennent des Value Objects. Une entité en référence une autre par son identifiant. | `ast` : chaque classe du modèle est un Value Object (frozen, sans `id`) ou une entité (`id` typé dédié), et rien d'autre. Un membre du vocabulaire en primitive brute est signalé. |
-| 3 | Le modèle **ignore-t-il le stockage** ? | **D** | P, T, C | Sortir SQLAlchemy du modèle. Le mapping vit dans `dal/` et se branche de l'extérieur. Le choix de base devient un détail remplaçable. | `ast` : aucun import `sqlalchemy` ni `omni_product.database` sous `model/`. Test : instancier une entité sans session. |
-| 4 | Les variantes sont-elles **composées** et non héritées ? | **C** | P, D | `PerishableProduct(Product)` et `NonExpiringProduct(Product)` deviennent `ShelfLife = Perishable \| NonExpiring`. `Product` porte un `shelf_life`. | `ast` : aucune classe du modèle n'hérite d'une autre (Enum, Protocol, Exception et TypedDict exceptés), pas d'`isinstance` sur les variantes. |
-| 5 | Un échec métier est-il **une valeur** ? | **P** | C, D, E | Un `raise` métier devient un résultat. Exemple : `withdraw` rend `Withdrawn \| InsufficientStock`. | `ast` : pas de `raise` métier dans `model/` et `service/`. Pyright : `match` exhaustif sur le résultat. |
-| 6 | Les **effets impurs** sont-ils expulsés du cœur ? | **T** | P, C, D | Heure, aléatoire, UUID, fichiers, réseau et base sortent du cœur du domaine. Le cœur les reçoit en paramètre, ou par un port nommé dans le métier (`Clock`, `IdGenerator`) qu'on injecte. Le cœur devient pur et ses tests se font avec de simples faux, sans `patch`. | `ast` : `model/` n'appelle pas `date.today`, `datetime.now`, `time.time`, `uuid4`, `random.*`, `open`, `print`, ni `requests` ou `httpx`. Les tests n'utilisent ni `patch` ni `freezegun`. |
-| 7 | **Un état illégal est-il impossible à construire ?** | **P** | D, E, C | Remplacer les combinaisons incohérentes (drapeaux, `None` qui vont par paires) par un ADT : une union fermée de dataclasses frozen. Exemple : `Perishable(sell_by, use_by)` ou `NonExpiring(best_before)`. L'invariant (`sell_by <= use_by`) est validé par une fabrique qui rend un résultat. | `ast` : pas de champ booléen `is_*` ou `has_*` stocké, pas de plusieurs champs `X \| None` qui vont ensemble, pas de `raise` dans `__init__` ou `__post_init__`. Pyright : `match` exhaustif sur l'ADT. |
-| 8 | Le code adopte-t-il **les idiomes modernes, fonctionnels d'abord** ? | **I** | P, U | Aller au-delà de la syntaxe correcte : exprimer *quoi* plutôt que *comment*. Les boucles qui remplissent une liste ou un compteur deviennent des compréhensions, `sum`, `any`, `all`, `filter`, `map` ou `reduce`. Les chaînes de `if` deviennent un `match` ou une table. Les retours anticipés remplacent l'imbrication. Chaque branche en moins fait baisser la complexité cyclomatique. | ruff durci (`PERF`, `C4`, `SIM`, `C90`), sans code maison : `PERF401` repère la boucle qui remplit une liste. En appui, sur la scorecard : `boucles`, complexités cyclomatique et cognitive. |
-| 9 | Les dépendances **pointent-elles vers le cœur** (architecture en oignon, ports et adaptateurs) ? | **T** | P, C | Sortir de l'architecture en couches `controller → service → dal → base`. Le cœur (modèle et cas d'usage) ne connaît que des **ports**, des `Protocol` écrits dans le langage du métier (`ProductRepository`, `Clock`). Les **adaptateurs** (FastAPI, SQLAlchemy) sont à l'extérieur, implémentent les ports, et sont branchés à un seul endroit (la composition root). Le `dal/` disparaît au profit d'adaptateurs. | `import-linter` : contrats de couches (le cœur n'importe ni `controller`, ni `dal`, ni `infrastructure`, ni `fastapi`, ni `sqlalchemy`). Test : les cas d'usage se testent avec des faux en mémoire, sans base ni HTTP. |
+| # | Règle (la question) | CUPID | Aussi | CUTE | Refactoring attendu | Comment on vérifie |
+|---|---|:-:|:-:|:-:|---|---|
+| 1 | Chaque classe parle-t-elle d'**un seul contexte borné** ? | **U** | D, C | 🗺️ | Éclater `Product` en classes par contexte (Catalog, Pricing, Storage, Supplier, Transport). Les liens passent par des identifiants. | `ast` + [`ubiquitous-language-map.json`](ubiquitous-language-map.json). En appui : LCOM*, WMC et CBO. |
+| 2 | Tout type du domaine est-il **une entité (identifiant obligatoire) ou un Value Object** ? | **D** | P, U | 🗣️ | Classer chaque classe du modèle dans l'une des deux familles.<br>**Entité :** un champ `id` d'un type dédié (`ProductId`, pas `str`).<br>**Value Object :** `dataclass(frozen=True)`, sans identité.<br>Les primitives du domaine (`price`, `slug`, `quantity`) deviennent des Value Objects. Une entité en référence une autre par son identifiant. | `ast` : chaque classe du modèle est un Value Object (frozen, sans `id`) ou une entité (`id` typé dédié), et rien d'autre. Un membre du vocabulaire en primitive brute est signalé. |
+| 3 | Le modèle **ignore-t-il le stockage** ? | **D** | P, C | 🧪 | Sortir SQLAlchemy du modèle. Le mapping vit dans `dal/` et se branche de l'extérieur. Le choix de base devient un détail remplaçable. | `ast` : aucun import `sqlalchemy` ni `omni_product.database` sous `model/`. Test : instancier une entité sans session. |
+| 4 | Les variantes sont-elles **composées** et non héritées ? | **C** | P, D | · | `PerishableProduct(Product)` et `NonExpiringProduct(Product)` deviennent `ShelfLife = Perishable \| NonExpiring`. `Product` porte un `shelf_life`. | `ast` : aucune classe du modèle n'hérite d'une autre (Enum, Protocol, Exception et TypedDict exceptés), pas d'`isinstance` sur les variantes. |
+| 5 | Un échec métier est-il **une valeur** ? | **P** | C, D | 📖 | Un `raise` métier devient un résultat. Exemple : `withdraw` rend `Withdrawn \| InsufficientStock`. | `ast` : pas de `raise` métier dans `model/` et `service/`. Pyright : `match` exhaustif sur le résultat. |
+| 6 | Les **effets impurs** sont-ils expulsés du cœur ? | **P** | C, D | 🧪 | Heure, aléatoire, UUID, fichiers, réseau et base sortent du cœur du domaine. Le cœur les reçoit en paramètre, ou par un port nommé dans le métier (`Clock`, `IdGenerator`) qu'on injecte. Le cœur devient pur et ses tests se font avec de simples faux, sans `patch`. | `ast` : `model/` n'appelle pas `date.today`, `datetime.now`, `time.time`, `uuid4`, `random.*`, `open`, `print`, ni `requests` ou `httpx`. Les tests n'utilisent ni `patch` ni `freezegun`. |
+| 7 | **Un état illégal est-il impossible à construire ?** | **P** | D, C | 📖 | Remplacer les combinaisons incohérentes (drapeaux, `None` qui vont par paires) par un ADT : une union fermée de dataclasses frozen. Exemple : `Perishable(sell_by, use_by)` ou `NonExpiring(best_before)`. L'invariant (`sell_by <= use_by`) est validé par une fabrique qui rend un résultat. | `ast` : pas de champ booléen `is_*` ou `has_*` stocké, pas de plusieurs champs `X \| None` qui vont ensemble, pas de `raise` dans `__init__` ou `__post_init__`. Pyright : `match` exhaustif sur l'ADT. |
+| 8 | Le code adopte-t-il **les idiomes modernes, fonctionnels d'abord** ? | **I** | P, U | · | Aller au-delà de la syntaxe correcte : exprimer *quoi* plutôt que *comment*. Les boucles qui remplissent une liste ou un compteur deviennent des compréhensions, `sum`, `any`, `all`, `filter`, `map` ou `reduce`. Les chaînes de `if` deviennent un `match` ou une table. Les retours anticipés remplacent l'imbrication. Chaque branche en moins fait baisser la complexité cyclomatique. | ruff durci (`PERF`, `C4`, `SIM`, `C90`), sans code maison : `PERF401` repère la boucle qui remplit une liste. En appui, sur la scorecard : `boucles`, complexités cyclomatique et cognitive. |
+| 9 | Les dépendances **pointent-elles vers le cœur** (architecture en oignon, ports et adaptateurs) ? | **C** | P | 🧪 | Sortir de l'architecture en couches `controller → service → dal → base`. Le cœur (modèle et cas d'usage) ne connaît que des **ports**, des `Protocol` écrits dans le langage du métier (`ProductRepository`, `Clock`). Les **adaptateurs** (FastAPI, SQLAlchemy) sont à l'extérieur, implémentent les ports, et sont branchés à un seul endroit (la composition root). Le `dal/` disparaît au profit d'adaptateurs. | `import-linter` : contrats de couches (le cœur n'importe ni `controller`, ni `dal`, ni `infrastructure`, ni `fastapi`, ni `sqlalchemy`). Test : les cas d'usage se testent avec des faux en mémoire, sans base ni HTTP. |
 
 ### Notes sur les règles
 
@@ -64,12 +65,11 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 - **Règle 9 ✅** : elle généralise la règle 3. La règle 3 sort le stockage du modèle, la règle 9 organise tout le
   projet autour du cœur. Le port `domain/port` et l'adaptateur `infrastructure/adapter`, déjà présents pour le
   transport carbone, sont le modèle à reproduire pour le reste. La règle 3 devient donc la première marche de la 9.
-- **La testabilité n'est pas une lettre de CUPID ✅** : c'est pourquoi on emprunte le **T** de CUTE. Les règles 3, 6
-  et 9 rendent le cœur testable sans base, sans horloge et sans réseau : la 9 et la 6 ont **T** pour principale, la 3
-  l'a en annexe (sa principale reste D). La règle 9 garde P en annexe, et C (on branche et on débranche les
-  adaptateurs).
-- **E (Expressive) ❓** : proposé en annexe des règles 2, 5 et 7 (types, résultats et ADT qui disent l'intention
-  métier). À confirmer, ou à retirer si tu préfères rester sur CUPID + T.
+- **La testabilité n'est pas une lettre de CUPID ✅** : c'est pourquoi la colonne CUTE a le 🧪. Les règles 3, 6 et 9
+  rendent le cœur testable sans base, sans horloge et sans réseau. La règle 9 est **C** côté CUPID (on branche et on
+  débranche les adaptateurs) et 🧪 côté CUTE.
+- **📖 (Expressive) ❓** : proposé pour les règles 5 et 7 (résultats et ADT qui disent l'intention métier). À
+  confirmer.
 - **Règle 4 dépend de la règle 3** : tant que le modèle est mappé par SQLAlchemy, supprimer l'héritage oblige à
   toucher au mapping.
 

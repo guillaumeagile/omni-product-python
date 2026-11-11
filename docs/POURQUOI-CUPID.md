@@ -61,7 +61,7 @@ def retirer(self, quantite):
 def retirer(self, quantite) -> Retire | StockInsuffisant: ...
 ```
 
-**I++, Idiomatic FP.** Le code s'ouvre vers des expressions plus fonctionnelles et plus fluides : compréhensions,
+**II, Idiomatic FP.** Le code s'ouvre vers des expressions plus fonctionnelles et plus fluides : compréhensions,
 lambdas, enchaînements de transformations, et jusqu'aux monades (`Result`, `Option`). On décrit ce qu'on veut, et
 non les étapes pour y arriver.
 
@@ -98,7 +98,7 @@ Le parcours d'apprentissage se fait en deux temps.
 les classes (U), paramétrer au lieu de coder en dur (C), retirer les comportements cachés (P), écrire en Python
 moderne (I). Chaque étape corrige un défaut et enseigne une lettre.
 
-**Virage 2, de l'objet au fonctionnel avec I++** On change de paradigme : un résultat est une valeur (une union de cas
+**Virage 2, de l'objet au fonctionnel avec II** On change de paradigme : un résultat est une valeur (une union de cas
 possibles, comme `Retire | StockInsuffisant`), les données sont immuables, les fonctions sont pures, le `match`
 remplace les enchaînements de `if`. Le style fonctionnel répond naturellement à CUPID : une fonction pure se compose,
 se prévoit et se lit.
@@ -112,8 +112,8 @@ autrement.
 
 **Là où tout le monde est d'accord.** Compréhensions et générateurs, `@dataclass(frozen=True)`, annotations de type
 vérifiées par `pyright` ou `mypy`, `match`, unions `A | B`. Ces idiomes sont mainstream, et ce sont eux qui portent la
-lettre **I** (règle 8). La règle 9, que l'on appelle **I++**, pousse plus loin vers le fonctionnel : c'est elle qui
-prend position.
+lettre **I** (règle 8). La règle 9, que l'on appelle **II** (un second I), pousse plus loin vers le fonctionnel :
+c'est elle qui prend position. Une fois appliquée, CUPID s'écrit **CUPIID**.
 
 **Là où la communauté se divise.**
 

@@ -56,6 +56,15 @@ wheels = [
 ]
 
 [[package]]
+name = "cognitive-complexity"
+version = "1.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "setuptools" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6a/ff/3cd46792fcbf742458083527407bc336efe382b168595583a06c70bf8e54/cognitive_complexity-1.3.0.tar.gz", hash = "sha256:a0cfbd47dee0b19f4056f892389f501694b205c3af69fb703cc744541e03dde5", size = 5650, upload-time = "2022-08-09T07:07:52.952Z" }
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -400,6 +409,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mando"
+version = "0.7.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/24/cd70d5ae6d35962be752feccb7dca80b5e0c2d450e995b16abd6275f3296/mando-0.7.1.tar.gz", hash = "sha256:18baa999b4b613faefb00eac4efadcf14f510b59b924b66e08289aa1de8c3500", size = 37868, upload-time = "2022-02-24T08:12:27.316Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d2/f0/834e479e47e499b6478e807fb57b31cc2db696c4db30557bb6f5aea4a90b/mando-0.7.1-py2.py3-none-any.whl", hash = "sha256:26ef1d70928b6057ee3ca12583d73c63e05c49de8972d620c278a7b206581a8a", size = 28149, upload-time = "2022-02-24T08:12:25.24Z" },
+]
+
+[[package]]
 name = "markdown-it-py"
 version = "4.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -477,11 +498,13 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "cognitive-complexity" },
     { name = "httpx2" },
     { name = "mutmut" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "radon" },
     { name = "ruff" },
 ]
 
@@ -496,11 +519,13 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "cognitive-complexity", specifier = ">=1.3.0" },
     { name = "httpx2", specifier = ">=2.16.0" },
     { name = "mutmut", specifier = ">=3.8.1" },
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "radon", specifier = ">=6.0.1" },
     { name = "ruff", specifier = ">=0.17.3" },
 ]
 
@@ -782,6 +807,19 @@ wheels = [
 ]
 
 [[package]]
+name = "radon"
+version = "6.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama" },
+    { name = "mando" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b1/6d/98e61600febf6bd929cf04154537c39dc577ce414bafbfc24a286c4fa76d/radon-6.0.1.tar.gz", hash = "sha256:d1ac0053943a893878940fedc8b19ace70386fc9c9bf0a09229a44125ebf45b5", size = 1874992, upload-time = "2023-03-26T06:24:38.868Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/93/f7/d00d9b4a0313a6be3a3e0818e6375e15da6d7076f4ae47d1324e7ca986a1/radon-6.0.1-py2.py3-none-any.whl", hash = "sha256:632cc032364a6f8bb1010a2f6a12d0f14bc7e5ede76585ef29dc0cecf4cd8859", size = 52784, upload-time = "2023-03-26T06:24:33.949Z" },
+]
+
+[[package]]
 name = "rich"
 version = "15.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -885,6 +923,24 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/42/94/f3e16c3a7949fa28a777aa30830bf89098026e13669144b0ec1b147f17f4/setproctitle-1.3.8-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:97b35b15f81363a314baca76674c19027dce19eed1590abd51c2d285830efd50", size = 34488, upload-time = "2026-10-01T21:09:11.756Z" },
     { url = "https://files.pythonhosted.org/packages/4c/e7/9baa826fc44c6f607a39ad35d419da7f51dec2df31ef169e7a4a34e1cc75/setproctitle-1.3.8-cp315-cp315t-win32.whl", hash = "sha256:ecf44731e351c6100885120cecf53a0f43a1bb975a92480de1f9e022ab542bc1", size = 12260, upload-time = "2026-10-01T21:09:13.6Z" },
     { url = "https://files.pythonhosted.org/packages/71/fb/08f55fab7294d18a6b1bc6d13340706c998b4641bd5f99ed9c7a626fcbf0/setproctitle-1.3.8-cp315-cp315t-win_amd64.whl", hash = "sha256:61aac898128dade36438da9387fea570f00cd519ad5231d3b268913afc2fc329", size = 13170, upload-time = "2026-10-01T21:09:15.351Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "84.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/b3/c19426f783614d625699a4b247faf628ea9ab1db228674491767b417f9e1/setuptools-84.2.1.tar.gz", hash = "sha256:3ff8b3b5492a0aa66960f4419365a86b84e013070d4313e4d4a6894f5d64d6bc", size = 1230289, upload-time = "2026-10-20T19:01:37.742Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/55/6dc6d6bb953bdfc52519a0059592c52b6e3b8ad51cf8256dffceb55b0610/setuptools-84.2.1-py3-none-any.whl", hash = "sha256:ca140b45d5325a9478f880e351484f62fef15f336462e449ca0c03c873d589c2", size = 876263, upload-time = "2026-10-20T19:01:35.678Z" },
+]
+
+[[package]]
+name = "six"
+version = "1.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
 ]
 
 [[package]]

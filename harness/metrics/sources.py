@@ -22,8 +22,18 @@ class SourceFile:
 
 def collect(roots: Sequence[Path], src_root: Path) -> list[SourceFile]:
     """Tous les `.py` sous `roots`, dans l'ordre alphabétique ; `src_root` sert à retrouver le nom du module."""
-    paths = sorted({path for root in roots for path in root.rglob("*.py")})
+    paths = sorted({path for root in roots for path in root.rglob("*.py") if not _is_test(path)})
     return [_read(path, src_root) for path in paths]
+
+
+def _is_test(path: Path) -> bool:
+    """Les tests ne font pas partie du code mesuré, même si un dossier mesuré en contient."""
+    return (
+        path.name.startswith("test_")
+        or path.name.endswith("_test.py")
+        or path.name == "conftest.py"
+        or "tests" in path.parts
+    )
 
 
 def _read(path: Path, src_root: Path) -> SourceFile:

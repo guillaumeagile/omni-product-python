@@ -6,11 +6,13 @@ La CI la publie en commentaire de PR. Elle guide, elle ne note pas : l'arbitre v
 """
 
 import argparse
+import difflib
 import io
 import subprocess
 import tarfile
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Generator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -127,34 +129,42 @@ def measure_tree(src_root: Path, roots: list[str]) -> Metrics:
     return measure(collect([src_root / root for root in roots], src_root))
 
 
-def measure_ref(ref: str, roots: list[str]) -> Metrics | None:
-    """Mesure le code tel qu'il est à `ref` (sans toucher à l'arbre de travail) ; `None` si le périmètre n'y existe pas."""
+@contextmanager
+def checkout(ref: str) -> Generator[Path | None]:
+    """Le dossier `src` tel qu'il est à `ref` (sans toucher à l'arbre de travail) ; `None` s'il n'y existe pas."""
     archive = subprocess.run(["git", "archive", ref, "src"], check=False, capture_output=True)
     if archive.returncode != 0:
-        return None
+        yield None
+        return
     with (
         tempfile.TemporaryDirectory() as tmp,
         tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar,
     ):
         tar.extractall(tmp, filter="data")
-        return measure_tree(Path(tmp) / "src", [_relative_to_src(root) for root in roots])
+        yield Path(tmp) / "src"
 
 
 def _relative_to_src(root: str) -> str:
     return root.removeprefix("src/")
 
 
-def changed_tokens(ref: str, roots: list[str]) -> int:
-    """Les tokens des lignes ajoutées ou retirées dans le périmètre, entre `ref` et le code actuel."""
-    diff = subprocess.run(
-        ["git", "diff", "--unified=0", ref, "--", *roots],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
+def _effective_lines(src_root: Path, roots: list[str]) -> dict[str, list[str]]:
+    return {
+        source.module: tokens.effective_code(source.tree).splitlines()
+        for source in collect([src_root / root for root in roots], src_root)
+    }
+
+
+def changed_tokens(base_src: Path, head_src: Path, roots: list[str]) -> int:
+    """Les tokens du code efficace ajouté ou retiré dans le périmètre (ni commentaires, ni docstrings, ni mise en forme)."""
+    before = _effective_lines(base_src, roots)
+    after = _effective_lines(head_src, roots)
     changed = [
         line[1:]
-        for line in diff.splitlines()
+        for module in sorted(before.keys() | after.keys())
+        for line in difflib.unified_diff(
+            before.get(module, []), after.get(module, []), n=0, lineterm=""
+        )
         if line[:1] in "+-" and not line.startswith(("+++", "---"))
     ]
     return tokens.count("\n".join(changed))
@@ -169,8 +179,13 @@ def main() -> None:
     parser.add_argument("roots", nargs="*", default=list(DEFAULT_ROOTS))
     args = parser.parse_args()
     head = measure_tree(Path("src"), [_relative_to_src(root) for root in args.roots])
-    base = measure_ref(args.base_ref, args.roots) if args.base_ref else None
-    changed = changed_tokens(args.base_ref, args.roots) if base and args.base_ref else None
+    roots = [_relative_to_src(root) for root in args.roots]
+    if args.base_ref:
+        with checkout(args.base_ref) as base_src:
+            base = None if base_src is None else measure_tree(base_src, roots)
+            changed = None if base_src is None else changed_tokens(base_src, Path("src"), roots)
+    else:
+        base, changed = None, None
     card = render(head, base, changed)
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")

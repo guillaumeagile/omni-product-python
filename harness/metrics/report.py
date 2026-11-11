@@ -73,7 +73,7 @@ def measure(sources: list[SourceFile]) -> Metrics:
         max_fan_out=max((m.fan_out for m in per_class), default=0),
         cbo=sum(m.cbo for m in per_class),
         max_cbo=max((m.cbo for m in per_class), default=0),
-        tokens=sum(tokens.count(source.text) for source in sources),
+        tokens=sum(tokens.count(tokens.effective_code(source.tree)) for source in sources),
         mutable_attributes=styled.mutable_attributes,
         assignments=styled.assignments,
         loops=styled.loops,

@@ -315,3 +315,34 @@ def test_scorecard_without_base_shows_only_the_pr_values():
 
     assert "Pas de base comparable" in card
     assert "| Classes" not in card
+
+
+def test_tokens_ignore_comments_docstrings_and_formatting():
+    bare = source("def f(x):\n    return x + 1\n")
+    noisy = source(
+        """
+        def f(x):
+            \"\"\"Une docstring bien longue qui ne coûte rien.\"\"\"
+            # un commentaire
+            return (x   +   1)
+        """
+    )
+
+    assert measure([noisy]).tokens == measure([bare]).tokens
+
+
+def test_collect_skips_test_files(tmp_path: Path):
+    (tmp_path / "pkg" / "tests").mkdir(parents=True)
+    (tmp_path / "pkg" / "a.py").write_text("x = 1\n")
+    (tmp_path / "pkg" / "test_a.py").write_text("x = 1\n")
+    (tmp_path / "pkg" / "tests" / "b.py").write_text("x = 1\n")
+
+    assert [s.module for s in collect([tmp_path / "pkg"], tmp_path)] == ["pkg.a"]
+
+
+def test_changed_tokens_ignore_comment_only_changes(tmp_path: Path):
+    for name, text in (("base", "x = 1\n"), ("head", "# nouveau commentaire\nx = 1\n")):
+        (tmp_path / name / "pkg").mkdir(parents=True)
+        (tmp_path / name / "pkg" / "a.py").write_text(text)
+
+    assert scorecard.changed_tokens(tmp_path / "base", tmp_path / "head", ["pkg"]) == 0

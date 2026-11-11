@@ -57,7 +57,7 @@ testé :
 | Complexité cognitive | [cognitive-complexity](https://pypi.org/project/cognitive-complexity/) |
 | TCC, LCOM* | calcul maison (module `ast` de Python) |
 | Fan-out, CBO | calcul maison (module `ast` de Python) |
-| Tokens | [tiktoken](https://github.com/openai/tiktoken), encodage `o200k_base` |
+| Tokens | [tiktoken](https://github.com/openai/tiktoken), encodage `o200k_base`, sur le code efficace (hors commentaires, docstrings et tests) |
 | Style (attributs mutables, affectations, boucles, lambdas) | calcul maison (module `ast` de Python) |
 
 #### La scorecard de chaque PR
@@ -131,5 +131,6 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
 | 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |
 | 2026-11-11 | Première version : CI, mutation testing, mesures de complexité, cohésion et couplage |

@@ -25,12 +25,16 @@ découpe. `ProductNameException` fait plusieurs tokens, `if` en fait un.
 lire, à comprendre et à garder en tête. Moins de tokens, c'est souvent moins de répétition, moins de code mort,
 moins de cérémonie.
 
+**Ce qui est compté.** Le **code efficace** seulement : ni les commentaires, ni les docstrings, ni la mise en forme
+(espaces, retours à la ligne), ni les tests. Commenter ne coûte donc rien, et réécrire sans commentaires ne fait rien
+gagner : seul le code qui s'exécute pèse.
+
 **Comment c'est compté.** Avec `tiktoken`, l'encodage `o200k_base`. Ce n'est pas le découpage exact de tous les modèles,
 mais l'ordre de grandeur est juste, et surtout les **variations** d'une PR à l'autre sont fidèles.
 
 **Le piège.** Raccourcir les noms (`price` devient `p`) fait baisser les tokens et dégrade le code. Lisible avant court.
 
-**Le petit diff.** L'arbitre compte aussi les tokens de **ta modification** (les lignes ajoutées et retirées). Une PR
+**Le petit diff.** L'arbitre compte aussi les tokens de **ta modification** (les lignes de code ajoutées et retirées, commentaires exclus). Une PR
 qui change peu est facile à relire et facile à annuler : c'est l'esprit du *baby step*.
 
 ## 2. Le nombre de chemins : la complexité cyclomatique

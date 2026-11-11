@@ -3,7 +3,8 @@
 import textwrap
 from pathlib import Path
 
-from harness.metrics import cohesion, complexity, coupling
+from harness import scorecard
+from harness.metrics import cohesion, complexity, coupling, style, tokens
 from harness.metrics.classes import top_level_classes
 from harness.metrics.report import measure
 from harness.metrics.sources import SourceFile, collect
@@ -234,3 +235,83 @@ def test_the_real_perimeter_can_be_measured():
 
     assert metrics.classes > 0
     assert metrics.cyclomatic >= metrics.max_cyclomatic > 0
+
+
+def test_tokens_count_more_for_longer_code():
+    assert 0 < tokens.count("x = 1") < tokens.count("x = 1\ny = x + 2\nz = y * 3\n")
+
+
+def test_style_signals_count_state_loops_and_lambdas():
+    styled = style.measure(
+        [
+            source(
+                """
+                from dataclasses import dataclass
+
+                @dataclass(frozen=True)
+                class Frozen:
+                    a: int
+
+                @dataclass
+                class Loose:
+                    a: int
+                    b: int
+
+                class Plain:
+                    def __init__(self):
+                        self.x = 0
+                        self.y = 0
+
+                    def bump(self):
+                        self.x += 1
+
+                def total(items):
+                    result = 0
+                    for item in items:
+                        result += item
+                    while result > 10:
+                        result -= 1
+                    return sorted(items, key=lambda i: -i)
+                """
+            )
+        ]
+    )
+
+    assert styled.mutable_attributes == 3  # Loose.a, Loose.b, Plain.x (réassigné hors __init__)
+    assert styled.assignments == 9
+    assert styled.loops == 2
+    assert styled.lambdas == 1
+
+
+def test_report_includes_tokens_and_style():
+    metrics = measure(
+        [source("class A:\n    def f(self):\n        for i in []:\n            pass\n")]
+    )
+
+    assert metrics.tokens > 0
+    assert metrics.loops == 1
+
+
+def test_scorecard_compares_head_to_base_and_shows_direction():
+    base = measure(
+        [
+            source(
+                "class A:\n    def f(self, x):\n        if x:\n            return 1\n        return 0\n"  # noqa: E501
+            )
+        ]
+    )
+    head = measure([source("class A:\n    def f(self, x):\n        return x\n")])
+
+    card = scorecard.render(head, base, changed_tokens=12)
+
+    assert card.startswith(scorecard.MARKER)
+    assert "| Complexité cyclomatique (total) | 2 | 1 | -1 | ✅ |" in card
+    assert "🤏 Small diff" in card
+    assert "`pkg.mod.A`" in card
+
+
+def test_scorecard_without_base_shows_only_the_pr_values():
+    card = scorecard.render(measure([source("class A:\n    pass\n")]), None)
+
+    assert "Pas de base comparable" in card
+    assert "| Classes" not in card

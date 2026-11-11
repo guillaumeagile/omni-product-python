@@ -11,6 +11,7 @@ DEFAULT_ROOTS = ("src/omni_product/model", "src/omni_product/service")
 
 def render(metrics: Metrics) -> str:
     rows = [
+        ("Tokens (o200k_base)", metrics.tokens),
         ("Classes", metrics.classes),
         (
             "Complexité cyclomatique (total / max par fonction)",
@@ -25,6 +26,10 @@ def render(metrics: Metrics) -> str:
         ("LCOM* max", metrics.max_lcom),
         ("Fan-out (total / max)", f"{metrics.fan_out} / {metrics.max_fan_out}"),
         ("CBO (total / max)", f"{metrics.cbo} / {metrics.max_cbo}"),
+        ("Attributs mutables", metrics.mutable_attributes),
+        ("Affectations", metrics.assignments),
+        ("Boucles", metrics.loops),
+        ("Lambdas", metrics.lambdas),
     ]
     return "\n".join(f"{label:<52} {value}" for label, value in rows)
 

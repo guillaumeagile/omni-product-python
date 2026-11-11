@@ -57,6 +57,20 @@ testé :
 | Complexité cognitive | [cognitive-complexity](https://pypi.org/project/cognitive-complexity/) |
 | TCC, LCOM* | calcul maison (module `ast` de Python) |
 | Fan-out, CBO | calcul maison (module `ast` de Python) |
+| Tokens | [tiktoken](https://github.com/openai/tiktoken), encodage `o200k_base` |
+| Style (attributs mutables, affectations, boucles, lambdas) | calcul maison (module `ast` de Python) |
+
+#### La scorecard de chaque PR
+
+À chaque PR, la CI (job **Scorecard**) mesure le code de la PR **et** celui de sa base, puis publie un commentaire :
+un tableau avant / après avec le sens de la variation (✅ mieux, ⚠️ moins bien), les tokens modifiés (🤏 Small diff) et
+les classes à regarder en premier. Le commentaire est mis à jour à chaque push, pas dupliqué. Le job est
+**informatif** : la scorecard guide les tours de refactoring, elle ne bloque rien. Que les chiffres soient mauvais sur
+le code de départ est normal : c'est le but de l'atelier de les faire bouger.
+
+```bash
+uv run python -m harness.scorecard --base-ref main    # la même scorecard en local
+```
 
 Le rapport JSON est fait pour être **comparé** : le harnais ne regarde pas la valeur d'un chiffre, il regarde de combien
 il a bougé entre deux baby steps.
@@ -104,8 +118,8 @@ C'est lui qui transformera les mesures de l'étage 2 en points. Le barème sera 
 | Mutation testing (modèle) | ✅ en place, informatif |
 | Mesures : complexités cyclomatique et cognitive, WMC | ✅ en place (`harness/metrics`) |
 | Mesures : TCC, LCOM*, fan-out, CBO | ✅ en place (`harness/metrics`) |
-| Mesures : tokens, métriques « style » (champs mutables, affectations, boucles, lambdas) | ⏳ à faire |
-| Mesures branchées sur la CI (rapport par PR) | ⏳ à faire |
+| Mesures : tokens, métriques « style » (champs mutables, affectations, boucles, lambdas) | ✅ en place (`harness/metrics`) |
+| Scorecard par PR (commentaire publié par la CI) | ✅ en place, informatif |
 | Règles de design maison | ⏳ à faire |
 | Arbitre (verdict, score, badges, classement) | ⏳ à faire |
 | Règles plus dures (seuils bloquants) | ⏳ à faire |
@@ -117,4 +131,5 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |
 | 2026-11-11 | Première version : CI, mutation testing, mesures de complexité, cohésion et couplage |

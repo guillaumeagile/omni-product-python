@@ -53,3 +53,40 @@ jobs:
           else
             gh pr comment "$PR_NUMBER" --body-file mutation-report.md
           fi
+
+  scorecard:
+    name: Scorecard (harnais)
+    runs-on: ubuntu-latest
+    # Informatif : la scorecard guide le refactoring, elle ne bloque jamais une PR.
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # La base de la PR doit être disponible pour comparer avant / après.
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Calculer la scorecard
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: |
+          uv run python -m harness.scorecard ${BASE_REF:+--base-ref "$BASE_REF"} --output scorecard.md
+          cat scorecard.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Publier la scorecard en commentaire de PR
+        # Un commentaire existant est mis à jour pour ne pas polluer la PR à chaque push.
+        # Les PR venant d'un fork n'ont pas le droit d'écrire : le résumé du job suffit alors.
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          existing=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
+            --jq '.[] | select(.body | startswith("<!-- harness-scorecard -->")) | .id' | sed -n '1p')
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@scorecard.md
+          else
+            gh pr comment "$PR_NUMBER" --body-file scorecard.md
+          fi

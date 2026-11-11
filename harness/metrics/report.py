@@ -4,7 +4,7 @@ import ast
 import json
 from dataclasses import asdict, dataclass
 
-from harness.metrics import cohesion, complexity, coupling
+from harness.metrics import cohesion, complexity, coupling, style, tokens
 from harness.metrics.classes import top_level_classes
 from harness.metrics.sources import SourceFile
 
@@ -37,6 +37,11 @@ class Metrics:
     max_fan_out: int
     cbo: int
     max_cbo: int
+    tokens: int
+    mutable_attributes: int
+    assignments: int
+    loops: int
+    lambdas: int
     per_class: tuple[ClassMetrics, ...]
 
     def to_json(self) -> str:
@@ -54,6 +59,7 @@ def measure(sources: list[SourceFile]) -> Metrics:
     every_function = [fn for measured in functions.values() for fn in measured]
     tccs = [m.tcc for m in per_class if m.tcc is not None]
     lcoms = [m.lcom for m in per_class if m.lcom is not None]
+    styled = style.measure(sources)
     return Metrics(
         classes=len(per_class),
         cyclomatic=sum(fn.cyclomatic for fn in every_function),
@@ -67,6 +73,11 @@ def measure(sources: list[SourceFile]) -> Metrics:
         max_fan_out=max((m.fan_out for m in per_class), default=0),
         cbo=sum(m.cbo for m in per_class),
         max_cbo=max((m.cbo for m in per_class), default=0),
+        tokens=sum(tokens.count(source.text) for source in sources),
+        mutable_attributes=styled.mutable_attributes,
+        assignments=styled.assignments,
+        loops=styled.loops,
+        lambdas=styled.lambdas,
         per_class=per_class,
     )
 

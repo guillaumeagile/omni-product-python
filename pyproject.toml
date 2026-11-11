@@ -39,6 +39,8 @@ addopts = "-ra --strict-markers"
 source_paths = ["src/omni_product/"]
 only_mutate = ["src/omni_product/model/*"]
 pytest_add_cli_args_test_selection = ["tests/"]
+# Les tests du harnais importent `harness`, absent de la copie que mutmut exécute (mutants/) : hors périmètre.
+pytest_add_cli_args = ["--ignore=tests/harness"]
 
 [tool.ruff]
 line-length = 100

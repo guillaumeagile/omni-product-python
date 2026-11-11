@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>SOLID > CUPID > CUTE DDD</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/dracula.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="dist/plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section
+					data-markdown="markdown/intro.md"
+					data-separator="^\n---\n$" 
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="concave"
+					>
+				</section>
+				<section
+					data-markdown="markdown/solid.md"
+					data-separator="^\n---\n$" 
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="convex"
+					>
+				</section>
+				<section 
+					data-markdown="markdown/cupid.md"
+					data-separator="^\n---\n$" 
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="convex"
+					>
+				</section>
+					<section 
+					data-markdown="markdown/xp-ddd.md"
+					data-separator="^\n---\n$" 
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="concave"
+					>
+				</section>
+					<section 
+					data-markdown="markdown/4c.md"
+					data-separator="^\n---\n$" 
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="concave"
+					>
+				</section>
+				<section
+					data-markdown="markdown/cute-ddd.md"
+					data-separator="^\n---\n$"
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="convex"
+					>
+				</section>
+				<section
+					data-markdown="markdown/licenses.md"
+					data-separator="^\n---\n$"
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="convex"
+					>
+				</section>
+				<section
+					data-markdown="markdown/references.md"
+					data-separator="^\n---\n$"
+                    data-separator-vertical="^\n--\n$"
+					data-separator-notes="^Note:"
+                    data-transition="concave"
+					>
+				</section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="dist/plugin/notes.js"></script>
+		<script src="dist/plugin/markdown.js"></script>
+		<script src="dist/plugin/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>

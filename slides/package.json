@@ -1,0 +1,13 @@
+{
+  "name": "cute-kanddinsky-slides",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "live-server --port=8080 --open=/index.html --ignore=node_modules"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "private": true,
+  "description": "Reveal.js slides for the talk"
+}

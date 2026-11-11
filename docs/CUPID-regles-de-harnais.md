@@ -1,7 +1,7 @@
 # Règles de harnais pour CUPID : document de travail
 
-> **Statut : brouillon de travail.** Ce document sert à décider quelles règles le harnais appliquera, pas à les
-> expliquer aux participants. Il est modifié au fil des décisions. Les décisions prises sont marquées ✅, les points
+> **Statut : brouillon de travail.** Ce document sert à décider quelles règles le harnais appliquera.
+> Il est modifié au fil des décisions. Les décisions prises sont marquées ✅, les points
 > ouverts ❓.
 >
 > Documents voisins : [`HARNAIS.md`](HARNAIS.md) (le harnais global), [`METRIQUES.md`](METRIQUES.md) (les chiffres de
@@ -12,8 +12,8 @@
 Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`). Deux problèmes :
 
 1. **Trop de règles, et le lien avec CUPID se perd.** Beaucoup décrivent une forme de code (HA9 `Identifiable`, HA10
-   « pas de service au constructeur », HA4.2 à HA4.9), pas une intention. Un participant voit la règle, pas pourquoi
-   elle va dans le sens de CUPID.
+   « pas de service au constructeur », HA4.2 à HA4.9).
+   Un participant voit la règle, sans voir pourquoi elle va dans le sens de CUPID.
 2. **Les règles se recouvrent**, entre elles (HA5, HA6, HA7 disent toutes « cette classe fait trop de choses ») et
    avec les métriques (le fan-out mesure déjà ce que HA7 interdit, `boucles` ce que HA4.8 interdit).
 
@@ -26,11 +26,16 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 - **Deux familles de lettres, jamais mélangées.** Les lettres sont celles de **CUPID** (Composable, Unix, Predictable,
   Idiomatic, Domain-based) : *comment le code est construit*. Une colonne **CUTE**
   ([`cute-ddd.md`](../../Cute-KanDDDinsky-2026/slides/markdown/cute-ddd.md)) les complète, en emojis pour ne pas
-  confondre ses C et U avec ceux de CUPID : 🗺️ Contextual, 🗣️ Ubiquitous, 🧪 Testable, 📖 Expressive. CUTE dit *ce que
-  le code apporte à l'équipe*. CUPID n'a pas de lettre pour la testabilité, CUTE la nomme.
+  confondre ses C et U avec ceux de CUPID : 
+  - 🗺️ Contextual, 
+  - 🗣️ Ubiquitous, 
+  - 🧪 Testable, 
+  - 📖 Expressive. 
+ 
+CUTE dit *ce que   le code apporte à l'équipe*. 
 - **Les métriques sont le thermomètre, les règles sont les portes.** La scorecard montre le mouvement, la règle dit
   quand une étape est franchie.
-- **Chaque règle dit le refactoring attendu**, pas seulement ce qui est interdit, et comment vérifier qu'il a eu lieu.
+- **Chaque règle dit le refactoring attendu** et comment vérifier qu'il a eu lieu.
 - **Du stratégique avant le tactique.** L'atelier porte d'abord sur des choix de découpage (DDD stratégique), puis sur
   des focus tactiques courts (ADT, immutabilité).
 
@@ -52,7 +57,7 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 
 - **Règle 2 ✅** : elle absorbe l'ancienne règle d'immuabilité. Un Value Object est frozen par définition. La métrique
   `attributs mutables` reste un thermomètre.
-- **Règle 3 ✅** : c'est une vraie décision d'architecture, pas une tâche à cocher. Dans ce port, le modèle **est**
+- **Règle 3 ✅** : c'est une vraie décision d'architecture. Dans ce port, le modèle **est**
   l'ORM (`Product(Base)`), donc la sortir du modèle coûte cher.
 - **Règle 6 ✅** : elle est séparée de la règle 5. Les effets impurs (horloge comprise) sont une préoccupation à part :
   on les expulse du cœur par injection de dépendance pour que le cœur se teste facilement.

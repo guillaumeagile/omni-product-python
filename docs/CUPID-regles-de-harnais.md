@@ -19,8 +19,8 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 
 ## Les principes ✅
 
-On connait **CUPID** (Composable, Unix, Predictable,
-  Idiomatic, Domain-based) : *comment le code est construit*. 
+On rappelle **CUPID** (Composable, Unix, Predictable, Idiomatic, Domain-based) : *comment le code est construit*.
+Voir [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md).
 
 On a ajouté une colonne **CUTE**
   ([`cute-ddd.md`](../../Cute-KanDDDinsky-2026/slides/markdown/cute-ddd.md)) qui les complète, en emojis pour ne pas

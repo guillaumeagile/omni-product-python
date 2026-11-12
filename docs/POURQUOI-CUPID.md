@@ -146,23 +146,35 @@ rend les `Result` et les ADT intéressants en Python aujourd'hui.
 
 ### Et la performance des exceptions ?
 
-En Java et en C#, lever une exception coûte cher : le runtime capture la pile d'appels, et chaque `throw` se paie en
-microsecondes. C'est un argument classique contre les exceptions pour le flux normal.
+En Java et en C#, lever puis rattraper une exception coûte cher : le runtime capture la pile d'appels, et chaque
+`throw` se paie en microsecondes. C'est un argument classique contre les exceptions dans le flux normal.
 
-En Python, l'argument est faible. Mesure sur ce dépôt (Python 3.14.7, une fonction appelée 500 fois, minimum de
-5 séries) :
+Pour Python, voici la mesure du cas qui compte : l'exception est **levée et rattrapée**, à une profondeur de pile
+variable. On la compare à un `Result` (un `NamedTuple`) que chaque couche renvoie à la précédente.
 
-| Cas | Coût par appel |
-|---|---:|
-| `try/except`, sans exception levée | 18 ns |
-| `raise` puis `except` | 149 ns |
-| `match` sur un `Result` (dataclass frozen) qui réussit | 209 ns |
-| `match` sur un `Result` qui échoue | 227 ns |
+Mesure sur ce dépôt, Python 3.14.7, minimum de 5 séries, en nanosecondes par appel :
 
-Lever et rattraper une exception coûte environ 130 ns de plus qu'un appel normal, et un `try` qui ne lève rien est
-quasi gratuit (depuis Python 3.11). Un `Result` construit avec une dataclass frozen coûte **plus** cher qu'une
-exception, car la construction d'une instance frozen est lente. Ces chiffres varient avec la machine et avec la
-profondeur de la pile, mais l'ordre de grandeur reste : **en Python, on ne passe pas aux `Result` pour la vitesse.**
+| Profondeur de pile | Sans échec | `raise` + `except` | `Result` en erreur |
+|---:|---:|---:|---:|
+| 1 | 189 | 262 | 287 |
+| 10 | 394 | 738 | 511 |
+| 50 | 1 033 | 2 921 | 1 407 |
+| 200 | 3 525 | 11 366 | 4 562 |
+
+Ce que montrent les chiffres :
+
+- **Le coût d'une exception augmente avec la profondeur.** Chaque couche traversée ajoute une entrée à la trace.
+  À 200 couches, lever et rattraper coûte 11 µs, soit plus du double d'un `Result` qui remonte la même pile (4,5 µs).
+- **À faible profondeur, c'est équivalent.** À 1 couche, l'exception et le `Result` sont à 25 ns l'un de l'autre.
+- **L'ordre de grandeur reste la microseconde.** Python ne s'effondre pas comme on le décrit pour .NET (de l'ordre de
+  plusieurs dizaines de microsecondes par exception, d'après ma connaissance, sans l'avoir mesuré ici). Une requête
+  HTTP coûte des centaines de microsecondes : un échec métier par requête ne se voit pas.
+- **Un `try` qui ne lève rien est quasi gratuit** (depuis Python 3.11).
+- **Le choix du `Result` compte** : avec une dataclass frozen, la construction (lente) efface le gain. Un
+  `NamedTuple` ou une classe à `__slots__` est plus rapide.
+
+Le `Result` gagne donc en vitesse sur les piles profondes et sur les boucles à fort taux d'échec, et reste neutre
+ailleurs. Ce n'est pas la raison principale de l'adopter.
 
 Les raisons de les adopter sont ailleurs :
 

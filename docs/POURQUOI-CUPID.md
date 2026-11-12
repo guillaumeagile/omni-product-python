@@ -144,6 +144,53 @@ plutôt que techniques :
 Ce dernier frein a disparu : avec `pyright` en mode strict, un `match` qui oublie un cas est signalé. C'est ce qui
 rend les `Result` et les ADT intéressants en Python aujourd'hui.
 
+### Et la performance des exceptions ?
+
+En Java et en C#, lever une exception coûte cher : le runtime capture la pile d'appels, et chaque `throw` se paie en
+microsecondes. C'est un argument classique contre les exceptions pour le flux normal.
+
+En Python, l'argument est faible. Mesure sur ce dépôt (Python 3.14.7, une fonction appelée 500 fois, minimum de
+5 séries) :
+
+| Cas | Coût par appel |
+|---|---:|
+| `try/except`, sans exception levée | 18 ns |
+| `raise` puis `except` | 149 ns |
+| `match` sur un `Result` (dataclass frozen) qui réussit | 209 ns |
+| `match` sur un `Result` qui échoue | 227 ns |
+
+Lever et rattraper une exception coûte environ 130 ns de plus qu'un appel normal, et un `try` qui ne lève rien est
+quasi gratuit (depuis Python 3.11). Un `Result` construit avec une dataclass frozen coûte **plus** cher qu'une
+exception, car la construction d'une instance frozen est lente. Ces chiffres varient avec la machine et avec la
+profondeur de la pile, mais l'ordre de grandeur reste : **en Python, on ne passe pas aux `Result` pour la vitesse.**
+
+Les raisons de les adopter sont ailleurs :
+
+- **L'échec apparaît dans la signature.** `retirer(...) -> Retire | StockInsuffisant` dit ce qui peut arriver, là où
+  `raise ValueError` se découvre à l'exécution.
+- **`pyright` vérifie qu'on traite tous les cas** avec un `match` exhaustif.
+- **Les étapes se composent** : c'est l'idée de la *Railway Oriented Programming* (ROP) de Scott Wlaschin.
+
+### Railway Oriented Programming
+
+Scott Wlaschin représente un enchaînement d'étapes comme deux rails : le rail du succès et le rail de l'échec. Chaque
+étape reçoit un succès et rend un succès ou un échec. À la première erreur, le train bascule sur le rail d'échec et
+saute les étapes suivantes. Il n'y a ni `if` ni `try` entre les étapes.
+
+```python
+def passer_commande(demande):
+    return (
+        valider(demande)              # Ok(demande) ou Err(Invalide)
+        .and_then(trouver_produit)    # Ok(produit)  ou Err(Introuvable)
+        .and_then(retirer_du_stock)   # Ok(retrait)  ou Err(StockInsuffisant)
+        .map(facturer)
+    )
+```
+
+En Python, ça se fait avec `.and_then` (appelé `bind` ou `flatmap` ailleurs) sur le `Result` de la bibliothèque
+`result`, ou avec `bind` et `flow` dans `returns`. Le chaînage de méthodes se lit mieux que des `if` imbriqués. Les
+exemples de Scott Wlaschin sont en F#, sur [fsharpforfunandprofit.com](https://fsharpforfunandprofit.com/rop/).
+
 L'atelier ne cherche pas à convertir tout le monde. Il propose d'essayer ce style sur un code réel, de mesurer ce
 qu'il apporte avec la scorecard, et de juger sur pièces.
 

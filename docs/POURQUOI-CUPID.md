@@ -147,10 +147,11 @@ rend les `Result` et les ADT intéressants en Python aujourd'hui.
 ### Et la performance des exceptions ?
 
 En Java et en C#, lever puis rattraper une exception coûte cher : le runtime capture la pile d'appels, et chaque
-`throw` se paie en microsecondes. C'est un argument classique contre les exceptions dans le flux normal.
+`throw` se paie en microsecondes, ce qui est très pénalisant dans un traitement de boucle (for/loop).
+C'est un argument de poids contre l'usage des exceptions comme intention de modéliser des erreurs métiers (ou des invalidations).
 
-Pour Python, voici la mesure du cas qui compte : l'exception est **levée et rattrapée**, à une profondeur de pile
-variable. On la compare à un `Result` (un `NamedTuple`) que chaque couche renvoie à la précédente.
+Pour Python, voici la mesure du cas qui compte : quand l'exception est **levée et rattrapée**, à une profondeur de pile
+variable. On la compare à l'exécution avec un `Result` (un `NamedTuple`) que chaque couche renvoie à la précédente.
 
 Mesure sur ce dépôt, Python 3.14.7, minimum de 5 séries, en nanosecondes par appel :
 
@@ -172,7 +173,7 @@ Ce que montrent les chiffres :
 - **Un `try` qui ne lève rien est quasi gratuit** (depuis Python 3.11).
 - **Le choix du type de `Result` compte peu**, sauf pour une bibliothèque (voir le tableau suivant).
 
-Même mesure, avec différentes représentations de l'échec, y compris les bibliothèques candidates (ns par appel) :
+Même mesure, avec différentes représentations de l'échec, y compris les bibliothèques candidates (nanosecondes par appel) :
 
 | Représentation de l'échec | Profondeur 1 | Profondeur 50 | Profondeur 200 |
 |---|---:|---:|---:|
@@ -195,7 +196,7 @@ Même mesure, avec différentes représentations de l'échec, y compris les bibl
 Le `Result` gagne donc en vitesse sur les piles profondes et sur les boucles à fort taux d'échec, et reste neutre
 ailleurs. Ce n'est pas la raison principale de l'adopter.
 
-Les raisons de les adopter sont ailleurs :
+> **Les raisons de les adopter sont ailleurs** 
 
 - **L'échec apparaît dans la signature.** `retirer(...) -> Retire | StockInsuffisant` dit ce qui peut arriver, là où
   `raise ValueError` se découvre à l'exécution.
@@ -204,8 +205,9 @@ Les raisons de les adopter sont ailleurs :
 
 ### Railway Oriented Programming
 
-Scott Wlaschin représente un enchaînement d'étapes comme deux rails : le rail du succès et le rail de l'échec. Chaque
-étape reçoit un succès et rend un succès ou un échec. À la première erreur, le train bascule sur le rail d'échec et
+Scott Wlaschin (Domain Model Made Functional in F#) représente un enchaînement d'étapes comme deux rails : le rail du succès et le rail de l'échec.
+
+Chaque étape reçoit un succès et rend un succès ou un échec. À la première erreur, le train bascule sur le rail d'échec et
 saute les étapes suivantes. Il n'y a ni `if` ni `try` entre les étapes.
 
 ```python

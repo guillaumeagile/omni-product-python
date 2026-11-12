@@ -1,4 +1,4 @@
-# Règles de harnais pour CUPID : document de travail
+# Règles de harnais pour atelier Python : document de travail
 
 > **Statut : brouillon de travail.** Ce document sert à décider quelles règles le harnais appliquera.
 > Il est modifié au fil des décisions. Les décisions prises sont marquées ✅, les points
@@ -19,7 +19,7 @@ Le harnais Java avait environ 25 règles (`HA1` à `HA12.1`, `HA4.1` à `HA4.9`)
 
 ## Les principes ✅
 
-On rappelle **CUPID** (Composable, Unix, Predictable, Idiomatic, Domain-based) : *comment le code est construit*.
+On se base sur **CUPID** (Composable, Unix, Predictable, Idiomatic, Domain-based) : *comment le code est construit*.
 Voir [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md).
 
 On a ajouté une colonne **CUTE**

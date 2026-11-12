@@ -169,7 +169,7 @@ CUPID dit **comment le code est construit**, CUTE dit **ce qu'il apporte à l'é
 Les règles du harnais sont les gestes concrets qui mènent à ces propriétés : chacune a une lettre CUPID principale,
 éventuellement des annexes, et un emoji CUTE quand elle en a un. Les chiffres de la scorecard (voir
 [`METRIQUES.md`](METRIQUES.md)) montrent si le code avance dans cette direction. Le détail des règles est dans
-[`CUPID-regles-de-harnais.md`](CUPID-regles-de-harnais.md).
+[`python-regles-de-harnais.md`](python-regles-de-harnais.md).
 
 ## Pour aller plus loin
 

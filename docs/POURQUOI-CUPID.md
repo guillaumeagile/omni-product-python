@@ -103,7 +103,7 @@ possibles, comme `Retire | StockInsuffisant`), les données sont immuables, les 
 remplace les enchaînements de `if`. Le style fonctionnel répond naturellement à CUPID : une fonction pure se compose,
 se prévoit et se lit.
 
-## I 🔜  FP: a New Hope in Idioms
+## I ❤️ FP: a New Hope in Idioms
 
 L'atelier prend position : le style d'un grand nombre de langages de programmation évolue vers plus de fonctionnel, de types précis et d'immuabilité .
 Nous pensons que Python gagnerait à suivre ce mouvement.

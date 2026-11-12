@@ -170,8 +170,27 @@ Ce que montrent les chiffres :
   plusieurs dizaines de microsecondes par exception, d'après ma connaissance, sans l'avoir mesuré ici). Une requête
   HTTP coûte des centaines de microsecondes : un échec métier par requête ne se voit pas.
 - **Un `try` qui ne lève rien est quasi gratuit** (depuis Python 3.11).
-- **Le choix du `Result` compte** : avec une dataclass frozen, la construction (lente) efface le gain. Un
-  `NamedTuple` ou une classe à `__slots__` est plus rapide.
+- **Le choix du type de `Result` compte peu**, sauf pour une bibliothèque (voir le tableau suivant).
+
+Même mesure, avec différentes représentations de l'échec, y compris les bibliothèques candidates (ns par appel) :
+
+| Représentation de l'échec | Profondeur 1 | Profondeur 50 | Profondeur 200 |
+|---|---:|---:|---:|
+| `raise` + `except` | 246 | 3 071 | 11 618 |
+| tuple `(ok, valeur)` | 81 | 1 113 | 3 944 |
+| classe à `__slots__` | 123 | 1 122 | 3 952 |
+| dataclass frozen | 189 | 1 199 | 4 055 |
+| dataclass frozen + `slots` | 177 | 1 192 | 4 026 |
+| `NamedTuple` | 213 | 1 186 | 4 011 |
+| `result` (rustedpy), `Err` | 135 | 1 143 | 3 931 |
+| `returns`, `Failure` | 322 | 1 313 | 4 190 |
+| `expression`, `Error` | 1 278 | 2 347 | 5 332 |
+
+- **La construction de l'objet pèse à faible profondeur, et plus ensuite.** Dès 50 couches, tout ce qui n'est pas une
+  exception tourne autour de 1,1 à 1,3 µs, quel que soit le type.
+- **`result` est parmi les plus rapides**, au niveau d'une classe à `__slots__`. `returns` est un peu plus lent.
+- **`expression` est la plus lente** : 1,3 µs rien que pour construire une erreur. Un critère de plus contre elle dans
+  le choix de la bibliothèque d'ADT (voir `CUPID-regles-de-harnais.md`).
 
 Le `Result` gagne donc en vitesse sur les piles profondes et sur les boucles à fort taux d'échec, et reste neutre
 ailleurs. Ce n'est pas la raison principale de l'adopter.

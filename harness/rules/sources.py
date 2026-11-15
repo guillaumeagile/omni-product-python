@@ -1,7 +1,7 @@
 """Lecture des sources pour les règles : un arbre `ast` par fichier, sans rien emprunter aux mesures."""
 
 import ast
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,3 +40,16 @@ def _read(path: Path, src_root: Path) -> Source:
 
 def top_level_classes(tree: ast.Module) -> list[ast.ClassDef]:
     return [node for node in tree.body if isinstance(node, ast.ClassDef)]
+
+
+def public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | None]]:
+    """Les membres déclarés dans la classe, sans les hérités : nom, ligne, et nœud qui porte l'annotation."""
+    for stmt in cls.body:
+        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+            yield stmt.target.id, stmt.lineno, stmt
+        elif isinstance(stmt, ast.Assign):
+            for target in stmt.targets:
+                if isinstance(target, ast.Name):
+                    yield target.id, target.lineno, None
+        elif isinstance(stmt, ast.FunctionDef | ast.AsyncFunctionDef):
+            yield stmt.name, stmt.lineno, stmt

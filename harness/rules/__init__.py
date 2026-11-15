@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness.rules import contexte_borne
+from harness.rules import contexte_borne, entite_valeur
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
 from harness.rules.ubiquitous_language import UbiquitousLanguage
@@ -28,6 +28,7 @@ class Rule:
 
 RULES: tuple[Rule, ...] = (
     Rule(1, "Contexte borné", ("omni_product/anemic_model",), contexte_borne.check),
+    Rule(2, "Entité ou Value Object", ("omni_product/anemic_model",), entite_valeur.check),
 )
 
 

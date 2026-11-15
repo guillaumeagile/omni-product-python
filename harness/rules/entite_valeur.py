@@ -14,7 +14,7 @@ import ast
 from dataclasses import dataclass
 
 from harness.rules.sources import Source, public_members, top_level_classes
-from harness.rules.language import UbiquitousLanguage
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 # Une classe qui n'est ni entité ni Value Object.
 KIND_CODE = "EV001"
@@ -79,7 +79,9 @@ def _kind_findings(cls: ast.ClassDef, classes: dict[str, ast.ClassDef], path: st
     ]
 
 
-def _primitive_findings(cls: ast.ClassDef, path: str, language: UbiquitousLanguage) -> list[Finding]:
+def _primitive_findings(
+    cls: ast.ClassDef, path: str, language: UbiquitousLanguage
+) -> list[Finding]:
     findings: list[Finding] = []
     for name, line, node in public_members(cls):
         if not isinstance(node, ast.AnnAssign) or name.startswith("_"):

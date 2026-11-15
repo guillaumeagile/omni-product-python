@@ -4,7 +4,7 @@ import textwrap
 
 from harness.rules import entite_valeur
 from harness.rules.sources import Source
-from harness.rules.language import UbiquitousLanguage
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 
 def source(text: str, module: str = "pkg.mod") -> Source:

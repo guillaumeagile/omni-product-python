@@ -4,8 +4,7 @@ Chaque membre public d'une classe (attribut, méthode, propriété) est rattach�
 défaut, par les types de ses annotations. Une classe qui touche plusieurs contextes est une violation : il faut
 l'éclater, et les liens passent alors par des identifiants.
 
-Les diagnostics suivent le format du compilateur : `chemin:ligne: warning: [catégorie] message`, suivi d'une
-`note:` par membre fautif.
+Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`, une ligne par classe fautive.
 """
 
 import ast
@@ -16,8 +15,8 @@ from dataclasses import dataclass
 from harness.rules.sources import Source, top_level_classes
 from harness.rules.vocabulary import Vocabulary
 
-# Catégorie affichée entre crochets, comme les lint de javac : `warning: [contexte-borne] ...`.
-SLUG = "contexte-borne"
+# Code affiché en tête de message, comme ruff : `CB001 ...` (CB pour « contexte borné »).
+CODE = "CB001"
 
 _IDENTIFIER = re.compile(r"[A-Za-z_]\w*")
 
@@ -33,6 +32,7 @@ class Member:
 class Violation:
     path: str
     line: int
+    col: int
     cls: str
     members: tuple[Member, ...]
 
@@ -44,16 +44,12 @@ class Violation:
         return {concern: tuple(names) for concern, names in grouped.items()}
 
     def __str__(self) -> str:
-        concerns = list(self.members_by_concern)
-        lines = [
-            f"{self.path}:{self.line}: warning: [{SLUG}] "
-            f"'{self.cls}' mêle {len(concerns)} contextes ({', '.join(concerns)})"
-        ]
-        lines += [
-            f"{self.path}:{member.line}: note: '{member.name}' relève du contexte {member.concern}"
-            for member in self.members
-        ]
-        return "\n".join(lines)
+        details = ", ".join(f"{member.name} ({member.concern})" for member in self.members)
+        concerns = len(self.members_by_concern)
+        return (
+            f"{self.path}:{self.line}:{self.col}: {CODE} "
+            f"'{self.cls}' mêle {concerns} contextes : {details}"
+        )
 
 
 def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
@@ -66,7 +62,13 @@ def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
                 members.append(Member(name, line, concern))
         if len({member.concern for member in members}) >= 2:
             violations.append(
-                Violation(path=source.path, line=cls.lineno, cls=cls.name, members=tuple(members))
+                Violation(
+                    path=source.path,
+                    line=cls.lineno,
+                    col=cls.col_offset + 1,
+                    cls=cls.name,
+                    members=tuple(members),
+                )
             )
     return violations
 

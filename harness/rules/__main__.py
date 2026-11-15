@@ -23,14 +23,16 @@ def main() -> None:
     args = parser.parse_args()
 
     findings = evaluate(Path(args.src_root))
-    # Comme un compilateur : un diagnostic par constat, puis le bilan ; rien à afficher quand tout est propre.
+    # Comme ruff : une ligne par constat, puis le bilan ; « All checks passed! » quand tout est propre.
     count = 0
     for rule in RULES:
         for finding in findings[rule.number]:
             print(finding)
             count += 1
     if count:
-        print(f"{count} warning{'s' if count > 1 else ''}")
+        print(f"Found {count} warning{'s' if count > 1 else ''}.")
+    else:
+        print("All checks passed!")
 
     if args.json_path:
         report = {

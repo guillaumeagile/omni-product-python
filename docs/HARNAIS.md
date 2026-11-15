@@ -113,7 +113,7 @@ C'est lui qui transformera les mesures de l'étage 2 en points. Le barème sera 
 Le harnais se protège lui-même. Le workflow `.github/workflows/garde-harnais.yml` échoue dès qu'une PR touche :
 
 - `harness/` et `tests/harness/` ;
-- `docs/ubiquitous-language-map.json`, le vocabulaire lu par la règle 1 ;
+- `docs/ubiquitous-language.json`, l'ubiquitous language lu par la règle 1 ;
 - ce workflow.
 
 Seul le propriétaire du dépôt (`guillaumeagile`) peut lever la garde, en posant le label `bypass-harnais` sur la PR.
@@ -152,7 +152,8 @@ par surprise.
 | Date | Changement |
 |---|---|
 | 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
-| 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors vocabulaire (hors points) ; les mots génériques de la carte ne comptent pas |
+| 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors ubiquitous language (hors points) ; les mots génériques ne comptent pas |
+| 2026-11-15 | Règle 2 (entité ou Value Object) : chaque classe du modèle est une entité (`id` typé) ou une `dataclass(frozen=True)` sans id ; un membre dont le nom relève de l'ubiquitous language, typé par une primitive brute, est signalé (EV001, EV002) |
 | 2026-11-15 | Règle 1 (contexte borné) : un identifiant de lien (`product_id`) ne porte pas de contexte ; les membres hérités des classes du même module comptent |
 | 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
 | 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |

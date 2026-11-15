@@ -13,7 +13,7 @@ from pathlib import Path
 from harness.rules import contexte_borne
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
-from harness.rules.vocabulary import Vocabulary
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 
 @dataclass(frozen=True)
@@ -23,9 +23,9 @@ class Rule:
     # Dossiers à analyser, relatifs à la racine des imports (`src`).
     roots: tuple[str, ...]
     # Rend les constats : une liste vide veut dire que la règle est verte.
-    check: Callable[[Source, Vocabulary], Sequence[object]]
+    check: Callable[[Source, UbiquitousLanguage], Sequence[object]]
     # Avertissements complémentaires, affichés sans entrer dans les points de la scorecard.
-    complement: Callable[[Source, Vocabulary], Sequence[object]] | None = None
+    complement: Callable[[Source, UbiquitousLanguage], Sequence[object]] | None = None
 
 
 RULES: tuple[Rule, ...] = (
@@ -54,18 +54,17 @@ def complements(src_root: Path) -> dict[int, list[object]]:
 
 
 def _run(
-    src_root: Path, pick: Callable[[Rule], Callable[[Source, Vocabulary], Sequence[object]] | None]
+    src_root: Path,
+    pick: Callable[[Rule], Callable[[Source, UbiquitousLanguage], Sequence[object]] | None],
 ) -> dict[int, list[object]]:
-    vocabulary = Vocabulary.load()
+    language = UbiquitousLanguage.load()
     output: dict[int, list[object]] = {}
     for rule in RULES:
         check = pick(rule)
         if check is None or not any((src_root / root).is_dir() for root in rule.roots):
             continue
         sources = collect([src_root / root for root in rule.roots], src_root)
-        output[rule.number] = [
-            finding for source in sources for finding in check(source, vocabulary)
-        ]
+        output[rule.number] = [finding for source in sources for finding in check(source, language)]
     return output
 
 

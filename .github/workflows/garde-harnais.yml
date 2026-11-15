@@ -1,0 +1,52 @@
+name: Garde du harnais
+
+# Règle mère : une PR ne modifie pas le harnais sans le bypass du propriétaire.
+#
+# `pull_request_target` lit la définition de ce workflow sur `main`, pas celle de la PR :
+# une PR ne peut pas désactiver sa propre garde. Aucun code de la PR n'est exécuté ici,
+# seule la liste de ses fichiers est lue.
+#
+# Bypass : le label `bypass-harnais`, posé par le propriétaire (`PROPRIETAIRE` ci-dessous).
+# Un label posé par quelqu'un d'autre ne compte pas.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  garde:
+    name: Garde du harnais
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      PROPRIETAIRE: guillaumeagile
+      BYPASS: bypass-harnais
+    steps:
+      - name: Vérifier si la PR touche le harnais
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --jq '.[].filename' > fichiers.txt
+          grep -E '^(harness/|tests/harness/|docs/ubiquitous-language-map\.json$|\.github/workflows/garde-harnais\.yml$)' fichiers.txt > proteges.txt || true
+          if [ ! -s proteges.txt ]; then
+            echo "Aucun fichier du harnais touché : la garde passe."
+            exit 0
+          fi
+          echo "Fichiers du harnais touchés :"
+          sed 's/^/  /' proteges.txt
+
+          label_pose=$(gh pr view "$PR" --json labels --jq '.labels[].name' | grep -cx "$BYPASS" || true)
+          dernier_poseur=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/events" \
+            --jq ".[] | select(.event == \"labeled\" and .label.name == \"$BYPASS\") | .actor.login" | tail -n 1)
+
+          if [ "$label_pose" -ge 1 ] && [ "$dernier_poseur" = "$PROPRIETAIRE" ]; then
+            echo "::notice::Bypass du propriétaire ($PROPRIETAIRE) : la modification du harnais est acceptée."
+            exit 0
+          fi
+
+          echo "::error::Cette PR modifie le harnais. Seul $PROPRIETAIRE peut l'accepter, avec le label $BYPASS."
+          exit 1

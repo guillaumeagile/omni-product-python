@@ -67,8 +67,8 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
     product.kilos = schema.kilos
     product.volume = schema.volume
-    product.quantity = schema.quantity
-    product.stock = schema.stock
+    product.quantity = schema.quantity if schema.quantity is not None else schema.stock
+    product.stock = schema.stock or 0
     product.supplier_id = schema.supplier_id
     if schema.price is not None:
         product.price = Price(**schema.price.model_dump())

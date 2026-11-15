@@ -156,6 +156,28 @@ le `ClassVar` provoquerait une erreur pyright, car SQLAlchemy déclare cet attri
 | S-T2 | Zones non couvertes | | Aucun test pour `ProductService`, `Supplier.from_services`, la branche « universe has collapsed », les dépôts isolés |
 | S-T3 | Tout passe par la vraie base | `tests/` | Pas de test unitaire de service avec doublure ; seule la couche transport utilise un faux |
 
+### Bugs latents : comportements faux que les tests ne voient pas
+
+Ajoutés pour l'atelier (branche `worktree-latent-bugs-legacy`). Ils ne font échouer aucun test courant.
+
+| ID | Bug | Où | Détail |
+|---|---|---|---|
+| S-B1 | Stock absent devient 0 | `controller/schemas/mapping.py` (`schema_to_product`) | `stock or 0` : « inconnu » et « zéro » deviennent indiscernables |
+| S-B2 | Quantité absente reprend le stock | `controller/schemas/mapping.py` | `quantity` retombe sur `stock` quand il n'est pas fourni |
+| S-B3 | Nom impossible à effacer | `service/supplier_service.py` (`update_supplier`) | `name or supplier.name` : les autres champs sont écrasés, celui-ci non |
+| S-B4 | Distance arrondie à 0 | `service/product_transport_service.py` | `round(distance_km)` : une livraison de 0,3 km devient invalide |
+
+À trancher :
+- S-B1 : un stock absent doit-il être `None` (inconnu) ou `0` ? Le choix actuel masque l'information.
+- S-B2 : le repli quantité → stock est-il voulu comme raccourci, ou un bug pur ?
+- S-B3 : le PUT doit-il être uniforme (tout écrasé, y compris par `None`) ? Dans ce cas le `or` est le seul écart.
+- S-B4 : l'arrondi est-il un défaut de précision (arrondir au dixième de km suffirait), ou un bug à garder tel quel ?
+
+Autres comportements douteux déjà présents, non modifiés. Les classer en bugs ou en smells est à trancher :
+- `SupplierService.create_supplier` agit en upsert : un POST sur un id existant écrase le fournisseur.
+- `update_product` (PUT) ne valide pas le nom, contrairement à `create_product`.
+- Supprimer un fournisseur supprime ses produits (cascade `all, delete-orphan`).
+
 ## 3. Écarts avec le code Java d'origine
 
 À connaître avant l'atelier, car ils changent ce que le harnais verra :

@@ -56,7 +56,7 @@ class SupplierService:
         region: str | None,
     ) -> Supplier:
         supplier = self._get_or_raise(id)
-        supplier.name = name
+        supplier.name = name or supplier.name
         supplier.contact_email = contact_email
         supplier.contact_phone = contact_phone
         supplier.country = country

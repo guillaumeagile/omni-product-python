@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from omni_product.dal import product_dal, supplier_dal
 from omni_product.anemic_model import Product, Supplier
+from omni_product.dal import product_dal, supplier_dal
 
 
 def _supplier(

@@ -1,11 +1,3 @@
-from omni_product.controller.schemas.product import (
-    PriceSchema,
-    ProductKind,
-    ProductSchema,
-    RegionSupplierSchema,
-    WarehouseSchema,
-)
-from omni_product.controller.schemas.supplier import SupplierSchema
 from omni_product.anemic_model import (
     NonExpiringProduct,
     PerishableProduct,
@@ -15,6 +7,14 @@ from omni_product.anemic_model import (
     Supplier,
     Warehouse,
 )
+from omni_product.controller.schemas.product import (
+    PriceSchema,
+    ProductKind,
+    ProductSchema,
+    RegionSupplierSchema,
+    WarehouseSchema,
+)
+from omni_product.controller.schemas.supplier import SupplierSchema
 
 
 def _kind_of(product: Product) -> ProductKind:

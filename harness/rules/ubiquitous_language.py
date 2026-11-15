@@ -1,6 +1,6 @@
-"""Le vocabulaire du domaine : à quel contexte borné appartient un nom.
+"""L'ubiquitous language du domaine : à quel contexte borné appartient un nom.
 
-La carte `docs/ubiquitous-language-map.json` liste, par contexte, les mots du métier. Un nom (méthode, attribut,
+Le fichier `docs/ubiquitous-language.json` liste, par contexte, les mots du métier. Un nom (méthode, attribut,
 type) est rattaché à un contexte si un de ses mots-clés apparaît dedans, mot entier par mot entier, sans tenir
 compte de la casse ni du pluriel.
 """
@@ -10,7 +10,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-MAP_PATH = Path(__file__).resolve().parents[2] / "docs" / "ubiquitous-language-map.json"
+LANGUAGE_PATH = Path(__file__).resolve().parents[2] / "docs" / "ubiquitous-language.json"
 
 _WORD = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
 
@@ -37,13 +37,13 @@ class Keyword:
 
 
 @dataclass(frozen=True)
-class Vocabulary:
+class UbiquitousLanguage:
     keywords: tuple[Keyword, ...]
     # Mots des identifiants naturels (SIREN, TVA…) : une donnée du métier, jamais un lien vers une autre entité.
     natural_words: frozenset[str] = frozenset()
 
     @classmethod
-    def load(cls, path: Path = MAP_PATH) -> "Vocabulary":
+    def load(cls, path: Path = LANGUAGE_PATH) -> "UbiquitousLanguage":
         data = json.loads(path.read_text(encoding="utf-8"))
         weak = set(data.get("weakConcerns", []))
         natural = frozenset(

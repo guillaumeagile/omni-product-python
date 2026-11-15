@@ -24,10 +24,18 @@ class Rule:
     roots: tuple[str, ...]
     # Rend les constats : une liste vide veut dire que la règle est verte.
     check: Callable[[Source, Vocabulary], Sequence[object]]
+    # Avertissements complémentaires, affichés sans entrer dans les points de la scorecard.
+    complement: Callable[[Source, Vocabulary], Sequence[object]] | None = None
 
 
 RULES: tuple[Rule, ...] = (
-    Rule(1, "Contexte borné", ("omni_product/anemic_model",), contexte_borne.check),
+    Rule(
+        1,
+        "Contexte borné",
+        ("omni_product/anemic_model",),
+        contexte_borne.check,
+        complement=contexte_borne.gaps,
+    ),
 )
 
 
@@ -37,16 +45,28 @@ def evaluate(src_root: Path) -> dict[int, list[object]]:
     Une règle dont le dossier n'existe pas (par exemple une base d'avant la restructuration) n'a pas de constat :
     elle est absente du résultat, et la scorecard ne la compare pas.
     """
+    return _run(src_root, lambda rule: rule.check)
+
+
+def complements(src_root: Path) -> dict[int, list[object]]:
+    """Les avertissements complémentaires de chaque règle. Ils n'entrent pas dans les points de la scorecard."""
+    return _run(src_root, lambda rule: rule.complement)
+
+
+def _run(
+    src_root: Path, pick: Callable[[Rule], Callable[[Source, Vocabulary], Sequence[object]] | None]
+) -> dict[int, list[object]]:
     vocabulary = Vocabulary.load()
-    findings: dict[int, list[object]] = {}
+    output: dict[int, list[object]] = {}
     for rule in RULES:
-        if not any((src_root / root).is_dir() for root in rule.roots):
+        check = pick(rule)
+        if check is None or not any((src_root / root).is_dir() for root in rule.roots):
             continue
         sources = collect([src_root / root for root in rule.roots], src_root)
-        findings[rule.number] = [
-            finding for source in sources for finding in rule.check(source, vocabulary)
+        output[rule.number] = [
+            finding for source in sources for finding in check(source, vocabulary)
         ]
-    return findings
+    return output
 
 
 def results(

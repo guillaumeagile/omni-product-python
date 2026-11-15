@@ -143,3 +143,53 @@ def test_an_overridden_member_keeps_the_subclass_version():
             price: str
         """
     assert contexte_borne.check(source(text), vocabulary()) == []
+
+
+def test_a_word_outside_the_vocabulary_is_a_gap():
+    text = """
+        class Shelf:
+            rating: int
+        """
+    [gap] = contexte_borne.gaps(source(text, "pkg.shelf"), vocabulary())
+    assert gap.unknown == (("rating", ("rating",)),)
+    assert str(gap) == (
+        "pkg/shelf.py:2:1: CB002 'Shelf' a des mots hors vocabulaire : rating (rating)"
+    )
+
+
+def test_generic_names_and_linked_or_known_members_are_not_gaps():
+    text = """
+        class Shelf:
+            id: str
+            name: str
+            product_id: str
+            slug: str
+
+            def get_count(self) -> int: ...
+
+            def make(self, warehouse: Warehouse) -> None: ...
+        """
+    assert contexte_borne.gaps(source(text), vocabulary()) == []
+
+
+def test_inherited_gaps_are_reported_in_their_own_class_only():
+    text = """
+        class Base:
+            rating: int
+
+        class Child(Base):
+            pass
+        """
+    [gap] = contexte_borne.gaps(source(text), vocabulary())
+    assert gap.cls == "Base"
+
+
+def test_a_violation_is_not_changed_by_the_gaps_check():
+    text = """
+        class Product:
+            slug: str
+            price: float
+            rating: int
+        """
+    [violation] = contexte_borne.check(source(text, "pkg.product"), vocabulary())
+    assert violation.members_by_concern == {"Catalog": ("slug",), "Pricing": ("price",)}

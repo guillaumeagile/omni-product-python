@@ -9,7 +9,7 @@ import argparse
 import json
 from pathlib import Path
 
-from harness.rules import RULES, evaluate
+from harness.rules import RULES, complements, evaluate
 
 
 def main() -> None:
@@ -22,12 +22,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    findings = evaluate(Path(args.src_root))
-    # Comme ruff : une ligne par constat, puis le bilan ; « All checks passed! » quand tout est propre.
+    src_root = Path(args.src_root)
+    findings = evaluate(src_root)
+    extra = complements(src_root)
+    # Comme ruff : une ligne par diagnostic, puis le bilan ; « All checks passed! » quand tout est propre.
     count = 0
     for rule in RULES:
-        for finding in findings[rule.number]:
-            print(finding)
+        for diagnostic in [*findings.get(rule.number, []), *extra.get(rule.number, [])]:
+            print(diagnostic)
             count += 1
     if count:
         print(f"Found {count} warning{'s' if count > 1 else ''}.")
@@ -38,7 +40,8 @@ def main() -> None:
         report = {
             f"regle_{rule.number}": {
                 "title": rule.title,
-                "findings": [str(finding) for finding in findings[rule.number]],
+                "findings": [str(finding) for finding in findings.get(rule.number, [])],
+                "complements": [str(item) for item in extra.get(rule.number, [])],
             }
             for rule in RULES
         }

@@ -9,11 +9,13 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Source:
     module: str
+    # Chemin tel qu'il apparaît dans les diagnostics, par exemple `src/omni_product/anemic_model/product.py`.
+    path: str
     tree: ast.Module
 
     @classmethod
-    def from_text(cls, module: str, text: str) -> "Source":
-        return cls(module, ast.parse(text))
+    def from_text(cls, module: str, text: str, path: str | None = None) -> "Source":
+        return cls(module, path or f"{module.replace('.', '/')}.py", ast.parse(text))
 
 
 def collect(roots: Sequence[Path], src_root: Path) -> list[Source]:
@@ -29,7 +31,11 @@ def _is_test(path: Path) -> bool:
 def _read(path: Path, src_root: Path) -> Source:
     relative = path.relative_to(src_root).with_suffix("")
     parts = [part for part in relative.parts if part != "__init__"]
-    return Source.from_text(".".join(parts), path.read_text(encoding="utf-8"))
+    return Source(
+        module=".".join(parts),
+        path=path.as_posix(),
+        tree=ast.parse(path.read_text(encoding="utf-8")),
+    )
 
 
 def top_level_classes(tree: ast.Module) -> list[ast.ClassDef]:

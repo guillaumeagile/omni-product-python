@@ -78,6 +78,23 @@ def test_the_context_of_an_untyped_name_comes_from_its_annotations():
     assert violation.members_by_concern == {"Pricing": ("price",), "Storage": ("make",)}
 
 
+def test_a_violation_is_printed_like_a_compiler_warning():
+    text = """
+        class Product:
+            slug: str
+            price: float
+        """
+    [violation] = contexte_borne.check(source(text, "pkg.product"), vocabulary())
+    assert str(violation) == "\n".join(
+        [
+            "pkg/product.py:2: warning: [contexte-borne] "
+            "'Product' mêle 2 contextes (Catalog, Pricing)",
+            "pkg/product.py:3: note: 'slug' relève du contexte Catalog",
+            "pkg/product.py:4: note: 'price' relève du contexte Pricing",
+        ]
+    )
+
+
 def test_private_members_are_not_part_of_the_context():
     text = """
         class Product:

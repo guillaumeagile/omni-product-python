@@ -3,6 +3,9 @@
 Chaque membre public d'une classe (attribut, méthode, propriété) est rattaché à un contexte par son nom, puis, à
 défaut, par les types de ses annotations. Une classe qui touche plusieurs contextes est une violation : il faut
 l'éclater, et les liens passent alors par des identifiants.
+
+Les diagnostics suivent le format du compilateur : `chemin:ligne: warning: [catégorie] message`, suivi d'une
+`note:` par membre fautif.
 """
 
 import ast
@@ -13,57 +16,71 @@ from dataclasses import dataclass
 from harness.rules.sources import Source, top_level_classes
 from harness.rules.vocabulary import Vocabulary
 
+# Catégorie affichée entre crochets, comme les lint de javac : `warning: [contexte-borne] ...`.
+SLUG = "contexte-borne"
+
 _IDENTIFIER = re.compile(r"[A-Za-z_]\w*")
 
 
 @dataclass(frozen=True)
+class Member:
+    name: str
+    line: int
+    concern: str
+
+
+@dataclass(frozen=True)
 class Violation:
-    module: str
+    path: str
     line: int
     cls: str
-    members_by_concern: dict[str, tuple[str, ...]]
+    members: tuple[Member, ...]
+
+    @property
+    def members_by_concern(self) -> dict[str, tuple[str, ...]]:
+        grouped: dict[str, list[str]] = {}
+        for member in self.members:
+            grouped.setdefault(member.concern, []).append(member.name)
+        return {concern: tuple(names) for concern, names in grouped.items()}
 
     def __str__(self) -> str:
-        contexts = " + ".join(self.members_by_concern)
-        detail = " ; ".join(
-            f"{concern} : {', '.join(members)}"
-            for concern, members in self.members_by_concern.items()
-        )
-        return f"{self.module}:{self.line} {self.cls} touche {contexts} ({detail})"
+        concerns = list(self.members_by_concern)
+        lines = [
+            f"{self.path}:{self.line}: warning: [{SLUG}] "
+            f"'{self.cls}' mêle {len(concerns)} contextes ({', '.join(concerns)})"
+        ]
+        lines += [
+            f"{self.path}:{member.line}: note: '{member.name}' relève du contexte {member.concern}"
+            for member in self.members
+        ]
+        return "\n".join(lines)
 
 
 def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
     violations: list[Violation] = []
     for cls in top_level_classes(source.tree):
-        members_by_concern: dict[str, list[str]] = {}
-        for name, node in _public_members(cls):
+        members: list[Member] = []
+        for name, line, node in _public_members(cls):
             concern = _concern_of(name, node, vocabulary)
             if concern is not None:
-                members_by_concern.setdefault(concern, []).append(name)
-        if len(members_by_concern) >= 2:
+                members.append(Member(name, line, concern))
+        if len({member.concern for member in members}) >= 2:
             violations.append(
-                Violation(
-                    module=source.module,
-                    line=cls.lineno,
-                    cls=cls.name,
-                    members_by_concern={
-                        concern: tuple(members) for concern, members in members_by_concern.items()
-                    },
-                )
+                Violation(path=source.path, line=cls.lineno, cls=cls.name, members=tuple(members))
             )
     return violations
 
 
-def _public_members(cls: ast.ClassDef) -> Iterator[tuple[str, ast.AST | None]]:
+def _public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | None]]:
     for stmt in cls.body:
         if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
-            yield stmt.target.id, stmt
+            yield stmt.target.id, stmt.lineno, stmt
         elif isinstance(stmt, ast.Assign):
             for target in stmt.targets:
                 if isinstance(target, ast.Name):
-                    yield target.id, None
+                    yield target.id, target.lineno, None
         elif isinstance(stmt, ast.FunctionDef | ast.AsyncFunctionDef):
-            yield stmt.name, stmt
+            yield stmt.name, stmt.lineno, stmt
 
 
 def _concern_of(name: str, node: ast.AST | None, vocabulary: Vocabulary) -> str | None:

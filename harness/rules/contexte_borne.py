@@ -16,7 +16,7 @@ import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from harness.rules.sources import Source, top_level_classes
+from harness.rules.sources import Source, public_members, top_level_classes
 from harness.rules.vocabulary import Vocabulary, words
 
 # Code affiché en tête de message, comme ruff : `CB001 ...` (CB pour « contexte borné »).
@@ -89,7 +89,7 @@ def _members_of(
         if base in classes and base not in seen:
             for member in _members_of(classes[base], classes, vocabulary, seen | {cls.name}):
                 found[member.name] = member
-    for name, line, node in _public_members(cls):
+    for name, line, node in public_members(cls):
         concern = _concern_of(name, node, vocabulary)
         if concern is not None:
             found[name] = Member(name, line, concern)
@@ -100,18 +100,6 @@ def _base_names(cls: ast.ClassDef) -> Iterator[str]:
     for base in cls.bases:
         if isinstance(base, ast.Name):
             yield base.id
-
-
-def _public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | None]]:
-    for stmt in cls.body:
-        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
-            yield stmt.target.id, stmt.lineno, stmt
-        elif isinstance(stmt, ast.Assign):
-            for target in stmt.targets:
-                if isinstance(target, ast.Name):
-                    yield target.id, target.lineno, None
-        elif isinstance(stmt, ast.FunctionDef | ast.AsyncFunctionDef):
-            yield stmt.name, stmt.lineno, stmt
 
 
 def _concern_of(name: str, node: ast.AST | None, vocabulary: Vocabulary) -> str | None:
@@ -166,7 +154,7 @@ def gaps(source: Source, vocabulary: Vocabulary) -> list[Gap]:
     found: list[Gap] = []
     for cls in top_level_classes(source.tree):
         unknown: list[tuple[str, tuple[str, ...]]] = []
-        for name, _line, node in _public_members(cls):
+        for name, _line, node in public_members(cls):
             if name.startswith("_") or vocabulary.is_link(name):
                 continue
             if _concern_of(name, node, vocabulary) is not None:

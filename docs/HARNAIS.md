@@ -138,6 +138,7 @@ protection, la garde s'affiche en rouge mais ne bloque pas le merge.
 | Mesures : tokens, métriques « style » (champs mutables, affectations, boucles, lambdas) | ✅ en place (`harness/metrics`) |
 | Scorecard par PR (commentaire publié par la CI) | ✅ en place, informatif |
 | Règles de design maison : règle 1, contexte borné (`harness/rules`) | ✅ en place, informatif : table en tête de scorecard, avec points |
+| Règles de design maison : règle 2, entité ou Value Object (`harness/rules/entite_valeur.py`) | ✅ en place, informatif : table en tête de scorecard, avec points |
 | Points par règle (barème de l'arbitre : +10 par règle passée au vert, +5 de baby step) | ✅ en place, dans la scorecard (`harness/rules/points.py`) |
 | Règle mère : garde du harnais (`garde-harnais.yml`), bypass du propriétaire seul | ✅ en place, bloquante dès que la protection de `main` l'exige |
 | Règles de design maison : règles 2 à 10 | ⏳ à faire |
@@ -152,6 +153,7 @@ par surprise.
 | Date | Changement |
 |---|---|
 | 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
+| 2026-11-15 | Règle 2 (entité ou Value Object) : chaque classe du modèle est une entité (`id` typé) ou une `dataclass(frozen=True)` sans id ; un membre du vocabulaire en type primitif brut est signalé (EV001, EV002) |
 | 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors vocabulaire (hors points) ; les mots génériques de la carte ne comptent pas |
 | 2026-11-15 | Règle 1 (contexte borné) : un identifiant de lien (`product_id`) ne porte pas de contexte ; les membres hérités des classes du même module comptent |
 | 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |

@@ -4,7 +4,7 @@ Une entité porte un champ `id` d'un type dédié (`ProductId`, pas `str`). Un V
 sans identifiant. Chaque classe du modèle est l'une des deux, et rien d'autre. Les Enum, Protocol, TypedDict et
 exceptions sont exceptés, comme dans la règle 4.
 
-Un membre du vocabulaire (`price`, `slug`) déclaré en type primitif brut (`float`, `str`) est une primitive du domaine
+Un membre de l'ubiquitous language (`price`, `slug`) déclaré en type primitif brut (`float`, `str`) est une primitive du domaine
 qui devrait être un Value Object.
 
 Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`.
@@ -14,11 +14,11 @@ import ast
 from dataclasses import dataclass
 
 from harness.rules.sources import Source, public_members, top_level_classes
-from harness.rules.vocabulary import Vocabulary
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 # Une classe qui n'est ni entité ni Value Object.
 KIND_CODE = "EV001"
-# Un membre du vocabulaire en type primitif brut.
+# Un membre de l'ubiquitous language en type primitif brut.
 PRIMITIVE_CODE = "EV002"
 
 PRIMITIVES = frozenset({"str", "int", "float", "bool", "bytes", "Decimal"})
@@ -40,14 +40,14 @@ class Finding:
         return f"{self.path}:{self.line}:{self.col}: {self.code} {self.message}"
 
 
-def check(source: Source, vocabulary: Vocabulary) -> list[Finding]:
+def check(source: Source, language: UbiquitousLanguage) -> list[Finding]:
     findings: list[Finding] = []
     classes = {cls.name: cls for cls in top_level_classes(source.tree)}
     for cls in classes.values():
         if _is_exempt(cls):
             continue
         findings.extend(_kind_findings(cls, classes, source.path))
-        findings.extend(_primitive_findings(cls, source.path, vocabulary))
+        findings.extend(_primitive_findings(cls, source.path, language))
     return findings
 
 
@@ -79,14 +79,16 @@ def _kind_findings(cls: ast.ClassDef, classes: dict[str, ast.ClassDef], path: st
     ]
 
 
-def _primitive_findings(cls: ast.ClassDef, path: str, vocabulary: Vocabulary) -> list[Finding]:
+def _primitive_findings(
+    cls: ast.ClassDef, path: str, language: UbiquitousLanguage
+) -> list[Finding]:
     findings: list[Finding] = []
     for name, line, node in public_members(cls):
         if not isinstance(node, ast.AnnAssign) or name.startswith("_"):
             continue
-        if vocabulary.is_link(name) or not _is_primitive(node.annotation):
+        if language.is_link(name) or not _is_primitive(node.annotation):
             continue
-        concern = vocabulary.concern_of(name)
+        concern = language.concern_of(name)
         if concern is None:
             continue
         annotation = ast.unparse(node.annotation)

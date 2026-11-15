@@ -99,3 +99,47 @@ def test_private_members_are_not_part_of_the_context():
             def _to_price(self) -> float: ...
         """
     assert contexte_borne.check(source(text), vocabulary()) == []
+
+
+def test_a_link_identifier_is_not_a_context():
+    vocab = vocabulary()
+    assert vocab.is_link("product_id")
+    assert vocab.is_link("supplierIds")
+    # Un identifiant naturel est une donnée (TVA), pas un lien. `id` seul n'est pas un lien.
+    assert not vocab.is_link("tvaId")
+    assert not vocab.is_link("id")
+    assert not vocab.is_link("discount")
+
+
+def test_a_row_linked_to_its_product_by_id_is_one_context():
+    # Le lien `product_id` ne compte pas : la classe ne porte que le contexte Pricing.
+    text = """
+        class ProductDiscount:
+            product_id: str
+            discount: str
+        """
+    assert contexte_borne.check(source(text), vocabulary()) == []
+
+
+def test_inherited_members_count_towards_the_contexts_of_the_subclass():
+    text = """
+        class Product:
+            slug: str
+
+        class PricedProduct(Product):
+            price: float
+        """
+    [violation] = contexte_borne.check(source(text, "pkg.product"), vocabulary())
+    assert violation.cls == "PricedProduct"
+    assert violation.members_by_concern == {"Catalog": ("slug",), "Pricing": ("price",)}
+
+
+def test_an_overridden_member_keeps_the_subclass_version():
+    text = """
+        class Product:
+            price: float
+
+        class Shelf(Product):
+            price: str
+        """
+    assert contexte_borne.check(source(text), vocabulary()) == []

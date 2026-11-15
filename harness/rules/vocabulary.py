@@ -39,17 +39,36 @@ class Keyword:
 @dataclass(frozen=True)
 class Vocabulary:
     keywords: tuple[Keyword, ...]
+    # Mots des identifiants naturels (SIREN, TVA…) : une donnée du métier, jamais un lien vers une autre entité.
+    natural_words: frozenset[str] = frozenset()
 
     @classmethod
     def load(cls, path: Path = MAP_PATH) -> "Vocabulary":
         data = json.loads(path.read_text(encoding="utf-8"))
         weak = set(data.get("weakConcerns", []))
+        natural = frozenset(
+            word for identifier in data.get("naturalIdentifiers", []) for word in words(identifier)
+        )
         return cls(
             tuple(
                 Keyword(concern, words(keyword), concern in weak)
                 for concern, keywords in data["concerns"].items()
                 for keyword in keywords
-            )
+            ),
+            natural,
+        )
+
+    def is_link(self, name: str) -> bool:
+        """Un identifiant qui renvoie vers une autre entité : `product_id`, `supplierIds`.
+
+        Il se termine par `id` ou `ids`, et ne contient aucun mot d'identifiant naturel (`tvaId` reste une donnée).
+        Un lien ne porte pas de contexte : il dit seulement quelle entité est visée.
+        """
+        parts = words(name)
+        return (
+            len(parts) > 1
+            and parts[-1] in ("id", "ids")
+            and not self.natural_words.intersection(parts)
         )
 
     def concern_of(self, name: str) -> str | None:

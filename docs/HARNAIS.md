@@ -133,6 +133,7 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-15 | Règle 1 (contexte borné) : un identifiant de lien (`product_id`) ne porte pas de contexte ; les membres hérités des classes du même module comptent |
 | 2026-11-15 | Règle 1 (contexte borné) : script `python -m harness.rules`, informatif, table et points dans la scorecard |
 | 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
 | 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |

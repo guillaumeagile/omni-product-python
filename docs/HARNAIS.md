@@ -152,6 +152,7 @@ par surprise.
 | Date | Changement |
 |---|---|
 | 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
+| 2026-11-15 | Règle 2 (entité ou Value Object) : chaque classe du modèle est une entité (`id` typé) ou une `dataclass(frozen=True)` sans id ; un membre dont le nom relève de l'ubiquitous language, typé par une primitive brute, est signalé (EV001, EV002) |
 | 2026-11-15 | Règle 1 (contexte borné) : un identifiant de lien (`product_id`) ne porte pas de contexte ; les membres hérités des classes du même module comptent |
 | 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
 | 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |

@@ -152,6 +152,7 @@ par surprise.
 | Date | Changement |
 |---|---|
 | 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
+| 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors vocabulaire (hors points) ; les mots génériques de la carte ne comptent pas |
 | 2026-11-15 | Règle 1 (contexte borné) : un identifiant de lien (`product_id`) ne porte pas de contexte ; les membres hérités des classes du même module comptent |
 | 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
 | 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |

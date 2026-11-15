@@ -41,6 +41,8 @@ class Vocabulary:
     keywords: tuple[Keyword, ...]
     # Mots des identifiants naturels (SIREN, TVA…) : une donnée du métier, jamais un lien vers une autre entité.
     natural_words: frozenset[str] = frozenset()
+    # Mots sans sens métier (id, get, name…) : un nom qui n'en contient pas d'autres n'est pas un trou du vocabulaire.
+    generic_words: frozenset[str] = frozenset()
 
     @classmethod
     def load(cls, path: Path = MAP_PATH) -> "Vocabulary":
@@ -49,6 +51,7 @@ class Vocabulary:
         natural = frozenset(
             word for identifier in data.get("naturalIdentifiers", []) for word in words(identifier)
         )
+        generic = frozenset(word for term in data.get("genericWords", []) for word in words(term))
         return cls(
             tuple(
                 Keyword(concern, words(keyword), concern in weak)
@@ -56,7 +59,11 @@ class Vocabulary:
                 for keyword in keywords
             ),
             natural,
+            generic,
         )
+
+    def is_generic(self, word: str) -> bool:
+        return word in self.generic_words
 
     def is_link(self, name: str) -> bool:
         """Un identifiant qui renvoie vers une autre entité : `product_id`, `supplierIds`.

@@ -4,7 +4,7 @@ Pendant l'atelier, l'arbitre commente chaque PR avec un tableau de chiffres. Ce 
 chaque chiffre, et pourquoi on le regarde**. Tu n'as pas besoin de le lire pour jouer : il est là si tu veux comprendre
 ce que le tableau dit de ton code.
 
-> **Une règle d'or avant de commencer.** Une métrique est un thermomètre, pas un objectif. Si tu écris du code pour
+> **Une règle d'or avant de commencer.** Une métrique est un thermomètre. Si tu écris du code pour
 > faire baisser un chiffre, tu fabriques du code étrange qui plaît au thermomètre. Écris le code le plus clair
 > possible, puis regarde ce que les chiffres en disent. C'est l'inverse qui ne marche pas.
 

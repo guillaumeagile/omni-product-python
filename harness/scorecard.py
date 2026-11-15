@@ -67,7 +67,7 @@ def render(
         MARKER,
         "## 📊 Scorecard du harnais",
         "",
-        "Des **repères pour guider ton refactoring**, pas une note : un thermomètre, pas un objectif. "
+        "Des **repères pour guider ton refactoring**  "
         "Le détail de chaque chiffre est dans `docs/METRIQUES.md`.",
         "",
         *([rules_md] if rules_md else []),

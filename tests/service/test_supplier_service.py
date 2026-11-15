@@ -129,8 +129,7 @@ def test_should_get_suppliers_by_product(
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
     product_dal.save(
-        session,
-        Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
     )
 
     suppliers = supplier_service.get_suppliers_by_product("prod1")

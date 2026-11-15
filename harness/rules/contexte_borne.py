@@ -5,6 +5,9 @@ défaut, par les types de ses annotations. Les membres hérités des classes du 
 Un identifiant de lien (`product_id`) ne porte pas de contexte : il renvoie à une autre entité.
 Une classe qui touche plusieurs contextes est une violation : il faut l'éclater.
 
+Complément (`gaps`) : un membre qui ne rattache à aucun contexte, et dont les mots ne sont ni génériques ni
+des liens, est un mot hors ubiquitous language. C'est un trou du fichier, pas une violation : il ne compte pas dans les points.
+
 Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`, une ligne par classe fautive.
 """
 
@@ -14,10 +17,12 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 from harness.rules.sources import Source, top_level_classes
-from harness.rules.ubiquitous_language import UbiquitousLanguage
+from harness.rules.ubiquitous_language import UbiquitousLanguage, words
 
 # Code affiché en tête de message, comme ruff : `CB001 ...` (CB pour « contexte borné »).
 CODE = "CB001"
+# Complément : mots hors ubiquitous language. Il ne compte pas dans les points de la scorecard.
+GAP_CODE = "CB002"
 
 _IDENTIFIER = re.compile(r"[A-Za-z_]\w*")
 
@@ -133,3 +138,42 @@ def _annotations(node: ast.AST) -> Iterator[ast.expr]:
                 yield argument.annotation
         if node.returns is not None:
             yield node.returns
+
+
+@dataclass(frozen=True)
+class Gap:
+    path: str
+    line: int
+    col: int
+    cls: str
+    # Pour chaque membre fautif : son nom et ses mots hors ubiquitous language.
+    unknown: tuple[tuple[str, tuple[str, ...]], ...]
+
+    def __str__(self) -> str:
+        details = ", ".join(f"{name} ({' '.join(parts)})" for name, parts in self.unknown)
+        return (
+            f"{self.path}:{self.line}:{self.col}: {GAP_CODE} "
+            f"'{self.cls}' a des mots hors ubiquitous language : {details}"
+        )
+
+
+def gaps(source: Source, language: UbiquitousLanguage) -> list[Gap]:
+    """Les membres propres à chaque classe que ni le nom ni les types ne rattachent à un contexte.
+
+    Seuls les mots non génériques comptent : `id`, `get`, `name` ne sont pas des trous de l'ubiquitous language.
+    Les membres hérités ne sont pas repris : ils sont signalés dans leur classe d'origine.
+    """
+    found: list[Gap] = []
+    for cls in top_level_classes(source.tree):
+        unknown: list[tuple[str, tuple[str, ...]]] = []
+        for name, _line, node in _public_members(cls):
+            if name.startswith("_") or language.is_link(name):
+                continue
+            if _concern_of(name, node, language) is not None:
+                continue
+            leftover = tuple(word for word in words(name) if not language.is_generic(word))
+            if leftover:
+                unknown.append((name, leftover))
+        if unknown:
+            found.append(Gap(source.path, cls.lineno, cls.col_offset + 1, cls.name, tuple(unknown)))
+    return found

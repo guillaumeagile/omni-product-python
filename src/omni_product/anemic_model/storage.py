@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from omni_product.anemic_model.invariants import require_at_least_zero, require_text
 from omni_product.anemic_model.product import ProductId
 
 
@@ -9,15 +10,24 @@ from omni_product.anemic_model.product import ProductId
 class Quantity:
     value: int
 
+    def __post_init__(self) -> None:
+        require_at_least_zero(self, self.value)
+
 
 @dataclass(frozen=True)
 class Stock:
     value: int
 
+    def __post_init__(self) -> None:
+        require_at_least_zero(self, self.value)
+
 
 @dataclass(frozen=True)
 class Location:
     value: str
+
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
 
 
 # Contexte Stockage : combien d'unités existent, et où elles sont rangées.

@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from omni_product.anemic_model.invariants import require_text
+
 # Contexte Catalogue : le produit, ses images et ses types. Les autres contextes (prix, transport,
 # stockage, approvisionnement) ont leurs propres classes, reliées au produit par son identifiant.
 
@@ -11,20 +13,32 @@ from datetime import date
 class ProductId:
     value: str
 
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
+
 
 @dataclass(frozen=True)
 class Slug:
     value: str
+
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
 
 
 @dataclass(frozen=True)
 class ImageKey:
     value: str
 
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
+
 
 @dataclass(frozen=True)
 class ImageDetail:
     value: str
+
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
 
 
 @dataclass(frozen=True)

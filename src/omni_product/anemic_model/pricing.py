@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from omni_product.anemic_model.invariants import require_at_least_zero, require_rate, require_text
 from omni_product.anemic_model.product import ProductId
 
 
@@ -9,15 +10,24 @@ from omni_product.anemic_model.product import ProductId
 class Amount:
     value: float
 
+    def __post_init__(self) -> None:
+        require_at_least_zero(self, self.value)
+
 
 @dataclass(frozen=True)
 class Rate:
     value: float
 
+    def __post_init__(self) -> None:
+        require_rate(self, self.value)
+
 
 @dataclass(frozen=True)
 class Discount:
     value: str
+
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
 
 
 # Contexte Pricing : ce que coûte un produit, et les remises qui s'y appliquent.

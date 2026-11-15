@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from omni_product.anemic_model.invariants import require_text
 from omni_product.anemic_model.product import ProductId
 from omni_product.anemic_model.supplier import Region, SupplierId
 
@@ -10,10 +11,16 @@ from omni_product.anemic_model.supplier import Region, SupplierId
 class Siren:
     value: str
 
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
+
 
 @dataclass(frozen=True)
 class TvaId:
     value: str
+
+    def __post_init__(self) -> None:
+        require_text(self, self.value)
 
 
 # Contexte Approvisionnement : qui fournit le produit, et les fournisseurs par région.

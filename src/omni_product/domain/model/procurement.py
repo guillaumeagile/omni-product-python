@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from omni_product.anemic_model.invariants import require_text
-from omni_product.anemic_model.product import ProductId
-from omni_product.anemic_model.supplier import Region, SupplierId
+from omni_product.domain.model.invariants import require_text
+from omni_product.domain.model.product import ProductId
+from omni_product.domain.model.supplier import Region, SupplierId
 
 
 @dataclass(frozen=True)

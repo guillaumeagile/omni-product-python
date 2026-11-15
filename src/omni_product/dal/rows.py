@@ -11,7 +11,8 @@ from datetime import date
 from sqlalchemy import Date, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from omni_product.anemic_model import (
+from omni_product.database import Base, record_column
+from omni_product.domain.model import (
     Amount,
     ContactEmail,
     ContactPhone,
@@ -32,7 +33,6 @@ from omni_product.anemic_model import (
     TvaId,
     Volume,
 )
-from omni_product.database import Base, record_column
 
 _ROW_CASCADE = "all, delete-orphan"
 

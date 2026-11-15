@@ -1,4 +1,4 @@
-from omni_product.anemic_model import (
+from omni_product.domain.model import (
     NonExpiringProduct,
     PerishableProduct,
     Product,

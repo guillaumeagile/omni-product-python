@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from omni_product.anemic_model.invariants import require_text
+from omni_product.domain.model.invariants import require_text
 
 # Contexte Catalogue : le produit, ses images et ses types. Les autres contextes (prix, transport,
 # stockage, approvisionnement) ont leurs propres classes, reliées au produit par son identifiant.

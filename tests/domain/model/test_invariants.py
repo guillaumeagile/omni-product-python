@@ -1,6 +1,6 @@
 import pytest
 
-from omni_product.anemic_model import (
+from omni_product.domain.model import (
     Amount,
     ContactEmail,
     ContactPhone,
@@ -21,7 +21,7 @@ from omni_product.anemic_model import (
     TvaId,
     Volume,
 )
-from omni_product.anemic_model.errors import InvalidValueError
+from omni_product.domain.model.errors import InvalidValueError
 
 TEXT_VALUES = [
     ProductId,

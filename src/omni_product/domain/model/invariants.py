@@ -1,4 +1,4 @@
-from omni_product.anemic_model.errors import InvalidValueError
+from omni_product.domain.model.errors import InvalidValueError
 
 
 def require_text(owner: object, value: str) -> None:

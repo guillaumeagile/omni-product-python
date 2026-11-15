@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import (
+from omni_product.dal import product_dal, supplier_dal
+from omni_product.dal.records import optional
+from omni_product.domain.model import (
     ContactEmail,
     ContactPhone,
     Country,
@@ -9,8 +11,6 @@ from omni_product.anemic_model import (
     Supplier,
     SupplierId,
 )
-from omni_product.dal import product_dal, supplier_dal
-from omni_product.dal.records import optional
 
 
 class SupplierService:

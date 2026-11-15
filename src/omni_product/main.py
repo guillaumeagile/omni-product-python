@@ -5,11 +5,11 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from omni_product.anemic_model.errors import InvalidValueError
 from omni_product.config import Settings
 from omni_product.controller import product_controller, supplier_controller
 from omni_product.dal import rows  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from omni_product.database import Base, create_db_engine, create_session_factory
+from omni_product.domain.model.errors import InvalidValueError
 from omni_product.exception.product_name_exception import ProductNameException
 
 FAILED_DEPENDENCY = 424

@@ -1,9 +1,9 @@
 from sqlalchemy import ColumnElement, select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Country, ProductId, Region, Supplier, SupplierId
 from omni_product.dal import product_dal
 from omni_product.dal.rows import ProductSupplyRow, SupplierRow
+from omni_product.domain.model import Country, ProductId, Region, Supplier, SupplierId
 
 
 def find_all(session: Session) -> list[Supplier]:

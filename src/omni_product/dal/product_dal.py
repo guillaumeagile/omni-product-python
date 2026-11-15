@@ -5,7 +5,17 @@ from dataclasses import dataclass
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import (
+from omni_product.dal.rows import (
+    ProductDiscountRow,
+    ProductImageRow,
+    ProductPriceRow,
+    ProductRow,
+    ProductStockRow,
+    ProductSupplierRegionRow,
+    ProductSupplyRow,
+    ProductTransportRow,
+)
+from omni_product.domain.model import (
     NonExpiringProduct,
     PerishableProduct,
     Price,
@@ -20,16 +30,6 @@ from omni_product.anemic_model import (
     Slug,
     SupplierByRegion,
     Warehouse,
-)
-from omni_product.dal.rows import (
-    ProductDiscountRow,
-    ProductImageRow,
-    ProductPriceRow,
-    ProductRow,
-    ProductStockRow,
-    ProductSupplierRegionRow,
-    ProductSupplyRow,
-    ProductTransportRow,
 )
 
 

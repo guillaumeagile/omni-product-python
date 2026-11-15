@@ -1,4 +1,14 @@
-from omni_product.anemic_model import (
+from omni_product.controller.schemas.product import (
+    PriceSchema,
+    ProductKind,
+    ProductSchema,
+    RegionSupplierSchema,
+    WarehouseSchema,
+)
+from omni_product.controller.schemas.supplier import SupplierSchema
+from omni_product.dal.product_dal import ProductSheet
+from omni_product.dal.records import optional, raw
+from omni_product.domain.model import (
     Amount,
     Discount,
     ImageDetail,
@@ -29,16 +39,6 @@ from omni_product.anemic_model import (
     Volume,
     Warehouse,
 )
-from omni_product.controller.schemas.product import (
-    PriceSchema,
-    ProductKind,
-    ProductSchema,
-    RegionSupplierSchema,
-    WarehouseSchema,
-)
-from omni_product.controller.schemas.supplier import SupplierSchema
-from omni_product.dal.product_dal import ProductSheet
-from omni_product.dal.records import optional, raw
 from omni_product.exception.product_name_exception import ProductNameException
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from omni_product.anemic_model.invariants import require_text
+from omni_product.domain.model.invariants import require_text
 
 # Contexte Approvisionnement : le fournisseur lui-même. Les produits qu'il fournit sont liés
 # par `ProductSupply`, dans `procurement.py`.

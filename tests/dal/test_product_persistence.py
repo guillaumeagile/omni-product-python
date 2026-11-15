@@ -6,15 +6,15 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import (
+from omni_product.dal import product_dal
+from omni_product.dal.product_dal import ProductSheet
+from omni_product.domain.model import (
     NonExpiringProduct,
     PerishableProduct,
     Product,
     ProductId,
     Slug,
 )
-from omni_product.dal import product_dal
-from omni_product.dal.product_dal import ProductSheet
 
 
 def test_kind_is_written_from_the_product_class(session: Session) -> None:

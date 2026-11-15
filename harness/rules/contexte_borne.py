@@ -1,8 +1,9 @@
 """Règle 1 : chaque classe parle-t-elle d'un seul contexte borné ?
 
 Chaque membre public d'une classe (attribut, méthode, propriété) est rattaché à un contexte par son nom, puis, à
-défaut, par les types de ses annotations. Une classe qui touche plusieurs contextes est une violation : il faut
-l'éclater, et les liens passent alors par des identifiants.
+défaut, par les types de ses annotations. Les membres hérités des classes du même module comptent aussi.
+Un identifiant de lien (`product_id`) ne porte pas de contexte : il renvoie à une autre entité.
+Une classe qui touche plusieurs contextes est une violation : il faut l'éclater.
 
 Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`, une ligne par classe fautive.
 """
@@ -54,12 +55,9 @@ class Violation:
 
 def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
     violations: list[Violation] = []
-    for cls in top_level_classes(source.tree):
-        members: list[Member] = []
-        for name, line, node in _public_members(cls):
-            concern = _concern_of(name, node, vocabulary)
-            if concern is not None:
-                members.append(Member(name, line, concern))
+    classes = {cls.name: cls for cls in top_level_classes(source.tree)}
+    for cls in classes.values():
+        members = _members_of(cls, classes, vocabulary)
         if len({member.concern for member in members}) >= 2:
             violations.append(
                 Violation(
@@ -71,6 +69,32 @@ def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
                 )
             )
     return violations
+
+
+def _members_of(
+    cls: ast.ClassDef,
+    classes: dict[str, ast.ClassDef],
+    vocabulary: Vocabulary,
+    seen: frozenset[str] = frozenset(),
+) -> list[Member]:
+    """Les membres de la classe, hérités compris. Un membre redéfini garde la version de la sous-classe."""
+    found: dict[str, Member] = {}
+    for base in _base_names(cls):
+        # `seen` évite de boucler si deux classes s'étendent mutuellement.
+        if base in classes and base not in seen:
+            for member in _members_of(classes[base], classes, vocabulary, seen | {cls.name}):
+                found[member.name] = member
+    for name, line, node in _public_members(cls):
+        concern = _concern_of(name, node, vocabulary)
+        if concern is not None:
+            found[name] = Member(name, line, concern)
+    return list(found.values())
+
+
+def _base_names(cls: ast.ClassDef) -> Iterator[str]:
+    for base in cls.bases:
+        if isinstance(base, ast.Name):
+            yield base.id
 
 
 def _public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | None]]:
@@ -86,7 +110,7 @@ def _public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | Non
 
 
 def _concern_of(name: str, node: ast.AST | None, vocabulary: Vocabulary) -> str | None:
-    if name.startswith("_"):
+    if name.startswith("_") or vocabulary.is_link(name):
         return None
     concern = vocabulary.concern_of(name)
     if concern is None and node is not None:

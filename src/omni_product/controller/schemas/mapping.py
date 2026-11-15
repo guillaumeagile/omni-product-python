@@ -6,7 +6,7 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
-from omni_product.model import (
+from omni_product.anemic_model import (
     NonExpiringProduct,
     PerishableProduct,
     Price,

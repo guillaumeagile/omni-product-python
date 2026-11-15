@@ -35,7 +35,7 @@ Familles ruff **volontairement non activées**, qui détecteraient des smells pr
 | `ERA` (code commenté) | Pas de cas aujourd'hui | à surveiller |
 | `D` (docstrings), `ANN` | Absence de documentation | hors sujet |
 
-Les `# noqa: A002` de `supplier_service.py` et `model/supplier.py` sont **inertes** (la famille `A` n'est pas activée) :
+Les `# noqa: A002` de `supplier_service.py` et `anemic_model/supplier.py` sont **inertes** (la famille `A` n'est pas activée) :
 ils ne servent à rien aujourd'hui. À supprimer ou à garder comme bruit, au choix de l'animateur.
 
 ### Pyright (`pyproject.toml`, section `[tool.pyright]`)
@@ -76,9 +76,9 @@ Les chemins sont relatifs à `src/omni_product/`. Pas de numéros de ligne : ils
 
 | ID | Smell | Où | Détail |
 |---|---|---|---|
-| S-M1 | Inversion de dépendance : le modèle connaît les services | `model/supplier.py`, `Supplier.from_services` | Une entité qui prend `ProductService` et `SupplierService`, fait de l'I/O (`find_all`, `get_supplier`) pendant sa construction. Les imports sont sous `TYPE_CHECKING`, donc le cycle est caché à l'exécution mais présent dans le design |
+| S-M1 | Inversion de dépendance : le modèle connaît les services | `anemic_model/supplier.py`, `Supplier.from_services` | Une entité qui prend `ProductService` et `SupplierService`, fait de l'I/O (`find_all`, `get_supplier`) pendant sa construction. Les imports sont sous `TYPE_CHECKING`, donc le cycle est caché à l'exécution mais présent dans le design |
 | S-M2 | Association bidirectionnelle avec cascade | `Supplier.products` ↔ `Product.supplier` | `cascade="all, delete-orphan"` : supprimer un fournisseur supprime ses produits |
-| S-M3 | Obsession des primitives | `model/product.py` | `Price` en `float` (argent), `volume: str` qui contient `"10x10x10"`, `discounts: list[str]`, `images: dict[str, str]` |
+| S-M3 | Obsession des primitives | `anemic_model/product.py` | `Price` en `float` (argent), `volume: str` qui contient `"10x10x10"`, `discounts: list[str]`, `images: dict[str, str]` |
 | S-M4 | Donnée dérivée stockée | `Price` | `tax` et `tax_rate` coexistent avec `base` : redondants, peuvent diverger |
 | S-M5 | Nommage incohérent | `Product` | `kilos` (poids), `volume` (dimensions), `image_detail` (une URL) ; le constructeur Java appelait ces champs `weight` et `dimensions` |
 | S-M6 | Deux « Supplier » | `Supplier` (entité) et `RegionSupplier` (valeur embarquée) | Même mot pour deux concepts. En Java c'était `Product.Supplier` contre `Supplier` ; en Python j'ai déjà renommé la classe embarquée, donc le smell est atténué |
@@ -127,13 +127,13 @@ Aucun de ces smells n'est visible pour ruff ni pyright : l'héritage est valide,
 
 | ID | Smell | Où | Détail |
 |---|---|---|---|
-| S-H1 | Sous-classe vide | `model/product.py`, `NonExpiringProduct` | Aucun champ ni comportement propre : la classe ne sert qu'à porter un `isinstance`. Le type `non_expiring` pourrait être une valeur de colonne |
-| S-H2 | Colonnes de sous-classe dans la table parente | `model/product.py`, `PerishableProduct` | Héritage mono-table : `expiration_date` et `shelf_life_days` sont nullables pour tous les produits, aucune invariante « périssable ⇒ date » |
+| S-H1 | Sous-classe vide | `anemic_model/product.py`, `NonExpiringProduct` | Aucun champ ni comportement propre : la classe ne sert qu'à porter un `isinstance`. Le type `non_expiring` pourrait être une valeur de colonne |
+| S-H2 | Colonnes de sous-classe dans la table parente | `anemic_model/product.py`, `PerishableProduct` | Héritage mono-table : `expiration_date` et `shelf_life_days` sont nullables pour tous les produits, aucune invariante « périssable ⇒ date » |
 | S-H3 | La base connaît ses enfants | `Product.is_perishable`, `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | La classe de base fait `isinstance(self, PerishableProduct)` ; la conversion refait un switch sur le type à deux endroits. Chaque nouveau type oblige à toucher la base et les schémas |
 | S-H4 | Hériter pour réutiliser des champs, pas pour un « est-un » | `controller/schemas/supplier.py` (`SupplierUpdateRequest` → `SupplierRequest` → `SupplierSchema`), `infrastructure/adapter/impact_co2_dtos.py` (`ImpactCo2Request` → `ImpactCo2Response`) | Une réponse de création hérite d'une requête, qui hérite d'une mise à jour. Changer `SupplierUpdateRequest` change silencieusement la réponse |
 | S-H5 | Racine d'exceptions vide et mal rangée | `exception/business_exception.py` | `BusinessException` n'a ni message ni comportement. `TransportCarbonException` (domaine) en dépend, donc le domaine importe depuis `exception/` ; `ProductNameException` reste dans un autre paquet que l'exception du domaine |
 | S-H6 | Socle de dépôt pour trois lignes (résolu) | `dal/` (ex-`repository/session_repository.py`) | `SessionRepository` a été supprimé avec le pattern Repository. La DAL n'a plus de classe de base : `find_all`, `find_by_id` et `delete_all` restent dupliqués par agrégat, par choix |
-| S-H7 | Violation de Liskov au niveau du comportement | `model/product.py` (`is_perishable`), `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
+| S-H7 | Violation de Liskov au niveau du comportement | `anemic_model/product.py` (`is_perishable`), `controller/schemas/mapping.py` (`_kind_of`, `schema_to_product`) | Le sous-type ne se comporte pas comme la base : le comportement dépend de la classe Python réelle, pas de la donnée. Voir le détail ci-dessous |
 
 #### S-H7 : pourquoi c'est un smell de comportement, pas seulement de structure
 

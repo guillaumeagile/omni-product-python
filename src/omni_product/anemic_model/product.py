@@ -12,7 +12,7 @@ from sqlalchemy.orm.collections import attribute_keyed_dict
 from omni_product.database import Base
 
 if TYPE_CHECKING:
-    from omni_product.model.supplier import Supplier
+    from omni_product.anemic_model.supplier import Supplier
 
 
 # Équivalents des @Embeddable Java : des composites SQLAlchemy mis à plat dans la table parente.

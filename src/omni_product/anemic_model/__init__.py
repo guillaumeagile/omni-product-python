@@ -1,4 +1,4 @@
-from omni_product.model.product import (
+from omni_product.anemic_model.product import (
     NonExpiringProduct,
     PerishableProduct,
     Price,
@@ -6,7 +6,7 @@ from omni_product.model.product import (
     RegionSupplier,
     Warehouse,
 )
-from omni_product.model.supplier import Supplier
+from omni_product.anemic_model.supplier import Supplier
 
 __all__ = [
     "NonExpiringProduct",

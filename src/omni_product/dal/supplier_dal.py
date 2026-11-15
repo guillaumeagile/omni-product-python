@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from omni_product.model import Product, Supplier
+from omni_product.anemic_model import Product, Supplier
 
 
 def find_all(session: Session) -> list[Supplier]:

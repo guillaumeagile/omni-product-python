@@ -75,12 +75,6 @@ jobs:
         run: |
           uv run python -m harness.scorecard ${BASE_REF:+--base-ref "$BASE_REF"} --output scorecard.md
           cat scorecard.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Calculer les règles maison (non bloquant)
-        # Les violations alimentent la scorecard, elles ne font jamais échouer le job.
-        run: |
-          uv run python -m harness.rules --json rules.json --markdown rules.md
-          cat rules.md >> scorecard.md
-          cat rules.md >> "$GITHUB_STEP_SUMMARY"
       - name: Publier la scorecard en commentaire de PR
         # Un commentaire existant est mis à jour pour ne pas polluer la PR à chaque push.
         # Les PR venant d'un fork n'ont pas le droit d'écrire : le résumé du job suffit alors.

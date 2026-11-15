@@ -2,22 +2,35 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from omni_product.anemic_model.product import ProductId
 
-from omni_product.database import Base
+
+@dataclass(frozen=True)
+class Quantity:
+    value: int
+
+
+@dataclass(frozen=True)
+class Stock:
+    value: int
+
+
+@dataclass(frozen=True)
+class Location:
+    value: str
 
 
 # Contexte Stockage : combien d'unités existent, et où elles sont rangées.
-@dataclass
+@dataclass(frozen=True)
 class Warehouse:
-    location: str | None = None
+    location: Location | None = None
 
 
-class ProductStock(Base):
-    __tablename__ = "product_stocks"
+@dataclass
+class ProductStock:
+    """Le stock d'un produit, identifié par le produit lui-même."""
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
-    quantity: Mapped[int | None] = mapped_column(Integer)
-    stock: Mapped[int | None] = mapped_column(Integer)
-    warehouse_location: Mapped[str | None] = mapped_column(String)
+    id: ProductId
+    quantity: Quantity | None = None
+    stock: Stock | None = None
+    warehouse: Warehouse | None = None

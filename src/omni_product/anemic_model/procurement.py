@@ -2,42 +2,40 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, composite, mapped_column
+from omni_product.anemic_model.product import ProductId
+from omni_product.anemic_model.supplier import Region, SupplierId
 
-from omni_product.database import Base
+
+@dataclass(frozen=True)
+class Siren:
+    value: str
+
+
+@dataclass(frozen=True)
+class TvaId:
+    value: str
 
 
 # Contexte Approvisionnement : qui fournit le produit, et les fournisseurs par région.
-@dataclass
+@dataclass(frozen=True)
 class RegionSupplier:
     """`Product.Supplier` en Java : fournisseur embarqué, par région."""
 
     name: str | None = None
-    siren: str | None = None
-    tva_id: str | None = None
+    siren: Siren | None = None
+    tva_id: TvaId | None = None
 
 
-class ProductSupply(Base):
-    __tablename__ = "product_supplies"
+@dataclass(frozen=True)
+class SupplierByRegion:
+    region: Region
+    supplier: RegionSupplier
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
-    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
 
+@dataclass
+class ProductSupply:
+    """L'approvisionnement d'un produit, identifié par le produit lui-même."""
 
-class ProductSupplierRegion(Base):
-    __tablename__ = "product_suppliers"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
-    region: Mapped[str] = mapped_column(String, primary_key=True)
-    supplier: Mapped[RegionSupplier] = composite(
-        RegionSupplier,
-        mapped_column("name", String),
-        mapped_column("siren", String),
-        mapped_column("tva_id", String),
-    )
-
-    def __init__(self, product_id: str, region: str, supplier: RegionSupplier) -> None:
-        self.product_id = product_id
-        self.region = region
-        self.supplier = supplier
+    id: ProductId
+    supplier_id: SupplierId | None = None
+    regions: tuple[SupplierByRegion, ...] = ()

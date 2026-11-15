@@ -1,32 +1,69 @@
-from omni_product.anemic_model.pricing import Price, ProductDiscount, ProductPrice
+"""Le modèle du domaine : des classes pures, sans lien avec la persistance.
+
+Une entité porte une identité (`id` d'un type dédié).
+Une valeur (Value Object) est un dataclass frozen, sans identité.
+"""
+
+from omni_product.anemic_model.pricing import Amount, Discount, Price, ProductPrice, Rate
 from omni_product.anemic_model.procurement import (
-    ProductSupplierRegion,
     ProductSupply,
     RegionSupplier,
+    Siren,
+    SupplierByRegion,
+    TvaId,
 )
 from omni_product.anemic_model.product import (
+    ImageDetail,
+    ImageKey,
     NonExpiringProduct,
     PerishableProduct,
     Product,
+    ProductId,
     ProductImage,
+    Slug,
 )
-from omni_product.anemic_model.storage import ProductStock, Warehouse
-from omni_product.anemic_model.supplier import Supplier
-from omni_product.anemic_model.transport import ProductTransport
+from omni_product.anemic_model.storage import Location, ProductStock, Quantity, Stock, Warehouse
+from omni_product.anemic_model.supplier import (
+    ContactEmail,
+    ContactPhone,
+    Country,
+    Region,
+    Supplier,
+    SupplierId,
+)
+from omni_product.anemic_model.transport import Kilos, ProductTransport, Volume
 
 __all__ = [
+    "Amount",
+    "ContactEmail",
+    "ContactPhone",
+    "Country",
+    "Discount",
+    "ImageDetail",
+    "ImageKey",
+    "Kilos",
+    "Location",
     "NonExpiringProduct",
     "PerishableProduct",
     "Price",
     "Product",
-    "ProductDiscount",
+    "ProductId",
     "ProductImage",
     "ProductPrice",
     "ProductStock",
-    "ProductSupplierRegion",
     "ProductSupply",
     "ProductTransport",
+    "Quantity",
+    "Rate",
+    "Region",
     "RegionSupplier",
+    "Siren",
+    "Slug",
+    "Stock",
     "Supplier",
+    "SupplierByRegion",
+    "SupplierId",
+    "TvaId",
+    "Volume",
     "Warehouse",
 ]

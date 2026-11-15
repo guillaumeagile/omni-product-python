@@ -72,7 +72,7 @@ def render(head: Metrics, base: Metrics | None, changed_tokens: int | None = Non
         )
     lines += ["", *_worst_classes(head), ""]
     lines.append(
-        "<sub>Périmètre : `model/` et `service/`. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
+        "<sub>Périmètre : `anemic_model/` et `service/`. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
         if base
         else "<sub>Pas de base comparable : seules les valeurs de la PR sont affichées.</sub>"
     )

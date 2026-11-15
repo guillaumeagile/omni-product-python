@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from omni_product.database import Base
 
 if TYPE_CHECKING:
-    from omni_product.model.product import Product
+    from omni_product.anemic_model.product import Product
     from omni_product.service.product_service import ProductService
     from omni_product.service.supplier_service import SupplierService
 

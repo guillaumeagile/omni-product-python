@@ -230,7 +230,7 @@ def test_collect_derives_module_names_from_paths(tmp_path: Path):
 def test_the_real_perimeter_can_be_measured():
     root = Path(__file__).resolve().parents[2]
     metrics = measure(
-        collect([root / "src/omni_product/model", root / "src/omni_product/service"], root / "src")
+        collect([root / "src/omni_product/anemic_model", root / "src/omni_product/service"], root / "src")
     )
 
     assert metrics.classes > 0

@@ -30,7 +30,7 @@ class Coupling:
 
 
 def measure(sources: list[SourceFile]) -> dict[str, Coupling]:
-    """Le couplage de chaque classe de premier niveau, par nom qualifié (`omni_product.model.product.Product`)."""
+    """Le couplage de chaque classe de premier niveau, par nom qualifié (`omni_product.anemic_model.product.Product`)."""
     tables = {source.module: _import_table(source) for source in sources}
     outgoing = {
         f"{source.module}.{cls.name}": _resolve_all(
@@ -111,7 +111,7 @@ def _resolve_all(names: set[str], tables: Mapping[str, ImportTable]) -> set[str]
 
 
 def _resolve(name: str, tables: Mapping[str, ImportTable], depth: int = 0) -> str:
-    """Suit les ré-exports : `omni_product.model.Product` (via `model/__init__.py`) devient `...model.product.Product`."""
+    """Suit les ré-exports : `omni_product.anemic_model.Product` (via `anemic_model/__init__.py`) devient `...anemic_model.product.Product`."""
     module, _, member = name.rpartition(".")
     target = tables.get(module, {}).get(member)
     if target is None or target == name or depth >= _MAX_REEXPORT_DEPTH:

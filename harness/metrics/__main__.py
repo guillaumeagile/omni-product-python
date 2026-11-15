@@ -6,7 +6,7 @@ from pathlib import Path
 from harness.metrics.report import Metrics, measure
 from harness.metrics.sources import collect
 
-DEFAULT_ROOTS = ("src/omni_product/model", "src/omni_product/service")
+DEFAULT_ROOTS = ("src/omni_product/anemic_model", "src/omni_product/service")
 
 
 def render(metrics: Metrics) -> str:

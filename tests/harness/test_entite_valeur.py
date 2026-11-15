@@ -4,19 +4,19 @@ import textwrap
 
 from harness.rules import entite_valeur
 from harness.rules.sources import Source
-from harness.rules.vocabulary import Vocabulary
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 
 def source(text: str, module: str = "pkg.mod") -> Source:
     return Source.from_text(module, textwrap.dedent(text))
 
 
-def vocabulary() -> Vocabulary:
-    return Vocabulary.load()
+def language() -> UbiquitousLanguage:
+    return UbiquitousLanguage.load()
 
 
 def codes(text: str) -> list[str]:
-    return [finding.code for finding in entite_valeur.check(source(text), vocabulary())]
+    return [finding.code for finding in entite_valeur.check(source(text), language())]
 
 
 def test_a_frozen_dataclass_without_id_is_a_value_object():
@@ -44,7 +44,7 @@ def test_an_entity_with_a_primitive_id_is_a_violation():
         class Product:
             id: str
         """
-    [finding] = entite_valeur.check(source(text, "pkg.product"), vocabulary())
+    [finding] = entite_valeur.check(source(text, "pkg.product"), language())
     assert finding.code == "EV001"
     assert str(finding) == (
         "pkg/product.py:2:1: EV001 'Product' a un identifiant de type primitif (str) : "
@@ -112,7 +112,7 @@ def test_a_domain_primitive_in_a_raw_type_is_flagged():
             price: float
             slug: str
         """
-    findings = entite_valeur.check(source(text, "pkg.pricing"), vocabulary())
+    findings = entite_valeur.check(source(text, "pkg.pricing"), language())
     assert [(f.code, f.message) for f in findings] == [
         (
             "EV002",
@@ -137,7 +137,7 @@ def test_a_domain_value_typed_by_a_value_object_is_not_flagged():
     assert codes(text) == []
 
 
-def test_a_link_and_a_name_outside_the_vocabulary_are_not_primitive_findings():
+def test_a_link_and_a_name_outside_the_ubiquitous_language_are_not_primitive_findings():
     text = """
         from dataclasses import dataclass
 

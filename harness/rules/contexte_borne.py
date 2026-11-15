@@ -2,7 +2,7 @@
 
 Chaque membre public d'une classe (attribut, méthode, propriété) est rattaché à un contexte par son nom, puis, à
 défaut, par les types de ses annotations. Les membres hérités des classes du même module comptent aussi.
-Un identifiant de lien (`product_id`) ne porte pas de contexte : il renvoie à une autre entité.
+Un identifiant, quel qu'il soit (`id`, `product_id`, `tvaId`), ne porte pas de contexte : il désigne une entité.
 Une classe qui touche plusieurs contextes est une violation : il faut l'éclater.
 
 Complément (`gaps`) : un membre qui ne rattache à aucun contexte, et dont les mots ne sont ni génériques ni
@@ -102,8 +102,14 @@ def _base_names(cls: ast.ClassDef) -> Iterator[str]:
             yield base.id
 
 
+def _is_identifier(name: str) -> bool:
+    """Un nom dont le dernier mot est `id` ou `ids` : `id`, `product_id`, `supplierIds`, `tvaId`."""
+    parts = words(name)
+    return bool(parts) and parts[-1] in ("id", "ids")
+
+
 def _concern_of(name: str, node: ast.AST | None, vocabulary: Vocabulary) -> str | None:
-    if name.startswith("_") or vocabulary.is_link(name):
+    if name.startswith("_") or _is_identifier(name):
         return None
     concern = vocabulary.concern_of(name)
     if concern is None and node is not None:
@@ -155,7 +161,7 @@ def gaps(source: Source, vocabulary: Vocabulary) -> list[Gap]:
     for cls in top_level_classes(source.tree):
         unknown: list[tuple[str, tuple[str, ...]]] = []
         for name, _line, node in public_members(cls):
-            if name.startswith("_") or vocabulary.is_link(name):
+            if name.startswith("_") or _is_identifier(name):
                 continue
             if _concern_of(name, node, vocabulary) is not None:
                 continue

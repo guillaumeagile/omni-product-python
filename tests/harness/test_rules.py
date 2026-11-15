@@ -193,3 +193,16 @@ def test_a_violation_is_not_changed_by_the_gaps_check():
         """
     [violation] = contexte_borne.check(source(text, "pkg.product"), vocabulary())
     assert violation.members_by_concern == {"Catalog": ("slug",), "Pricing": ("price",)}
+
+
+def test_any_identifier_is_neither_a_context_nor_a_gap():
+    # Un identifiant, naturel ou non (`tva_id`), désigne une entité : il ne porte pas de contexte.
+    text = """
+        class ProductPrice:
+            id: ProductId
+            tva_id: TvaId
+            supplier_ids: str
+            price: float
+        """
+    assert contexte_borne.check(source(text), vocabulary()) == []
+    assert contexte_borne.gaps(source(text), vocabulary()) == []

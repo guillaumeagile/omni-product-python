@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, Supplier
+from omni_product.anemic_model import ProductSupply, Supplier
+from omni_product.dal import product_dal
 
 
 def find_all(session: Session) -> list[Supplier]:
@@ -26,7 +27,8 @@ def find_by_name(session: Session, name: str) -> Supplier | None:
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
-    return _find_all_where(session, Supplier.products.any(Product.id == product_id))
+    supplier_ids = select(ProductSupply.supplier_id).where(ProductSupply.product_id == product_id)
+    return _find_all_where(session, Supplier.id.in_(supplier_ids))
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:
@@ -36,6 +38,12 @@ def save(session: Session, supplier: Supplier) -> Supplier:
 
 
 def delete(session: Session, supplier: Supplier) -> None:
+    # Comportement conservé : supprimer un fournisseur supprime les produits qu'il fournit.
+    product_ids = session.scalars(
+        select(ProductSupply.product_id).where(ProductSupply.supplier_id == supplier.id)
+    ).all()
+    for product_id in product_ids:
+        product_dal.delete_by_id(session, product_id)
     session.delete(supplier)
     session.commit()
 

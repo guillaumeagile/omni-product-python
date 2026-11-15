@@ -13,7 +13,7 @@ from pathlib import Path
 from harness.rules import contexte_borne
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
-from harness.rules.vocabulary import Vocabulary
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class Rule:
     # Dossiers à analyser, relatifs à la racine des imports (`src`).
     roots: tuple[str, ...]
     # Rend les constats : une liste vide veut dire que la règle est verte.
-    check: Callable[[Source, Vocabulary], Sequence[object]]
+    check: Callable[[Source, UbiquitousLanguage], Sequence[object]]
 
 
 RULES: tuple[Rule, ...] = (
@@ -37,14 +37,14 @@ def evaluate(src_root: Path) -> dict[int, list[object]]:
     Une règle dont le dossier n'existe pas (par exemple une base d'avant la restructuration) n'a pas de constat :
     elle est absente du résultat, et la scorecard ne la compare pas.
     """
-    vocabulary = Vocabulary.load()
+    language = UbiquitousLanguage.load()
     findings: dict[int, list[object]] = {}
     for rule in RULES:
         if not any((src_root / root).is_dir() for root in rule.roots):
             continue
         sources = collect([src_root / root for root in rule.roots], src_root)
         findings[rule.number] = [
-            finding for source in sources for finding in rule.check(source, vocabulary)
+            finding for source in sources for finding in rule.check(source, language)
         ]
     return findings
 

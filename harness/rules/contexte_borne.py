@@ -14,7 +14,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 
 from harness.rules.sources import Source, top_level_classes
-from harness.rules.vocabulary import Vocabulary
+from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 # Code affiché en tête de message, comme ruff : `CB001 ...` (CB pour « contexte borné »).
 CODE = "CB001"
@@ -53,11 +53,11 @@ class Violation:
         )
 
 
-def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
+def check(source: Source, language: UbiquitousLanguage) -> list[Violation]:
     violations: list[Violation] = []
     classes = {cls.name: cls for cls in top_level_classes(source.tree)}
     for cls in classes.values():
-        members = _members_of(cls, classes, vocabulary)
+        members = _members_of(cls, classes, language)
         if len({member.concern for member in members}) >= 2:
             violations.append(
                 Violation(
@@ -74,7 +74,7 @@ def check(source: Source, vocabulary: Vocabulary) -> list[Violation]:
 def _members_of(
     cls: ast.ClassDef,
     classes: dict[str, ast.ClassDef],
-    vocabulary: Vocabulary,
+    language: UbiquitousLanguage,
     seen: frozenset[str] = frozenset(),
 ) -> list[Member]:
     """Les membres de la classe, hérités compris. Un membre redéfini garde la version de la sous-classe."""
@@ -82,10 +82,10 @@ def _members_of(
     for base in _base_names(cls):
         # `seen` évite de boucler si deux classes s'étendent mutuellement.
         if base in classes and base not in seen:
-            for member in _members_of(classes[base], classes, vocabulary, seen | {cls.name}):
+            for member in _members_of(classes[base], classes, language, seen | {cls.name}):
                 found[member.name] = member
     for name, line, node in _public_members(cls):
-        concern = _concern_of(name, node, vocabulary)
+        concern = _concern_of(name, node, language)
         if concern is not None:
             found[name] = Member(name, line, concern)
     return list(found.values())
@@ -109,15 +109,15 @@ def _public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | Non
             yield stmt.name, stmt.lineno, stmt
 
 
-def _concern_of(name: str, node: ast.AST | None, vocabulary: Vocabulary) -> str | None:
-    if name.startswith("_") or vocabulary.is_link(name):
+def _concern_of(name: str, node: ast.AST | None, language: UbiquitousLanguage) -> str | None:
+    if name.startswith("_") or language.is_link(name):
         return None
-    concern = vocabulary.concern_of(name)
+    concern = language.concern_of(name)
     if concern is None and node is not None:
         # Le nom ne dit rien : on regarde les types (paramètres, retour, annotation).
         for annotation in _annotations(node):
             for identifier in _IDENTIFIER.findall(ast.unparse(annotation)):
-                concern = vocabulary.concern_of(identifier)
+                concern = language.concern_of(identifier)
                 if concern is not None:
                     return concern
     return concern

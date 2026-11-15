@@ -31,7 +31,7 @@ jobs:
       - name: Vérifier si la PR touche le harnais
         run: |
           gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --jq '.[].filename' > fichiers.txt
-          grep -E '^(harness/|tests/harness/|docs/ubiquitous-language-map\.json$|\.github/workflows/garde-harnais\.yml$)' fichiers.txt > proteges.txt || true
+          grep -E '^(harness/|tests/harness/|docs/ubiquitous-language\.json$|\.github/workflows/garde-harnais\.yml$)' fichiers.txt > proteges.txt || true
           if [ ! -s proteges.txt ]; then
             echo "Aucun fichier du harnais touché : la garde passe."
             exit 0

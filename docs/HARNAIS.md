@@ -113,7 +113,7 @@ C'est lui qui transformera les mesures de l'étage 2 en points. Le barème sera 
 Le harnais se protège lui-même. Le workflow `.github/workflows/garde-harnais.yml` échoue dès qu'une PR touche :
 
 - `harness/` et `tests/harness/` ;
-- `docs/ubiquitous-language-map.json`, le vocabulaire lu par la règle 1 ;
+- `docs/ubiquitous-language.json`, l'ubiquitous language lu par la règle 1 ;
 - ce workflow.
 
 Seul le propriétaire du dépôt (`guillaumeagile`) peut lever la garde, en posant le label `bypass-harnais` sur la PR.

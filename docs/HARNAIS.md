@@ -120,7 +120,9 @@ C'est lui qui transformera les mesures de l'étage 2 en points. Le barème sera 
 | Mesures : TCC, LCOM*, fan-out, CBO | ✅ en place (`harness/metrics`) |
 | Mesures : tokens, métriques « style » (champs mutables, affectations, boucles, lambdas) | ✅ en place (`harness/metrics`) |
 | Scorecard par PR (commentaire publié par la CI) | ✅ en place, informatif |
-| Règles de design maison | ⏳ à faire |
+| Règles de design maison : règle 1, contexte borné (`harness/rules`) | ✅ en place, informatif : table en tête de scorecard, avec points |
+| Points par règle (barème de l'arbitre : +10 par règle passée au vert, +5 de baby step) | ✅ en place, dans la scorecard (`harness/rules/points.py`) |
+| Règles de design maison : règles 2 à 10 | ⏳ à faire |
 | Arbitre (verdict, score, badges, classement) | ⏳ à faire |
 | Règles plus dures (seuils bloquants) | ⏳ à faire |
 
@@ -131,6 +133,7 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-15 | Règle 1 (contexte borné) : script `python -m harness.rules`, informatif, table et points dans la scorecard |
 | 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
 | 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |
 | 2026-11-11 | Première version : CI, mutation testing, mesures de complexité, cohésion et couplage |

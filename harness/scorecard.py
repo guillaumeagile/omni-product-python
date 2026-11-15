@@ -20,6 +20,9 @@ from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
 from harness.metrics.report import ClassMetrics, Metrics, measure
 from harness.metrics.sources import collect
+from harness.rules import evaluate as evaluate_rules
+from harness.rules import report as rules_report
+from harness.rules import results as rule_results
 
 MARKER = "<!-- harness-scorecard -->"
 TOP_CLASSES = 3
@@ -54,13 +57,21 @@ ROWS = (
 )
 
 
-def render(head: Metrics, base: Metrics | None, changed_tokens: int | None = None) -> str:
+def render(
+    head: Metrics,
+    base: Metrics | None,
+    changed_tokens: int | None = None,
+    rules_md: str = "",
+) -> str:
     lines = [
         MARKER,
         "## 📊 Scorecard du harnais",
         "",
-        "Des **repères pour guider ton refactoring**, pas une note : un thermomètre, pas un objectif. "
+        "Des **repères pour guider ton refactoring**  "
         "Le détail de chaque chiffre est dans `docs/METRIQUES.md`.",
+        "",
+        *([rules_md] if rules_md else []),
+        "### 📏 Métriques",
         "",
         "| Mesure | Base | PR | Variation | |",
         "|---|---:|---:|---:|:--:|",
@@ -180,13 +191,17 @@ def main() -> None:
     args = parser.parse_args()
     head = measure_tree(Path("src"), [_relative_to_src(root) for root in args.roots])
     roots = [_relative_to_src(root) for root in args.roots]
+    head_findings = evaluate_rules(Path("src"))
+    base_findings = None
     if args.base_ref:
         with checkout(args.base_ref) as base_src:
             base = None if base_src is None else measure_tree(base_src, roots)
             changed = None if base_src is None else changed_tokens(base_src, Path("src"), roots)
+            base_findings = None if base_src is None else evaluate_rules(base_src)
     else:
         base, changed = None, None
-    card = render(head, base, changed)
+    rules_md = rules_report.section(rule_results(head_findings, base_findings))
+    card = render(head, base, changed, rules_md)
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")
     else:

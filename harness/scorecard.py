@@ -20,6 +20,7 @@ from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
 from harness.metrics.report import ClassMetrics, Metrics, measure
 from harness.metrics.sources import collect
+from harness.perimetre import dossiers_exclus
 from harness.rules import evaluate as evaluate_rules
 from harness.rules import report as rules_report
 from harness.rules import results as rule_results
@@ -83,7 +84,7 @@ def render(
         )
     lines += ["", *_worst_classes(head), ""]
     lines.append(
-        "<sub>Périmètre : `anemic_model/` et `service/`. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
+        "<sub>Périmètre : `omni_product/`, hors `controller/`, `service/` et `dal/`. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
         if base
         else "<sub>Pas de base comparable : seules les valeurs de la PR sont affichées.</sub>"
     )
@@ -137,7 +138,9 @@ def _class_row(c: ClassMetrics) -> str:
 
 
 def measure_tree(src_root: Path, roots: list[str]) -> Metrics:
-    return measure(collect([src_root / root for root in roots], src_root))
+    return measure(
+        collect([src_root / root for root in roots], src_root, dossiers_exclus(src_root))
+    )
 
 
 @contextmanager
@@ -162,7 +165,9 @@ def _relative_to_src(root: str) -> str:
 def _effective_lines(src_root: Path, roots: list[str]) -> dict[str, list[str]]:
     return {
         source.module: tokens.effective_code(source.tree).splitlines()
-        for source in collect([src_root / root for root in roots], src_root)
+        for source in collect(
+            [src_root / root for root in roots], src_root, dossiers_exclus(src_root)
+        )
     }
 
 

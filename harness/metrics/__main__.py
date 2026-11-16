@@ -5,8 +5,9 @@ from pathlib import Path
 
 from harness.metrics.report import Metrics, measure
 from harness.metrics.sources import collect
+from harness.perimetre import dossiers_exclus
 
-DEFAULT_ROOTS = ("src/omni_product/anemic_model", "src/omni_product/service")
+DEFAULT_ROOTS = ("src/omni_product",)
 
 
 def render(metrics: Metrics) -> str:
@@ -44,7 +45,10 @@ def main() -> None:
         "--json", dest="json_path", help="écrit le rapport détaillé dans ce fichier"
     )
     args = parser.parse_args()
-    metrics = measure(collect([Path(root) for root in args.roots], Path(args.src_root)))
+    src_root = Path(args.src_root)
+    metrics = measure(
+        collect([Path(root) for root in args.roots], src_root, dossiers_exclus(src_root))
+    )
     print(render(metrics))
     if args.json_path:
         Path(args.json_path).write_text(metrics.to_json() + "\n", encoding="utf-8")

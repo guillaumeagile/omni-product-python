@@ -1,4 +1,4 @@
-"""Le périmètre du harnais : `omni_product/`, sauf controller, service, dal, config.py et database.py."""
+"""Le périmètre du harnais : `omni_product/`, sauf les couches externes et la plomberie."""
 
 from pathlib import Path
 

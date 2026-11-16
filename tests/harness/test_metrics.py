@@ -8,6 +8,7 @@ from harness.metrics import cohesion, complexity, coupling, style, tokens
 from harness.metrics.classes import top_level_classes
 from harness.metrics.report import measure
 from harness.metrics.sources import SourceFile, collect
+from harness.perimetre import dossiers_exclus
 
 
 def source(text: str, module: str = "pkg.mod", *, is_package: bool = False) -> SourceFile:
@@ -231,8 +232,9 @@ def test_the_real_perimeter_can_be_measured():
     root = Path(__file__).resolve().parents[2]
     metrics = measure(
         collect(
-            [root / "src/omni_product/anemic_model", root / "src/omni_product/service"],
+            [root / "src/omni_product"],
             root / "src",
+            dossiers_exclus(root / "src"),
         )
     )
 

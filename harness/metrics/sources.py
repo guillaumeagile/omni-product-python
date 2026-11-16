@@ -20,9 +20,16 @@ class SourceFile:
         return cls(module, is_package, text, ast.parse(text))
 
 
-def collect(roots: Sequence[Path], src_root: Path) -> list[SourceFile]:
-    """Tous les `.py` sous `roots`, dans l'ordre alphabétique ; `src_root` sert à retrouver le nom du module."""
-    paths = sorted({path for root in roots for path in root.rglob("*.py") if not _is_test(path)})
+def collect(roots: Sequence[Path], src_root: Path, exclus: Sequence[Path] = ()) -> list[SourceFile]:
+    """Tous les `.py` sous `roots`, hors `exclus`, dans l'ordre alphabétique ; `src_root` sert à retrouver le nom du module."""
+    paths = sorted(
+        {
+            path
+            for root in roots
+            for path in root.rglob("*.py")
+            if not _is_test(path) and not any(path.is_relative_to(dossier) for dossier in exclus)
+        }
+    )
     return [_read(path, src_root) for path in paths]
 
 

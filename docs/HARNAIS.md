@@ -151,6 +151,7 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-16 | Règle 1 (contexte borné) : tout identifiant (`id`, `product_id`, `tvaId`…, qui commence ou finit par `id`/`ids`) ne porte pas de contexte. La règle 2 garde son propre critère, qui ne retient pas les identifiants naturels |
 | 2026-11-16 | Règle 3 (pas de modèle anémique) : tout fichier non vide sous `anemic_model/` est un constat (MA001). Elle devient verte quand le dossier disparaît |
 | 2026-11-16 | Règle 2 : son périmètre passe à `domain/model/`. Les adaptateurs, la configuration et la base SQLAlchemy n'en font pas partie |
 | 2026-11-16 | Règle 2 rétablie dans le registre (perdue lors de la fusion de #15) ; un test de registre empêche la régression |

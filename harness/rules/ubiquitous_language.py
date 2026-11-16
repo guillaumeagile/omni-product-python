@@ -78,6 +78,15 @@ class UbiquitousLanguage:
             and not self.natural_words.intersection(parts)
         )
 
+    def is_identifier(self, name: str) -> bool:
+        """Un identifiant, naturel ou non : `id`, `product_id`, `supplierIds`, `tvaId`.
+
+        Il commence ou se termine par `id` ou `ids`. Un identifiant ne porte pas de contexte : `ProductId` ne rattache
+        pas `id` à Catalog, et `ProductPrice(id, price)` ne mêle donc que Pricing.
+        """
+        parts = words(name)
+        return bool(parts) and (parts[0] in ("id", "ids") or parts[-1] in ("id", "ids"))
+
     def concern_of(self, name: str) -> str | None:
         """Le contexte d'un nom, ou `None` s'il ne contient aucun mot-clé.
 

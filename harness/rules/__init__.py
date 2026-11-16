@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harness.perimetre import dossiers_exclus
-from harness.rules import contexte_borne, entite_valeur
+from harness.rules import contexte_borne, entite_valeur, modele_anemique
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
 from harness.rules.ubiquitous_language import UbiquitousLanguage
@@ -37,7 +37,10 @@ RULES: tuple[Rule, ...] = (
         contexte_borne.check,
         complement=contexte_borne.gaps,
     ),
-    Rule(2, "Entité ou Value Object", ("omni_product",), entite_valeur.check),
+    # La règle 2 ne regarde que le modèle : les adaptateurs et la configuration n'en font pas partie.
+    Rule(2, "Entité ou Value Object", ("omni_product/domain/model",), entite_valeur.check),
+    # Le modèle est rangé dans domain/model : plus de code sous anemic_model.
+    Rule(3, "Pas de modèle anémique", ("omni_product/anemic_model",), modele_anemique.check),
 )
 
 

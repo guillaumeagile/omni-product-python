@@ -140,7 +140,8 @@ protection, la garde s'affiche en rouge mais ne bloque pas le merge.
 | Règles de design maison : règle 1, contexte borné (`harness/rules`) | ✅ en place, informatif : table en tête de scorecard, avec points |
 | Points par règle (barème de l'arbitre : +10 par règle passée au vert, +5 de baby step) | ✅ en place, dans la scorecard (`harness/rules/points.py`) |
 | Règle mère : garde du harnais (`garde-harnais.yml`), bypass du propriétaire seul | ✅ en place, bloquante dès que la protection de `main` l'exige |
-| Règles de design maison : règles 2 à 10 | ⏳ à faire |
+| Règles de design maison : règle 4, composition plutôt qu'héritage (`harness/rules/heritage.py`) | ✅ en place, informatif |
+| Règles de design maison : règles 5 à 10 | ⏳ à faire |
 | Arbitre (verdict, score, badges, classement) | ⏳ à faire |
 | Règles plus dures (seuils bloquants) | ⏳ à faire |
 
@@ -152,6 +153,7 @@ par surprise.
 | Date | Changement |
 |---|---|
 | 2026-11-16 | Règle 1 (contexte borné) : tout identifiant (`id`, `product_id`, `tvaId`…, qui commence ou finit par `id`/`ids`) ne porte pas de contexte. La règle 2 garde son propre critère, qui ne retient pas les identifiants naturels |
+| 2026-11-16 | Règle 4 (composition plutôt qu'héritage) : une classe du modèle qui hérite d'une autre classe du même module est un constat (HE001). Enum, Protocol, TypedDict et exceptions sont exceptés. Le modèle est cherché dans `domain/model/` et `anemic_model/` |
 | 2026-11-16 | Règle 3 (pas de modèle anémique) : tout fichier non vide sous `anemic_model/` est un constat (MA001). Elle devient verte quand le dossier disparaît |
 | 2026-11-16 | Règle 2 : son périmètre passe à `domain/model/`. Les adaptateurs, la configuration et la base SQLAlchemy n'en font pas partie |
 | 2026-11-16 | Règle 2 rétablie dans le registre (perdue lors de la fusion de #15) ; un test de registre empêche la régression |

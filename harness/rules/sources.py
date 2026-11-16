@@ -18,9 +18,16 @@ class Source:
         return cls(module, path or f"{module.replace('.', '/')}.py", ast.parse(text))
 
 
-def collect(roots: Sequence[Path], src_root: Path) -> list[Source]:
-    """Les `.py` sous `roots`, hors tests, dans l'ordre alphabétique ; `src_root` sert à nommer les modules."""
-    paths = sorted({path for root in roots for path in root.rglob("*.py") if not _is_test(path)})
+def collect(roots: Sequence[Path], src_root: Path, exclus: Sequence[Path] = ()) -> list[Source]:
+    """Les `.py` sous `roots`, hors tests et hors `exclus`, dans l'ordre alphabétique ; `src_root` sert à nommer les modules."""
+    paths = sorted(
+        {
+            path
+            for root in roots
+            for path in root.rglob("*.py")
+            if not _is_test(path) and not any(path.is_relative_to(dossier) for dossier in exclus)
+        }
+    )
     return [_read(path, src_root) for path in paths]
 
 

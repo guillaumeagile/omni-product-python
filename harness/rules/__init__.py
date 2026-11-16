@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from harness.perimetre import dossiers_exclus
 from harness.rules import contexte_borne
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
@@ -32,7 +33,7 @@ RULES: tuple[Rule, ...] = (
     Rule(
         1,
         "Contexte borné",
-        ("omni_product/anemic_model",),
+        ("omni_product",),
         contexte_borne.check,
         complement=contexte_borne.gaps,
     ),
@@ -63,7 +64,9 @@ def _run(
         check = pick(rule)
         if check is None or not any((src_root / root).is_dir() for root in rule.roots):
             continue
-        sources = collect([src_root / root for root in rule.roots], src_root)
+        sources = collect(
+            [src_root / root for root in rule.roots], src_root, dossiers_exclus(src_root)
+        )
         output[rule.number] = [finding for source in sources for finding in check(source, language)]
     return output
 

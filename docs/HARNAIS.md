@@ -151,6 +151,7 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-16 | Périmètre : `omni_product/`, hors `controller/`, `service/` et `dal/` (`harness/perimetre.py`), pour les règles et les mesures |
 | 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
 | 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors ubiquitous language (hors points) ; les mots génériques ne comptent pas |
 | 2026-11-15 | Règle 2 (entité ou Value Object) : chaque classe du modèle est une entité (`id` typé) ou une `dataclass(frozen=True)` sans id ; un membre dont le nom relève de l'ubiquitous language, typé par une primitive brute, est signalé (EV001, EV002) |

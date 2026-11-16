@@ -151,6 +151,9 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-16 | Règle 3 (pas de modèle anémique) : tout fichier non vide sous `anemic_model/` est un constat (MA001). Elle devient verte quand le dossier disparaît |
+| 2026-11-16 | Règle 2 : son périmètre passe à `domain/model/`. Les adaptateurs, la configuration et la base SQLAlchemy n'en font pas partie |
+| 2026-11-16 | Règle 2 rétablie dans le registre (perdue lors de la fusion de #15) ; un test de registre empêche la régression |
 | 2026-11-16 | Périmètre : `omni_product/`, hors `controller/`, `service/` et `dal/` (`harness/perimetre.py`), pour les règles et les mesures |
 | 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
 | 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors ubiquitous language (hors points) ; les mots génériques ne comptent pas |

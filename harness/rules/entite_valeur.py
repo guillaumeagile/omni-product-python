@@ -13,7 +13,7 @@ Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`
 import ast
 from dataclasses import dataclass
 
-from harness.rules.sources import Source, public_members, top_level_classes
+from harness.rules.sources import Source, is_exempt_class, public_members, top_level_classes
 from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 # Une classe qui n'est ni entité ni Value Object.
@@ -24,7 +24,6 @@ PRIMITIVE_CODE = "EV002"
 PRIMITIVES = frozenset({"str", "int", "float", "bool", "bytes", "Decimal"})
 # Enveloppes qui ne changent pas le type porté : `Mapped[str]` est un `str`.
 _WRAPPERS = frozenset({"Mapped", "Optional", "ClassVar"})
-_EXEMPT_BASES = frozenset({"Enum", "StrEnum", "IntEnum", "Protocol", "TypedDict"})
 
 
 @dataclass(frozen=True)
@@ -44,7 +43,7 @@ def check(source: Source, language: UbiquitousLanguage) -> list[Finding]:
     findings: list[Finding] = []
     classes = {cls.name: cls for cls in top_level_classes(source.tree)}
     for cls in classes.values():
-        if _is_exempt(cls):
+        if is_exempt_class(cls):
             continue
         findings.extend(_kind_findings(cls, classes, source.path))
         findings.extend(_primitive_findings(cls, source.path, language))
@@ -136,12 +135,6 @@ def _base_names(cls: ast.ClassDef) -> list[str]:
         elif isinstance(base, ast.Attribute):
             names.append(base.attr)
     return names
-
-
-def _is_exempt(cls: ast.ClassDef) -> bool:
-    return any(
-        name in _EXEMPT_BASES or name.endswith(("Error", "Exception")) for name in _base_names(cls)
-    )
 
 
 def _is_frozen_dataclass(cls: ast.ClassDef) -> bool:

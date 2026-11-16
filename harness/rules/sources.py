@@ -60,3 +60,15 @@ def public_members(cls: ast.ClassDef) -> Iterator[tuple[str, int, ast.AST | None
                     yield target.id, target.lineno, None
         elif isinstance(stmt, ast.FunctionDef | ast.AsyncFunctionDef):
             yield stmt.name, stmt.lineno, stmt
+
+
+# Bases dont une classe du modèle a le droit d'hériter : ce sont des outils du langage, pas des variantes du métier.
+EXEMPT_BASES = frozenset({"Enum", "StrEnum", "IntEnum", "Protocol", "TypedDict"})
+
+
+def is_exempt_class(cls: ast.ClassDef) -> bool:
+    """Une énumération, un Protocol, un TypedDict ou une exception : exceptés des règles 2 et 4."""
+    names = [
+        base.id if isinstance(base, ast.Name) else getattr(base, "attr", "") for base in cls.bases
+    ]
+    return any(name in EXEMPT_BASES or name.endswith(("Error", "Exception")) for name in names)

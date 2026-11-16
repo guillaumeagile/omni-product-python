@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harness.perimetre import dossiers_exclus
-from harness.rules import contexte_borne
+from harness.rules import contexte_borne, entite_valeur
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
 from harness.rules.ubiquitous_language import UbiquitousLanguage
@@ -37,6 +37,7 @@ RULES: tuple[Rule, ...] = (
         contexte_borne.check,
         complement=contexte_borne.gaps,
     ),
+    Rule(2, "Entité ou Value Object", ("omni_product",), entite_valeur.check),
 )
 
 

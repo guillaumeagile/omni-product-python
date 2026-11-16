@@ -195,14 +195,8 @@ def test_a_violation_is_not_changed_by_the_gaps_check():
     assert violation.members_by_concern == {"Catalog": ("slug",), "Pricing": ("price",)}
 
 
-def test_technical_and_unit_words_are_not_gaps():
+def test_unit_and_co2_words_are_not_gaps():
     text = """
-        class Settings:
-            database_url: str
-            external_api_read_timeout: float
-
-            def process_bind_param(self, value): ...
-
         class Emission:
             co2_equivalent_kg: float
         """

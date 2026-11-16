@@ -1,4 +1,4 @@
-"""Le périmètre du harnais : `omni_product/`, sauf controller, service et dal."""
+"""Le périmètre du harnais : `omni_product/`, sauf controller, service, dal, config.py et database.py."""
 
 from pathlib import Path
 
@@ -16,7 +16,7 @@ def test_controller_service_and_dal_are_out_of_the_perimeter(tmp_path: Path):
     for name in ("domain/model/product.py", "infrastructure/x.py", "main.py", "dal/rows.py"):
         _write(src / "omni_product" / name)
     for name in HORS_PERIMETRE:
-        _write(src / "omni_product" / name / "module.py")
+        _write(src / "omni_product" / (name if name.endswith(".py") else f"{name}/module.py"))
 
     modules = [s.module for s in collect([src / "omni_product"], src, dossiers_exclus(src))]
 

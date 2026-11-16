@@ -85,7 +85,7 @@ def test_a_subclass_inherits_the_id_of_its_entity():
             id: ProductId
 
         class PerishableProduct(Product):
-            shelf_life_days: int
+            rating: int
         """
     assert codes(text) == []
 

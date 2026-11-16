@@ -193,3 +193,24 @@ def test_a_violation_is_not_changed_by_the_gaps_check():
         """
     [violation] = contexte_borne.check(source(text, "pkg.product"), language())
     assert violation.members_by_concern == {"Catalog": ("slug",), "Pricing": ("price",)}
+
+
+def test_technical_and_unit_words_are_not_gaps():
+    text = """
+        class Settings:
+            database_url: str
+            external_api_read_timeout: float
+
+            def process_bind_param(self, value): ...
+
+        class Emission:
+            co2_equivalent_kg: float
+        """
+    assert contexte_borne.gaps(source(text), language()) == []
+
+
+def test_a_digit_stays_attached_to_its_word():
+    from harness.rules.ubiquitous_language import words
+
+    assert words("co2_equivalent_kg") == ("co2", "equivalent", "kg")
+    assert words("ImpactCo2Response") == ("impact", "co2", "response")

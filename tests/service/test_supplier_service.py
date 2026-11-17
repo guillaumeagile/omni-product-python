@@ -1,8 +1,17 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product
 from omni_product.dal import product_dal
+from omni_product.dal.product_dal import ProductSheet
+from omni_product.domain.model import (
+    Country,
+    Product,
+    ProductId,
+    ProductSupply,
+    Region,
+    Slug,
+    SupplierId,
+)
 from omni_product.service.supplier_service import SupplierService
 
 
@@ -26,9 +35,9 @@ def test_should_create_supplier(supplier_service: SupplierService) -> None:
         "sup1", "Supplier A", "contact@suppliera.com", "+33123456789", "France", "Île-de-France"
     )
 
-    assert supplier.id == "sup1"
+    assert supplier.id == SupplierId("sup1")
     assert supplier.name == "Supplier A"
-    assert supplier.country == "France"
+    assert supplier.country == Country("France")
 
 
 def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
@@ -37,7 +46,7 @@ def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
     found = supplier_service.get_supplier("sup1")
 
     assert found is not None
-    assert found.id == "sup1"
+    assert found.id == SupplierId("sup1")
     assert found.name == "Supplier A"
 
 
@@ -80,8 +89,8 @@ def test_should_update_supplier(supplier_service: SupplierService) -> None:
     )
 
     assert updated.name == "Updated Supplier A"
-    assert updated.country == "Germany"
-    assert updated.region == "Berlin"
+    assert updated.country == Country("Germany")
+    assert updated.region == Region("Berlin")
 
 
 def test_should_raise_when_updating_non_existent_supplier(
@@ -113,13 +122,17 @@ def test_should_cascade_delete_products_when_supplier_deleted(
 ) -> None:
     _create(supplier_service, "sup1", "Supplier A")
     product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+        session,
+        ProductSheet(
+            product=Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
+            supply=ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")),
+        ),
     )
-    assert product_dal.find_by_id(session, "prod1") is not None
+    assert product_dal.find_by_id(session, ProductId("prod1")) is not None
 
     supplier_service.delete_supplier("sup1")
 
-    assert product_dal.find_by_id(session, "prod1") is None
+    assert product_dal.find_by_id(session, ProductId("prod1")) is None
 
 
 def test_should_get_suppliers_by_product(
@@ -129,12 +142,16 @@ def test_should_get_suppliers_by_product(
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
     product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+        session,
+        ProductSheet(
+            product=Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
+            supply=ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")),
+        ),
     )
 
     suppliers = supplier_service.get_suppliers_by_product("prod1")
 
-    assert [s.id for s in suppliers] == ["sup1"]
+    assert [s.id for s in suppliers] == [SupplierId("sup1")]
 
 
 def test_should_raise_when_getting_suppliers_of_unknown_product(

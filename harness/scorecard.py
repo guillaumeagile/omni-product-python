@@ -20,7 +20,7 @@ from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
 from harness.metrics.report import ClassMetrics, Metrics, measure
 from harness.metrics.sources import collect
-from harness.perimetre import dossiers_exclus
+from harness.perimetre import description, dossiers_exclus
 from harness.rules import evaluate as evaluate_rules
 from harness.rules import report as rules_report
 from harness.rules import results as rule_results
@@ -84,7 +84,7 @@ def render(
         )
     lines += ["", *_worst_classes(head), ""]
     lines.append(
-        "<sub>Périmètre : `omni_product/`, hors `controller/`, `service/` et `dal/`. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
+        f"<sub>Périmètre : {description()}. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
         if base
         else "<sub>Pas de base comparable : seules les valeurs de la PR sont affichées.</sub>"
     )

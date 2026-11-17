@@ -15,3 +15,11 @@ HORS_PERIMETRE = ("controller", "service", "dal", "config.py", "database.py")
 def dossiers_exclus(src_root: Path) -> list[Path]:
     """Les dossiers et fichiers à écarter, sous la racine des imports (`src`)."""
     return [src_root / PACKAGE / name for name in HORS_PERIMETRE]
+
+
+def description() -> str:
+    """Le périmètre en une phrase, lue depuis `HORS_PERIMETRE` pour ne pas dériver."""
+    exclus = ", ".join(
+        f"`{name}/`" if not name.endswith(".py") else f"`{name}`" for name in HORS_PERIMETRE
+    )
+    return f"`{PACKAGE}/`, hors {exclus}"

@@ -95,7 +95,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 1 | Contexte borné | `CB001` (`CB002` : mots hors ubiquitous language, hors points) | **U** | 1, stratégique | ✅ en place (`harness/rules/contexte_borne.py`) |
 | 2 | Entité ou Value Object | `EV001`, `EV002` | **D** | 1, stratégique | ✅ en place (`entite_valeur.py`) |
 | 3 | Pas de modèle anémique | `MA001` | **D** | 1, stratégique | ✅ en place (`modele_anemique.py`) |
-| 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | 🚧 en cours (PR #24) |
+| 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | ✅ en place (`heritage.py`) |
 | 5 | Un échec métier est une valeur | à venir | **P** | 2, tactique | ⏳ à faire |
 | 6 | Effets impurs hors du cœur | à venir | **P** | 2, tactique | ⏳ à faire |
 | 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |
@@ -121,27 +121,18 @@ la vérification. Les préfixes des codes viennent du nom de la règle : **C**on
 - **Règle 10, l'aboutissement** : elle réorganise tout le projet, donc elle vient en dernier (phase 3), une fois le
   cœur bien découpé et pur. ❓ à confirmer.
 
-## Les ADT en Python : quelle bibliothèque ❓
+## Les ADT en Python : la bibliothèque retenue
 
-Test dans un projet jetable, avec pyright, en supprimant un cas du `match` pour voir si l'oubli est signalé :
-
-| Bibliothèque | Version testée | Résultat |
-|---|---|---|
-| [`result`](https://github.com/rustedpy/result) | 0.17.0 | `Ok` ou `Err`. Pyright **signale l'oubli** d'un cas. Pas d'`Option`. |
-| `returns` | 0.26.0 | Pyright **ne signale pas** l'oubli (`Result` n'est pas une union fermée pour lui). Riche, mais prévue pour mypy. |
-| `expression` | 5.8.0 | Complète (`Option`, `Result`), mais ses motifs `match` sont peu naturels (`Some` est une fonction, pas une classe). |
-
-**Piste :** `result` pour les résultats (règles 5 et 7), et de simples **unions de dataclasses frozen** pour tout le
-reste, avec la bibliothèque standard. L'absence d'une valeur reste `X | None`.
-
-À vérifier avant de l'imposer : la maintenance de `result` (non vérifiée).
+**Décision : [`result`](https://github.com/rustedpy/result) 0.17.0** (dépendance du projet). Un résultat est `Ok` ou
+`Err`, pyright signale l'oubli d'un cas dans un `match`, et les étapes s'enchaînent avec `.map`, `.and_then` et
+`.map_err` (Railway Oriented Programming). Le comparatif et ses limites sont dans l'[annexe](#annexe--comparatif-des-bibliothèques-adt).
 
 ## Points ouverts ❓
 
 1. **Règle 3 (modèle sans stockage)** : en phase 1, ou en bonus réservé à la stratégie « par stockage » ?
 2. **Blocage** : ne bloquer que la règle de l'étape en cours, et laisser les autres en avertissement sur la scorecard ?
 3. **Règle 2** : garder l'immuabilité fondue dedans, ou la séparer en règle P ?
-4. **Bibliothèque d'ADT** : `result` + unions de dataclasses, ou autre chose ?
+4. ~~**Bibliothèque d'ADT**~~ : tranché, `result` (voir la section sur les ADT et l'annexe).
 5. **Règle 7** : les heuristiques `ast` (booléens stockés, `None` par paires) sont-elles assez fiables, ou faut-il
    les accompagner d'un test par propriétés (`hypothesis`) ?
 6. **Règle 10** : en phase 3, ou dès la phase 1 comme quatrième stratégie (« par architecture ») ? Et `import-linter`
@@ -156,3 +147,20 @@ reste, avec la bibliothèque standard. L'absence d'une valeur reste `X | None`.
 - [ ] Une fiche par règle : question, pourquoi c'est CUPID, avant/après de 5 lignes, vérification.
 - [ ] Écrire les règles `ast` dans `harness/rules/`, une par règle, avec des tests à réponse connue.
 - [ ] Brancher les règles sur la scorecard (progression par lettre).
+
+## Annexe : comparatif des bibliothèques ADT
+
+Test dans un projet jetable, avec pyright, en supprimant un cas du `match` pour voir si l'oubli est signalé.
+Mesures de performance dans [POURQUOI-CUPID.md](POURQUOI-CUPID.md).
+
+| Critère | `result` (retenue) | `returns` | `expression` | Maison (union de dataclasses) |
+|---|---|---|---|---|
+| Oubli signalé par pyright | oui | non (`Result` n'est pas une union fermée pour lui) | ❓ | oui |
+| Chaînage ROP | `.map`, `.and_then`, `.map_err` | `bind`, `flow` (le plus proche de Wlaschin) | pipe | à écrire, une vingtaine de lignes |
+| Performance | parmi les plus rapides | un peu plus lente | la plus lente (1,3 µs pour construire une erreur) | celle d'un `NamedTuple` |
+| Motifs `match` | `Ok(valeur)`, `Err(erreur)` | riches, mais prévus pour mypy | peu naturels (`Some` est une fonction) | naturels |
+| Maintenance | à surveiller à chaque montée de version | à vérifier | à vérifier | notre code |
+
+**Pourquoi `result`.** C'est la seule qui cumule le `match` exhaustif et la vitesse, et qui permet le ROP. `returns`
+donne le ROP le plus riche, mais sans l'oubli signalé, ce qui retire l'intérêt principal du style. La solution maison
+reste le repli si `result` cesse d'être maintenue : elle ne demande aucune dépendance.

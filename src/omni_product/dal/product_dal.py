@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from omni_product.dal.records import optional, raw
 from omni_product.dal.rows import (
     ProductDiscountRow,
     ProductImageRow,
@@ -28,6 +29,7 @@ from omni_product.domain.model import (
     ProductTransport,
     RegionSupplier,
     ShelfLife,
+    ShelfLifeDays,
     Slug,
     SupplierByRegion,
     Warehouse,
@@ -102,7 +104,7 @@ def _product(row: ProductRow) -> Product:
         case "perishable":
             shelf_life: ShelfLife | None = Perishable(
                 expiration_date=row.expiration_date,
-                shelf_life_days=row.shelf_life_days,
+                shelf_life_days=optional(ShelfLifeDays, row.shelf_life_days),
             )
         case "non_expiring":
             shelf_life = NonExpiring()
@@ -119,7 +121,7 @@ def _product_row(product: Product) -> ProductRow:
         name=product.name,
         slug=product.slug,
         expiration_date=perishable.expiration_date if perishable else None,
-        shelf_life_days=perishable.shelf_life_days if perishable else None,
+        shelf_life_days=raw(perishable.shelf_life_days) if perishable else None,
         image_rows=[
             ProductImageRow(product_id=product.id, image_key=image.key, image_detail=image.detail)
             for image in product.images

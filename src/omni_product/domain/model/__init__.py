@@ -21,6 +21,7 @@ from omni_product.domain.model.product import (
     ProductId,
     ProductImage,
     ShelfLife,
+    ShelfLifeDays,
     Slug,
 )
 from omni_product.domain.model.storage import Location, ProductStock, Quantity, Stock, Warehouse
@@ -32,10 +33,11 @@ from omni_product.domain.model.supplier import (
     Supplier,
     SupplierId,
 )
-from omni_product.domain.model.transport import Kilos, ProductTransport, Volume
+from omni_product.domain.model.transport import CarbonKilos, Kilos, ProductTransport, Volume
 
 __all__ = [
     "Amount",
+    "CarbonKilos",
     "ContactEmail",
     "ContactPhone",
     "Country",
@@ -59,6 +61,7 @@ __all__ = [
     "Region",
     "RegionSupplier",
     "ShelfLife",
+    "ShelfLifeDays",
     "Siren",
     "Slug",
     "Stock",

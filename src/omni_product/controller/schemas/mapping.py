@@ -30,6 +30,7 @@ from omni_product.domain.model import (
     Region,
     RegionSupplier,
     ShelfLife,
+    ShelfLifeDays,
     Siren,
     Slug,
     Stock,
@@ -67,7 +68,7 @@ def product_to_schema(sheet: ProductSheet) -> ProductSchema:
         name=product.name,
         slug=product.slug.value,
         expiration_date=perishable.expiration_date if perishable else None,
-        shelf_life_days=perishable.shelf_life_days if perishable else None,
+        shelf_life_days=raw(perishable.shelf_life_days) if perishable else None,
         price=(
             PriceSchema(base=raw(price.base), tax=raw(price.tax), tax_rate=raw(price.tax_rate))
             if price is not None
@@ -118,7 +119,7 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> ProductSheet:
         case "perishable":
             shelf_life: ShelfLife | None = Perishable(
                 expiration_date=schema.expiration_date,
-                shelf_life_days=schema.shelf_life_days,
+                shelf_life_days=optional(ShelfLifeDays, schema.shelf_life_days),
             )
         case "non_expiring":
             shelf_life = NonExpiring()

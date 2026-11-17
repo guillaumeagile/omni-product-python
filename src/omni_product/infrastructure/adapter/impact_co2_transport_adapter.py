@@ -1,7 +1,7 @@
 import httpx
 
 from omni_product.domain.exception.transport_carbon_exception import TransportCarbonException
-from omni_product.domain.model.transport import Distance, Kilos, TransportMode
+from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
 from omni_product.domain.model.transport_request import TransportRequest
 from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2ApiClient
@@ -37,9 +37,10 @@ class ImpactCo2TransportAdapter:
 
     @staticmethod
     def _map_to_domain_model(response: ImpactCo2Response) -> TransportCarbonMetrics:
+        direct = response.co2_direct_kg
         return TransportCarbonMetrics(
-            co2_equivalent_kg=response.co2_equivalent_kg,
-            co2_direct_kg=response.co2_direct_kg,
+            co2_equivalent_kg=CarbonKilos(response.co2_equivalent_kg),
+            co2_direct_kg=None if direct is None else CarbonKilos(direct),
             transport_mode=TransportMode.parse(response.transport_mode),
             distance=Distance(response.distance_km),
             weight=Kilos(response.weight_kg),

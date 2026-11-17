@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from omni_product.domain.exception.transport_carbon_exception import TransportCarbonException
-from omni_product.domain.model.transport import Distance, Kilos, TransportMode
+from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_request import TransportRequest
 from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2ApiClient
 from omni_product.infrastructure.adapter.impact_co2_transport_adapter import (
@@ -44,8 +44,8 @@ def test_maps_request_and_response() -> None:
 
     assert seen["url"] == f"{BASE_URL}/transport/emissions"
     assert seen["body"] == {"transport_mode": "truck", "distance_km": 100.0, "weight_kg": 5.0}
-    assert metrics.co2_equivalent_kg == 4.2
-    assert metrics.co2_direct_kg == 3.9
+    assert metrics.co2_equivalent_kg == CarbonKilos(4.2)
+    assert metrics.co2_direct_kg == CarbonKilos(3.9)
     assert metrics.transport_mode == TransportMode("truck")
     assert metrics.distance.value == 100.0
     assert metrics.weight.value == 5.0

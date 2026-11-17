@@ -13,6 +13,7 @@ from omni_product.domain.model import (
     Perishable,
     Product,
     ProductId,
+    ShelfLifeDays,
     Slug,
 )
 
@@ -38,7 +39,9 @@ def test_row_is_loaded_back_with_its_shelf_life(app: FastAPI) -> None:
                     id=ProductId("p1"),
                     name="Lait",
                     slug=Slug("lait"),
-                    shelf_life=Perishable(expiration_date=date(2026, 12, 1), shelf_life_days=7),
+                    shelf_life=Perishable(
+                        expiration_date=date(2026, 12, 1), shelf_life_days=ShelfLifeDays(7)
+                    ),
                 )
             ),
         )
@@ -50,7 +53,7 @@ def test_row_is_loaded_back_with_its_shelf_life(app: FastAPI) -> None:
         assert loaded is not None
         product = loaded.product
         assert product.shelf_life == Perishable(
-            expiration_date=date(2026, 12, 1), shelf_life_days=7
+            expiration_date=date(2026, 12, 1), shelf_life_days=ShelfLifeDays(7)
         )
         assert product.is_perishable()
 

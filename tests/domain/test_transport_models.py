@@ -1,7 +1,7 @@
 import pytest
 
 from omni_product.domain.model.errors import InvalidValueError
-from omni_product.domain.model.transport import Distance, Kilos, TransportMode
+from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
 from omni_product.domain.model.transport_request import TransportRequest
 
@@ -45,5 +45,7 @@ def test_invalid_request(distance: float, weight: float, message: str) -> None:
 
 
 def test_negative_metrics_are_rejected() -> None:
-    with pytest.raises(ValueError, match="cannot be negative"):
-        TransportCarbonMetrics(-1.0, None, TransportMode.parse("truck"), Distance(10.0), Kilos(1.0))
+    with pytest.raises(ValueError, match="négatif"):
+        TransportCarbonMetrics(
+            CarbonKilos(-1.0), None, TransportMode.parse("truck"), Distance(10.0), Kilos(1.0)
+        )

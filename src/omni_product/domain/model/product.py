@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from omni_product.domain.model.invariants import require_text
+from omni_product.domain.model.invariants import require_at_least_zero, require_text
 
 # Contexte Catalogue : le produit, ses images et ses types. Les autres contextes (prix, transport,
 # stockage, approvisionnement) ont leurs propres classes, reliées au produit par son identifiant.
@@ -48,11 +48,19 @@ class ProductImage:
 
 
 @dataclass(frozen=True)
+class ShelfLifeDays:
+    value: int
+
+    def __post_init__(self) -> None:
+        require_at_least_zero(self, self.value)
+
+
+@dataclass(frozen=True)
 class Perishable:
     """Produit périssable : une date limite, et une durée de conservation."""
 
     expiration_date: date | None = None
-    shelf_life_days: int | None = None
+    shelf_life_days: ShelfLifeDays | None = None
 
 
 @dataclass(frozen=True)

@@ -50,6 +50,16 @@ class Kilos:
 
 
 @dataclass(frozen=True)
+class CarbonKilos:
+    """Une quantité de CO2 en kilogrammes, jamais négative."""
+
+    value: float
+
+    def __post_init__(self) -> None:
+        require_at_least_zero(self, self.value)
+
+
+@dataclass(frozen=True)
 class Volume:
     value: str
 

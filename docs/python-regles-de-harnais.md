@@ -54,6 +54,11 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 
 ### Notes sur les règles
 
+- **Périmètre** : le harnais analyse `omni_product/`, hors `controller/`, `service/`, `dal/`, `config.py` et
+  `database.py` (`harness/perimetre.py`). Ces fichiers sont de la plomberie : l'architecture en oignon
+  (règle 10 du tableau) les sortira du cœur. Un mot technique ne s'ajoute jamais à l'ubiquitous language pour faire
+  taire le harnais : on exclut le fichier.
+
 - **Règle 2 ✅** : elle absorbe l'ancienne règle d'immuabilité. Un Value Object est frozen par définition. La métrique
   `attributs mutables` reste un thermomètre.
 - **Règle 3 ✅** : c'est une vraie décision d'architecture. Dans ce port, le modèle **est**
@@ -80,21 +85,27 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 - **Règle 4 dépend de la règle 3** : tant que le modèle est mappé par SQLAlchemy, supprimer l'héritage oblige à
   toucher au mapping.
 
-## Ce que deviennent les règles Java
+## Règles Python
 
-| Règle Java | Devenir |
-|---|---|
-| HA5 (4 propriétés max), HA6 (single concern), HA7 (fan-out) | **Règle 1.** Le fan-out et le CBO restent en métrique. |
-| HA11 (concept non primitif), HA12 (identifiants riches), HA12.1, HA9 (`Identifiable`), HA3 (records) | **Règle 2.** « Entité ou Value Object » remplace `Identifiable`, artefact Java. |
-| HA8 (pas de persistance) | **Règle 3.** |
-| HA4.1 (pas d'héritage), HA4.3 (`Product` porte un ADT) | **Règles 4 et 7.** |
-| HA2 (données immuables) | **Règle 2** (Value Objects frozen). |
-| HA4.2, HA4.4, HA4.5 (échecs en valeurs, ADT, `switch` exhaustif) | **Règles 5 et 7.** L'exhaustivité est vérifiée par pyright. |
-| HA4.6 (horloge), HA10 (pas de service au constructeur) | **Règle 6.** |
-| HA1 (idiomes) | **Règle 8.** |
-| HA4.8 (pipeline, pas de boucle) | **Règle 9** : idiomes fonctionnels (II). |
-| (aucune : nouveauté de la version Python) | **Règle 10** : architecture en oignon. |
-| HA4.7 (retrait après `canSell`), HA4.9 (validation en chaîne) | **Supprimées.** HA4.7 et HA4.9 imposent un style trop précis pour être expliquées en une phrase. |
+Les participants voient la règle par son numéro et par son code de diagnostic (`CB001`, `EV002`…). Ce tableau relie
+les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`.
+
+| # | Nom court | Code | CUPID | Phase | État dans le harnais |
+|---|---|---|:-:|---|---|
+| 1 | Contexte borné | `CB001` (`CB002` : mots hors ubiquitous language, hors points) | **U** | 1, stratégique | ✅ en place (`harness/rules/contexte_borne.py`) |
+| 2 | Entité ou Value Object | `EV001`, `EV002` | **D** | 1, stratégique | ✅ en place (`entite_valeur.py`) |
+| 3 | Pas de modèle anémique | `MA001` | **D** | 1, stratégique | ✅ en place (`modele_anemique.py`) |
+| 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | 🚧 en cours (PR #24) |
+| 5 | Un échec métier est une valeur | à venir | **P** | 2, tactique | ⏳ à faire |
+| 6 | Effets impurs hors du cœur | à venir | **P** | 2, tactique | ⏳ à faire |
+| 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |
+| 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ⏳ à faire |
+| 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |
+| 10 | Architecture en oignon | à venir | **C** | 3, aboutissement | ⏳ à faire |
+
+Le numéro de la règle est celui du tableau « Les 10 règles » plus haut, qui donne la question, le refactoring attendu et
+la vérification. Les préfixes des codes viennent du nom de la règle : **C**ontexte **B**orné, **E**ntité **V**aleur,
+**M**odèle **A**némique, **H**éritag**E**.
 
 ## Stratégique, puis tactique (DDD, all the way)
 

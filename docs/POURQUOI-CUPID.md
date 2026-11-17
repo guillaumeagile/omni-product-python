@@ -191,12 +191,12 @@ Même mesure, avec différentes représentations de l'échec, y compris les bibl
   exception tourne autour de 1,1 à 1,3 µs, quel que soit le type.
 - **`result` est parmi les plus rapides**, au niveau d'une classe à `__slots__`. `returns` est un peu plus lent.
 - **`expression` est la plus lente** : 1,3 µs rien que pour construire une erreur. Un critère de plus contre elle dans
-  le choix de la bibliothèque d'ADT (voir `CUPID-regles-de-harnais.md`).
+  le choix de la bibliothèque d'ADT (voir `python-regles-de-harnais.md`).
 
 Le `Result` gagne donc en vitesse sur les piles profondes et sur les boucles à fort taux d'échec, et reste neutre
 ailleurs. Ce n'est pas la raison principale de l'adopter.
 
-> **Les raisons de les adopter sont ailleurs** 
+Les raisons de les adopter tiennent à la lisibilité et à la vérification :
 
 - **L'échec apparaît dans la signature.** `retirer(...) -> Retire | StockInsuffisant` dit ce qui peut arriver, là où
   `raise ValueError` se découvre à l'exécution.

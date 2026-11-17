@@ -95,7 +95,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 1 | Contexte borné | `CB001` (`CB002` : mots hors ubiquitous language, hors points) | **U** | 1, stratégique | ✅ en place (`harness/rules/contexte_borne.py`) |
 | 2 | Entité ou Value Object | `EV001`, `EV002` | **D** | 1, stratégique | ✅ en place (`entite_valeur.py`) |
 | 3 | Pas de modèle anémique | `MA001` | **D** | 1, stratégique | ✅ en place (`modele_anemique.py`) |
-| 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | 🚧 en cours (PR #24) |
+| 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | ✅ en place (`heritage.py`) |
 | 5 | Un échec métier est une valeur | à venir | **P** | 2, tactique | ⏳ à faire |
 | 6 | Effets impurs hors du cœur | à venir | **P** | 2, tactique | ⏳ à faire |
 | 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |

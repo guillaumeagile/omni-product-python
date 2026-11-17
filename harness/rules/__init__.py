@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harness.perimetre import dossiers_exclus
-from harness.rules import contexte_borne, entite_valeur, heritage, modele_anemique
+from harness.rules import contexte_borne, echec_valeur, entite_valeur, heritage, modele_anemique
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
 from harness.rules.ubiquitous_language import UbiquitousLanguage
@@ -47,6 +47,13 @@ RULES: tuple[Rule, ...] = (
         "Composition plutôt qu'héritage",
         ("omni_product/domain/model", "omni_product/anemic_model"),
         heritage.check,
+    ),
+    # Le modèle, comme la règle 4 : pas de `raise` dans domain/model, ni dans anemic_model tant qu'il y est.
+    Rule(
+        5,
+        "Un échec métier est une valeur",
+        ("omni_product/domain/model", "omni_product/anemic_model"),
+        echec_valeur.check,
     ),
 )
 

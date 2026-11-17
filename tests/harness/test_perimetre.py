@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from harness.perimetre import HORS_PERIMETRE, dossiers_exclus
+from harness.perimetre import HORS_PERIMETRE, description, dossiers_exclus
 from harness.rules.sources import collect
 
 
@@ -47,3 +47,10 @@ def test_the_real_perimeter_excludes_the_outer_layers():
     assert not any(
         len(parts := module.split(".")) > 1 and parts[1] in HORS_PERIMETRE for module in modules
     )
+
+
+def test_the_description_lists_every_excluded_entry():
+    text = description()
+
+    assert text.startswith("`omni_product/`, hors ")
+    assert all(name in text for name in HORS_PERIMETRE)

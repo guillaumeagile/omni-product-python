@@ -15,8 +15,8 @@ from omni_product.domain.model import (
     ImageKey,
     Kilos,
     Location,
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Price,
     Product,
     ProductId,
@@ -29,6 +29,7 @@ from omni_product.domain.model import (
     Rate,
     Region,
     RegionSupplier,
+    ShelfLife,
     Siren,
     Slug,
     Stock,
@@ -43,16 +44,18 @@ from omni_product.exception.product_name_exception import ProductNameException
 
 
 def _kind_of(product: Product) -> ProductKind:
-    if isinstance(product, PerishableProduct):
-        return "perishable"
-    if isinstance(product, NonExpiringProduct):
-        return "non_expiring"
-    return "standard"
+    match product.shelf_life:
+        case Perishable():
+            return "perishable"
+        case NonExpiring():
+            return "non_expiring"
+        case None:
+            return "standard"
 
 
 def product_to_schema(sheet: ProductSheet) -> ProductSchema:
     product = sheet.product
-    perishable = product if isinstance(product, PerishableProduct) else None
+    perishable = product.shelf_life if isinstance(product.shelf_life, Perishable) else None
     pricing = sheet.pricing
     price = pricing.price if pricing is not None else None
     transport = sheet.transport
@@ -113,18 +116,15 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> ProductSheet:
     )
     match schema.kind:
         case "perishable":
-            product: Product = PerishableProduct(
-                id=pid,
-                name=name,
-                slug=slug,
-                images=images,
+            shelf_life: ShelfLife | None = Perishable(
                 expiration_date=schema.expiration_date,
                 shelf_life_days=schema.shelf_life_days,
             )
         case "non_expiring":
-            product = NonExpiringProduct(id=pid, name=name, slug=slug, images=images)
+            shelf_life = NonExpiring()
         case _:
-            product = Product(id=pid, name=name, slug=slug, images=images)
+            shelf_life = None
+    product = Product(id=pid, name=name, slug=slug, images=images, shelf_life=shelf_life)
     price = schema.price
     warehouse = schema.warehouse
     return ProductSheet(

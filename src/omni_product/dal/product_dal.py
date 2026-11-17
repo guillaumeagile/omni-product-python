@@ -16,8 +16,8 @@ from omni_product.dal.rows import (
     ProductTransportRow,
 )
 from omni_product.domain.model import (
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Price,
     Product,
     ProductId,
@@ -27,6 +27,7 @@ from omni_product.domain.model import (
     ProductSupply,
     ProductTransport,
     RegionSupplier,
+    ShelfLife,
     Slug,
     SupplierByRegion,
     Warehouse,
@@ -99,22 +100,19 @@ def _product(row: ProductRow) -> Product:
     )
     match row.kind:
         case "perishable":
-            return PerishableProduct(
-                id=row.id,
-                name=row.name,
-                slug=row.slug,
-                images=images,
+            shelf_life: ShelfLife | None = Perishable(
                 expiration_date=row.expiration_date,
                 shelf_life_days=row.shelf_life_days,
             )
         case "non_expiring":
-            return NonExpiringProduct(id=row.id, name=row.name, slug=row.slug, images=images)
+            shelf_life = NonExpiring()
         case _:
-            return Product(id=row.id, name=row.name, slug=row.slug, images=images)
+            shelf_life = None
+    return Product(id=row.id, name=row.name, slug=row.slug, images=images, shelf_life=shelf_life)
 
 
 def _product_row(product: Product) -> ProductRow:
-    perishable = product if isinstance(product, PerishableProduct) else None
+    perishable = product.shelf_life if isinstance(product.shelf_life, Perishable) else None
     return ProductRow(
         id=product.id,
         kind=_kind_of(product),
@@ -130,11 +128,13 @@ def _product_row(product: Product) -> ProductRow:
 
 
 def _kind_of(product: Product) -> str:
-    if isinstance(product, PerishableProduct):
-        return "perishable"
-    if isinstance(product, NonExpiringProduct):
-        return "non_expiring"
-    return "standard"
+    match product.shelf_life:
+        case Perishable():
+            return "perishable"
+        case NonExpiring():
+            return "non_expiring"
+        case None:
+            return "standard"
 
 
 def _load(session: Session, row: ProductRow) -> ProductSheet:

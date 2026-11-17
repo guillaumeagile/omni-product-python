@@ -47,26 +47,30 @@ class ProductImage:
     detail: ImageDetail | None = None
 
 
-@dataclass
-class Product:
-    id: ProductId
-    name: str
-    slug: Slug
-    images: tuple[ProductImage, ...] = ()
-
-    def is_perishable(self) -> bool:
-        # La classe de base connaît sa sous-classe : une branche de plus à chaque nouveau type.
-        return isinstance(self, PerishableProduct)
-
-
-@dataclass
-class PerishableProduct(Product):
+@dataclass(frozen=True)
+class Perishable:
     """Produit périssable : une date limite, et une durée de conservation."""
 
     expiration_date: date | None = None
     shelf_life_days: int | None = None
 
 
+@dataclass(frozen=True)
+class NonExpiring:
+    """Produit sans date limite."""
+
+
+ShelfLife = Perishable | NonExpiring
+
+
 @dataclass
-class NonExpiringProduct(Product):
-    """Produit sans date limite. Aucun champ propre : la classe ne sert qu'à porter un type."""
+class Product:
+    id: ProductId
+    name: str
+    slug: Slug
+    images: tuple[ProductImage, ...] = ()
+    # Absent : produit standard, sans information de conservation.
+    shelf_life: ShelfLife | None = None
+
+    def is_perishable(self) -> bool:
+        return isinstance(self.shelf_life, Perishable)

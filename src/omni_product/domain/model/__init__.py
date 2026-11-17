@@ -15,11 +15,12 @@ from omni_product.domain.model.procurement import (
 from omni_product.domain.model.product import (
     ImageDetail,
     ImageKey,
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Product,
     ProductId,
     ProductImage,
+    ShelfLife,
     Slug,
 )
 from omni_product.domain.model.storage import Location, ProductStock, Quantity, Stock, Warehouse
@@ -43,8 +44,8 @@ __all__ = [
     "ImageKey",
     "Kilos",
     "Location",
-    "NonExpiringProduct",
-    "PerishableProduct",
+    "NonExpiring",
+    "Perishable",
     "Price",
     "Product",
     "ProductId",
@@ -57,6 +58,7 @@ __all__ = [
     "Rate",
     "Region",
     "RegionSupplier",
+    "ShelfLife",
     "Siren",
     "Slug",
     "Stock",

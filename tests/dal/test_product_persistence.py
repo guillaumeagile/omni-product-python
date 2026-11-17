@@ -9,19 +9,19 @@ from sqlalchemy.orm import Session
 from omni_product.dal import product_dal
 from omni_product.dal.product_dal import ProductSheet
 from omni_product.domain.model import (
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Product,
     ProductId,
     Slug,
 )
 
 
-def test_kind_is_written_from_the_product_class(session: Session) -> None:
+def test_kind_is_written_from_the_shelf_life(session: Session) -> None:
     for product in (
         Product(id=ProductId("p1"), name="Stylo", slug=Slug("stylo")),
-        PerishableProduct(id=ProductId("p2"), name="Lait", slug=Slug("lait")),
-        NonExpiringProduct(id=ProductId("p3"), name="Sel", slug=Slug("sel")),
+        Product(id=ProductId("p2"), name="Lait", slug=Slug("lait"), shelf_life=Perishable()),
+        Product(id=ProductId("p3"), name="Sel", slug=Slug("sel"), shelf_life=NonExpiring()),
     ):
         product_dal.save(session, ProductSheet(product=product))
 
@@ -29,17 +29,16 @@ def test_kind_is_written_from_the_product_class(session: Session) -> None:
     assert kinds == {"p1": "standard", "p2": "perishable", "p3": "non_expiring"}
 
 
-def test_row_is_loaded_back_as_its_subclass(app: FastAPI) -> None:
+def test_row_is_loaded_back_with_its_shelf_life(app: FastAPI) -> None:
     with app.state.session_factory() as writer:
         product_dal.save(
             writer,
             ProductSheet(
-                product=PerishableProduct(
+                product=Product(
                     id=ProductId("p1"),
                     name="Lait",
                     slug=Slug("lait"),
-                    expiration_date=date(2026, 12, 1),
-                    shelf_life_days=7,
+                    shelf_life=Perishable(expiration_date=date(2026, 12, 1), shelf_life_days=7),
                 )
             ),
         )
@@ -50,16 +49,20 @@ def test_row_is_loaded_back_as_its_subclass(app: FastAPI) -> None:
 
         assert loaded is not None
         product = loaded.product
-        assert isinstance(product, PerishableProduct)
-        assert product.expiration_date == date(2026, 12, 1)
-        assert product.shelf_life_days == 7
+        assert product.shelf_life == Perishable(
+            expiration_date=date(2026, 12, 1), shelf_life_days=7
+        )
         assert product.is_perishable()
 
 
 def test_single_table_leaves_perishable_columns_null_for_other_kinds(session: Session) -> None:
     product_dal.save(
         session,
-        ProductSheet(product=NonExpiringProduct(id=ProductId("p1"), name="Sel", slug=Slug("sel"))),
+        ProductSheet(
+            product=Product(
+                id=ProductId("p1"), name="Sel", slug=Slug("sel"), shelf_life=NonExpiring()
+            )
+        ),
     )
 
     expiration = session.execute(

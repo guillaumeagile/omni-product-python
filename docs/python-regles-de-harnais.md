@@ -54,6 +54,11 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 
 ### Notes sur les règles
 
+- **Périmètre** : le harnais analyse `omni_product/`, hors `controller/`, `service/`, `dal/`, `config.py` et
+  `database.py` (`harness/perimetre.py`). Ces fichiers sont de la plomberie : l'architecture en oignon
+  (règle 10 du tableau) les sortira du cœur. Un mot technique ne s'ajoute jamais à l'ubiquitous language pour faire
+  taire le harnais : on exclut le fichier.
+
 - **Règle 2 ✅** : elle absorbe l'ancienne règle d'immuabilité. Un Value Object est frozen par définition. La métrique
   `attributs mutables` reste un thermomètre.
 - **Règle 3 ✅** : c'est une vraie décision d'architecture. Dans ce port, le modèle **est**

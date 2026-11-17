@@ -12,12 +12,13 @@ from pathlib import Path
 
 LANGUAGE_PATH = Path(__file__).resolve().parents[2] / "docs" / "ubiquitous-language.json"
 
-_WORD = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
+_WORD = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+\d*|[A-Z]+\d*|\d+")
 
 
 def words(name: str) -> tuple[str, ...]:
     """`getProductSlug`, `product_slug` et `ProductSlugs` donnent tous un mot-clé sous forme de mots en minuscules.
 
+    Un chiffre reste collé au mot qui le précède (`co2_equivalent_kg` donne `co2`, `equivalent`, `kg`).
     Le pluriel est replié (`products` → `product`) pour que `Products` et `Product` se rencontrent.
     """
     folded: list[str] = []

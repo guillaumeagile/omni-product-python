@@ -1,168 +1,72 @@
 # Le harnais de l'atelier
 
-Le harnais est tout ce qui regarde ton code à ta place pendant l'atelier : il compile, vérifie, mesure, et (bientôt)
-juge. Ce document dit **ce qui existe aujourd'hui, ce qui viendra, et comment ça s'enchaîne**. Il évolue avec l'atelier :
-la section « État » en bas dit toujours où on en est.
-
-Pour le détail de chaque chiffre mesuré, voir [METRIQUES.md](METRIQUES.md). Ici, on parle du dispositif, pas des
-chiffres.
+Le harnais regarde ton code à ta place pendant l'atelier : il compile, vérifie, mesure et juge. Il est le même pour
+tout le monde et tu n'y touches pas.
 
 ## L'idée
 
 Tu fais un **baby step** : un petit changement, une PR. Le harnais répond à trois questions, dans cet ordre :
 
 1. **Est-ce que ça tient debout ?** Le code est propre, typé, et les tests passent. Sinon, rien d'autre ne compte.
-2. **Est-ce que c'est mieux ?** Les mesures du code ont-elles bougé dans le bon sens depuis le baby step précédent ?
-3. **Est-ce que tu as respecté la règle du tour ?** (à venir) Une règle de design précise doit passer au vert, sans
-   en casser d'autres.
+2. **Est-ce que c'est mieux ?** Les mesures du code ont bougé dans le bon sens depuis le baby step précédent.
+3. **Est-ce que tu as respecté la règle du tour ?** Une règle de design précise passe au vert, sans en casser d'autres.
+   La règle du tour est annoncée dans l'énoncé de l'étape.
 
-Le harnais ne se discute pas dans la PR : ce n'est pas du code que tu modifies. Il est le même pour tout le monde.
-
-## Les quatre étages
+## Les étages
 
 ### 1. La CI : le sol
 
-Un workflow GitHub Actions (`.github/workflows/ci.yml`) tourne sur chaque PR :
+Un workflow GitHub Actions tourne sur chaque PR : `ruff` (hygiène), `pyright` en mode strict (types) et `pytest`
+(comportement). Un check rouge veut dire « ne pas fusionner ». Il ne juge pas ton design : le linter reste volontairement
+permissif là-dessus.
 
-| Étape | Outil | Ce qu'il vérifie |
-|---|---|---|
-| Installation | `uv sync --locked` | Les dépendances exactes du `uv.lock` |
-| Lint | `ruff check` | Hygiène : erreurs, imports, simplifications, nommage |
-| Types | `pyright` (mode strict) | Les types sont cohérents |
-| Tests | `pytest` | Le comportement n'a pas régressé |
-
-C'est le seul étage **bloquant** aujourd'hui. Un check rouge veut dire « ne pas fusionner », pas « tu as mal joué ».
-Le linter est volontairement **permissif** sur le design : il ne doit pas te corriger à ta place (voir le guide de
-l'animateur).
-
-Un second job, le **mutation testing** (`mutmut`, périmètre : le modèle), mesure si les tests détectent vraiment les
-bugs : on casse le code à petites doses, et on regarde si un test crie. Il est **informatif** : il ne bloque pas.
+Un second job, le **mutation testing** (`mutmut`, sur le modèle), casse le code à petites doses et regarde si un test
+crie. Il est informatif.
 
 ### 2. Les mesures : le thermomètre
 
-Le paquet `harness/metrics` lit le code du **modèle** et des **services** et sort des chiffres : complexités,
-cohésion, couplage. Pas de jugement : des faits, reproductibles (même code, mêmes chiffres).
+Le paquet `harness/metrics` lit le modèle et les services et sort des chiffres : complexités, cohésion, couplage,
+tokens, style (champs mutables, affectations, boucles, lambdas). Ce sont des faits reproductibles. Le détail de chaque
+chiffre est dans [METRIQUES.md](METRIQUES.md).
 
 ```bash
-uv run python -m harness.metrics                    # tableau résumé
+uv run python -m harness.metrics                      # tableau résumé
 uv run python -m harness.metrics --json rapport.json  # détail par classe
 ```
 
-Chaque mesure a son outil, ou, quand il n'existe pas de bibliothèque Python reconnue, un calcul maison petit et
-testé :
-
-| Mesure | D'où elle vient |
-|---|---|
-| Complexité cyclomatique, WMC | [radon](https://radon.readthedocs.io/) |
-| Complexité cognitive | [cognitive-complexity](https://pypi.org/project/cognitive-complexity/) |
-| TCC, LCOM* | calcul maison (module `ast` de Python) |
-| Fan-out, CBO | calcul maison (module `ast` de Python) |
-| Tokens | [tiktoken](https://github.com/openai/tiktoken), encodage `o200k_base`, sur le code efficace (hors commentaires, docstrings et tests) |
-| Style (attributs mutables, affectations, boucles, lambdas) | calcul maison (module `ast` de Python) |
-
-#### La scorecard de chaque PR
-
-À chaque PR, la CI (job **Scorecard**) mesure le code de la PR **et** celui de sa base, puis publie un commentaire :
-un tableau avant / après avec le sens de la variation (✅ mieux, ⚠️ moins bien), les tokens modifiés (🤏 Small diff) et
-les classes à regarder en premier. Le commentaire est mis à jour à chaque push, pas dupliqué. Le job est
-**informatif** : la scorecard guide les tours de refactoring, elle ne bloque rien. Que les chiffres soient mauvais sur
-le code de départ est normal : c'est le but de l'atelier de les faire bouger.
+À chaque PR, le job **Scorecard** mesure ton code et celui de sa base, puis commente la PR : un tableau avant / après
+(✅ mieux, ⚠️ moins bien), les tokens modifiés (🤏 Small diff) et les classes à regarder en premier. Le commentaire est
+mis à jour à chaque push. Le job est informatif. Les chiffres sont mauvais au départ, et l'atelier sert à les faire
+bouger.
 
 ```bash
 uv run python -m harness.scorecard --base-ref main    # la même scorecard en local
 ```
 
-Le rapport JSON est fait pour être **comparé** : le harnais ne regarde pas la valeur d'un chiffre, il regarde de combien
-il a bougé entre deux baby steps.
+### 3. Les règles : le détecteur de design
 
-### 3. Les règles maison : le détecteur de design (à venir)
+Les mesures disent *combien*. Les **règles** disent *quoi* : « cette classe fait telle chose qu'elle ne devrait pas ».
+Chacune cible un défaut de design précis que ni `ruff` ni `pyright` ne signalent. Elles lisent l'arbre syntaxique du code
+(module `ast`), pas le texte.
 
-Les mesures disent *combien*, pas *quoi*. Les **règles** disent : « ici, cette classe fait telle chose qu'elle ne
-devrait pas ». Elles sont propres à l'atelier CUPID : chacune cible un défaut de design précis, laissé exprès dans le
-code, que ni `ruff` ni `pyright` ne signalent.
+Une règle est **rouge** tant qu'il reste des constats, **verte** quand il n'y en a plus. Chaque constat s'affiche au
+format de ruff : `chemin:ligne:colonne: CODE message`. La liste des règles, leurs codes et leur état se trouvent dans
+le tableau « Règles Python » de [python-regles-de-harnais.md](python-regles-de-harnais.md).
 
-Elles liront le code par son **arbre syntaxique** (module `ast`, éventuellement `tree-sitter`), pas par du texte : on
-cherche des structures, pas des mots. Une règle est **rouge** tant qu'il reste des violations, **verte** quand il n'y en
-a plus.
+```bash
+uv run python -m harness.rules                        # les constats de chaque règle
+```
 
-La règle du tour est annoncée dans l'énoncé de l'étape ; tu n'as pas à deviner laquelle est visée.
+La scorecard affiche les règles en tête, avec leurs points : +10 par règle passée au vert, +5 pour un vrai baby step.
 
 ### 4. L'arbitre : le score (à venir)
 
-L'arbitre est un workflow GitHub qui, à chaque PR, fait tourner le harnais sur trois états du code :
-
-- la **base** (la branche de la phase),
-- ton **baby step précédent**,
-- la **tête** de ta PR.
-
-Il compare les rapports et commente la PR : verdict (accepté ou non), score du round, niveau, badges. Il fait échouer le
-check quand la PR n'est pas un vrai baby step : la règle visée n'est pas verte, quelque chose a régressé, ou le harnais
-lui-même a été touché.
-
-C'est lui qui transformera les mesures de l'étage 2 en points. Le barème sera dans son commentaire, ligne par ligne.
+Un workflow GitHub comparera trois états du code : la base, ton baby step précédent et la tête de ta PR. Il commentera
+la PR avec un verdict, le score du round, le niveau et les badges. Le barème sera dans son commentaire, ligne par ligne.
 
 ## Ce que tu peux et ne peux pas faire
 
-- **Tu peux** lancer les mesures en local à tout moment, pour voir où tu en es.
+- **Tu peux** lancer les mesures et les règles en local à tout moment, pour voir où tu en es.
 - **Tu ne touches pas** à `harness/`, ni aux workflows : le code d'une PR ne juge pas la PR.
-- **Tu n'optimises pas** pour les chiffres. Si un chiffre baisse parce que tu as fabriqué du code bizarre, tu as
-  trompé le thermomètre, pas amélioré le code.
-
-## La règle mère : la garde du harnais
-
-Le harnais se protège lui-même. Le workflow `.github/workflows/garde-harnais.yml` échoue dès qu'une PR touche :
-
-- `harness/` et `tests/harness/` ;
-- `docs/ubiquitous-language.json`, l'ubiquitous language lu par la règle 1 ;
-- ce workflow.
-
-Seul le propriétaire du dépôt (`guillaumeagile`) peut lever la garde, en posant le label `bypass-harnais` sur la PR.
-Un label posé par un autre compte ne compte pas. Le workflow vérifie qui a posé le label en dernier.
-
-Le workflow tourne avec `pull_request_target` : il lit sa définition sur `main`, donc une PR ne peut pas le désactiver.
-Il n'exécute aucun code de la PR, il lit seulement la liste des fichiers modifiés.
-
-Pour que la garde soit bloquante, la protection de `main` doit exiger ce check (« Garde du harnais »). Sans cette
-protection, la garde s'affiche en rouge mais ne bloque pas le merge.
-
-## État
-
-> À mettre à jour à chaque évolution du harnais (nouvelle règle, nouvelle mesure, nouveau seuil).
-
-| Étage | État |
-|---|---|
-| CI (ruff, pyright, pytest) | ✅ en place, bloquant |
-| Mutation testing (modèle) | ✅ en place, informatif |
-| Mesures : complexités cyclomatique et cognitive, WMC | ✅ en place (`harness/metrics`) |
-| Mesures : TCC, LCOM*, fan-out, CBO | ✅ en place (`harness/metrics`) |
-| Mesures : tokens, métriques « style » (champs mutables, affectations, boucles, lambdas) | ✅ en place (`harness/metrics`) |
-| Scorecard par PR (commentaire publié par la CI) | ✅ en place, informatif |
-| Règles de design maison : règle 1, contexte borné (`harness/rules`) | ✅ en place, informatif : table en tête de scorecard, avec points |
-| Points par règle (barème de l'arbitre : +10 par règle passée au vert, +5 de baby step) | ✅ en place, dans la scorecard (`harness/rules/points.py`) |
-| Règle mère : garde du harnais (`garde-harnais.yml`), bypass du propriétaire seul | ✅ en place, bloquante dès que la protection de `main` l'exige |
-| Règles de design maison : règle 4, composition plutôt qu'héritage (`harness/rules/heritage.py`) | ✅ en place, informatif |
-| Règles de design maison : règles 5 à 10 | ⏳ à faire |
-| Arbitre (verdict, score, badges, classement) | ⏳ à faire |
-| Règles plus dures (seuils bloquants) | ⏳ à faire |
-
-## Historique des durcissements
-
-Les règles deviendront plus dures au fil des phases. On note ici chaque durcissement, pour que personne ne le découvre
-par surprise.
-
-| Date | Changement |
-|---|---|
-| 2026-11-17 | Périmètre : `config.py` et `database.py` sortent aussi de l'analyse. C'est de la plomberie, que l'architecture en oignon sortira du cœur. Inutile de l'analyser d'ici là |
-| 2026-11-16 | Règle 1 (contexte borné) : tout identifiant (`id`, `product_id`, `tvaId`…, qui commence ou finit par `id`/`ids`) ne porte pas de contexte. La règle 2 garde son propre critère, qui ne retient pas les identifiants naturels |
-| 2026-11-16 | Règle 4 (composition plutôt qu'héritage) : une classe du modèle qui hérite d'une autre classe du même module est un constat (HE001). Enum, Protocol, TypedDict et exceptions sont exceptés. Le modèle est cherché dans `domain/model/` et `anemic_model/` |
-| 2026-11-16 | Règle 3 (pas de modèle anémique) : tout fichier non vide sous `anemic_model/` est un constat (MA001). Elle devient verte quand le dossier disparaît |
-| 2026-11-16 | Règle 2 : son périmètre passe à `domain/model/`. Les adaptateurs, la configuration et la base SQLAlchemy n'en font pas partie |
-| 2026-11-16 | Règle 2 rétablie dans le registre (perdue lors de la fusion de #15) ; un test de registre empêche la régression |
-| 2026-11-16 | Périmètre : `omni_product/`, hors `controller/`, `service/` et `dal/` (`harness/perimetre.py`), pour les règles et les mesures |
-| 2026-11-15 | Règle mère : une PR qui touche le harnais échoue, sauf bypass du propriétaire (label `bypass-harnais`) |
-| 2026-11-15 | Règle 1 (contexte borné) : complément CB002, mots hors ubiquitous language (hors points) ; les mots génériques ne comptent pas |
-| 2026-11-15 | Règle 2 (entité ou Value Object) : chaque classe du modèle est une entité (`id` typé) ou une `dataclass(frozen=True)` sans id ; un membre dont le nom relève de l'ubiquitous language, typé par une primitive brute, est signalé (EV001, EV002) |
-| 2026-11-15 | Règle 1 (contexte borné) : un identifiant de lien (`product_id`) ne porte pas de contexte ; les membres hérités des classes du même module comptent |
-| 2026-11-11 | Les tokens ne comptent que le code efficace (ni commentaires, ni docstrings, ni tests) |
-| 2026-11-11 | Tokens, métriques de style et scorecard par PR (informative) |
-| 2026-11-11 | Première version : CI, mutation testing, mesures de complexité, cohésion et couplage |
+- **Tu n'optimises pas** pour les chiffres. Un chiffre qui baisse grâce à du code bizarre trompe le thermomètre sans
+  améliorer le code.

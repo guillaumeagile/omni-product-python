@@ -152,6 +152,7 @@ par surprise.
 
 | Date | Changement |
 |---|---|
+| 2026-11-17 | Périmètre : `config.py` et `database.py` sortent aussi de l'analyse. C'est de la plomberie, que l'architecture en oignon sortira du cœur. Inutile de l'analyser d'ici là |
 | 2026-11-16 | Règle 1 (contexte borné) : tout identifiant (`id`, `product_id`, `tvaId`…, qui commence ou finit par `id`/`ids`) ne porte pas de contexte. La règle 2 garde son propre critère, qui ne retient pas les identifiants naturels |
 | 2026-11-16 | Règle 4 (composition plutôt qu'héritage) : une classe du modèle qui hérite d'une autre classe du même module est un constat (HE001). Enum, Protocol, TypedDict et exceptions sont exceptés. Le modèle est cherché dans `domain/model/` et `anemic_model/` |
 | 2026-11-16 | Règle 3 (pas de modèle anémique) : tout fichier non vide sous `anemic_model/` est un constat (MA001). Elle devient verte quand le dossier disparaît |

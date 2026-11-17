@@ -7,10 +7,11 @@ Les tests ne sont jamais dans le périmètre : `collect` les écarte déjà.
 from pathlib import Path
 
 PACKAGE = "omni_product"
-# Sous-paquets de `omni_product/` exclus du périmètre : les couches qui ne sont pas le cœur.
-HORS_PERIMETRE = ("controller", "service", "dal")
+# Sous-paquets et modules de `omni_product/` exclus du périmètre : les couches et la plomberie qui ne sont pas le cœur.
+# `config.py` et `database.py` sont de la plomberie : l'architecture en oignon (règle 6) les sortira du cœur.
+HORS_PERIMETRE = ("controller", "service", "dal", "config.py", "database.py")
 
 
 def dossiers_exclus(src_root: Path) -> list[Path]:
-    """Les dossiers à écarter, sous la racine des imports (`src`)."""
+    """Les dossiers et fichiers à écarter, sous la racine des imports (`src`)."""
     return [src_root / PACKAGE / name for name in HORS_PERIMETRE]

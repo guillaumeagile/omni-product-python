@@ -48,5 +48,5 @@ jobs:
             exit 0
           fi
 
-          echo "::error::Cette PR modifie le harnais. Seul $PROPRIETAIRE peut l'accepter, avec le label $BYPASS."
+          echo "::error::Cette PR modifie le harnais. Seul $PROPRIETAIRE peut l'accepter."
           exit 1

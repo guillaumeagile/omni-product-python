@@ -30,6 +30,7 @@ def render(metrics: Metrics) -> str:
         ("Affectations", metrics.assignments),
         ("Boucles", metrics.loops),
         ("Lambdas", metrics.lambdas),
+        ("Lambdas sur les rails (ROP)", metrics.rail_lambdas),
     ]
     return "\n".join(
         [f"{label:<52} {value}" for label, value in rows] + ["", *render_layers(metrics)]

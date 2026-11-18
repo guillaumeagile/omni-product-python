@@ -55,6 +55,40 @@ def _read(path: Path, src_root: Path) -> Source:
     )
 
 
+def dotted(node: ast.expr) -> list[str] | None:
+    """`a.b.c` en `["a", "b", "c"]`, ou `None` quand la chaîne ne part pas d'un nom (`f().b`)."""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return None
+    return [node.id, *reversed(parts)]
+
+
+def import_aliases(tree: ast.Module) -> dict[str, str]:
+    """Le nom local de chaque import, vers le nom qualifié : `d` vaut `datetime.date` après `from datetime import date as d`."""
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname:
+                    aliases[alias.asname] = alias.name
+                else:
+                    root = alias.name.split(".")[0]
+                    aliases[root] = root
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    return aliases
+
+
+def qualify(parts: list[str], aliases: dict[str, str]) -> str:
+    """Le nom qualifié d'une chaîne `a.b.c`, en résolvant son premier nom par les imports du fichier."""
+    root = aliases.get(parts[0], parts[0])
+    return ".".join([root, *parts[1:]])
+
+
 def top_level_classes(tree: ast.Module) -> list[ast.ClassDef]:
     return [node for node in tree.body if isinstance(node, ast.ClassDef)]
 

@@ -1,6 +1,7 @@
 """Le périmètre analysé par le harnais : tout `omni_product/`, sauf `controller/`, `service/` et la plomberie.
 
-Les règles et les mesures lisent les mêmes fichiers. Ce module est le seul endroit qui dit lesquels.
+Les règles et les mesures lisent les mêmes fichiers, à une exception près : la règle 9 (style fonctionnel, ROP) lit tout
+le paquet. Ce module est le seul endroit qui dit lesquels.
 Les tests ne sont jamais dans le périmètre : `collect` les écarte déjà.
 """
 
@@ -12,11 +13,13 @@ PACKAGE = "omni_product"
 # compter ce déplacement comme du code ajouté.
 # `config.py` et `database.py` sont de la plomberie : l'architecture en oignon (règle 10) les sortira du cœur.
 HORS_PERIMETRE = ("controller", "service", "config.py", "database.py")
+# La règle 9 n'exclut rien : un controller ou un service s'écrit en ROP comme le cœur, le style ne dépend pas de la couche.
+TOUT_LE_PAQUET: tuple[str, ...] = ()
 
 
-def dossiers_exclus(src_root: Path) -> list[Path]:
+def dossiers_exclus(src_root: Path, hors: tuple[str, ...] = HORS_PERIMETRE) -> list[Path]:
     """Les dossiers et fichiers à écarter, sous la racine des imports (`src`)."""
-    return [src_root / PACKAGE / name for name in HORS_PERIMETRE]
+    return [src_root / PACKAGE / name for name in hors]
 
 
 def description() -> str:

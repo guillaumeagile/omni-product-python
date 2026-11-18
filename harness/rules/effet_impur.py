@@ -21,7 +21,7 @@ Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`
 import ast
 from dataclasses import dataclass
 
-from harness.rules.sources import Source
+from harness.rules.sources import Source, dotted, import_aliases, qualify
 from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 CODE = "EI001"
@@ -118,11 +118,10 @@ class _Walker(ast.NodeVisitor):
     def __init__(self, source: Source) -> None:
         self._path = source.path
         self.findings: list[Finding] = []
-        self._aliases = _aliases(source.tree)
+        self._aliases = import_aliases(source.tree)
 
     def _qualify(self, parts: list[str]) -> str:
-        root = self._aliases.get(parts[0], parts[0])
-        return ".".join([root, *parts[1:]])
+        return qualify(parts, self._aliases)
 
     def _report(self, node: ast.expr, effect: str) -> None:
         self.findings.append(
@@ -148,7 +147,7 @@ class _Effects(_Walker):
         self._defined = _defined_names(source.tree)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
-        parts = _dotted(node)
+        parts = dotted(node)
         if parts is not None:
             qualified = self._qualify(parts)
             if _is_impure(qualified):
@@ -184,7 +183,7 @@ class _Patches(_Walker):
     )
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
-        parts = _dotted(node)
+        parts = dotted(node)
         if parts is not None and (self._is_fixture_patch(parts) or _is_patch(self._qualify(parts))):
             self._report(node, ".".join(parts))
             return
@@ -202,34 +201,6 @@ class _Patches(_Walker):
             return False
         method = PATCH_FIXTURES[parts[0]]
         return method is None or parts[1] == method
-
-
-def _dotted(node: ast.expr) -> list[str] | None:
-    """`a.b.c` en `["a", "b", "c"]`, ou `None` quand la chaîne ne part pas d'un nom (`f().b`)."""
-    parts: list[str] = []
-    while isinstance(node, ast.Attribute):
-        parts.append(node.attr)
-        node = node.value
-    if not isinstance(node, ast.Name):
-        return None
-    return [node.id, *reversed(parts)]
-
-
-def _aliases(tree: ast.Module) -> dict[str, str]:
-    """Le nom local de chaque import, vers le nom qualifié : `d` vaut `datetime.date` après `from datetime import date as d`."""
-    aliases: dict[str, str] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.asname:
-                    aliases[alias.asname] = alias.name
-                else:
-                    root = alias.name.split(".")[0]
-                    aliases[root] = root
-        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-            for alias in node.names:
-                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
-    return aliases
 
 
 def _defined_names(tree: ast.Module) -> set[str]:

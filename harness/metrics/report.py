@@ -45,6 +45,7 @@ class Metrics:
     assignments: int
     loops: int
     lambdas: int
+    rail_lambdas: int
     per_class: tuple[ClassMetrics, ...]
     layers: tuple[martin.LayerMetrics, ...] = ()
 
@@ -82,6 +83,7 @@ def measure(sources: list[SourceFile]) -> Metrics:
         assignments=styled.assignments,
         loops=styled.loops,
         lambdas=styled.lambdas,
+        rail_lambdas=styled.rail_lambdas,
         per_class=per_class,
         layers=layers,
     )

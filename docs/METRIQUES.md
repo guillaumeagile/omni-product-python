@@ -112,7 +112,8 @@ Ces compteurs ne jugent pas le code bon ou mauvais. Ils indiquent **vers quel st
 | **Attributs mutables** | Attributs qu'on peut réassigner après la construction | Plus il y en a, plus l'état peut changer sous tes pieds (en Python : classe non `frozen`, attribut réassigné hors `__init__`) |
 | **Affectations** | Les `=`, `+=`, `-=`… | Chaque affectation est un état qui évolue ; un code qui en a peu se lit comme une suite de valeurs |
 | **Boucles** | `for`, `while` | Souvent remplaçables par une compréhension ou un `map`/`filter` qui dit *quoi* au lieu de *comment* |
-| **Lambdas** | Petites fonctions anonymes | Un style plus déclaratif ; l'arbitre en récompense un peu |
+| **Lambdas** | Petites fonctions anonymes | Un style plus déclaratif. Un thermomètre, sans points : sur une liste, la compréhension reste préférée à `map(lambda ...)` (règle 8) |
+| **Lambdas sur les rails (ROP)** | Les lambdas passées à `.map`, `.and_then`, `.map_err`… d'un `Result` | Le style que vise la règle 9 : l'arbitre en récompense un peu |
 
 C'est un parti pris de l'atelier (le style fonctionnel facilite la lecture et le test), pas une vérité universelle.
 

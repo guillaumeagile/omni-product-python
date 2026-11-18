@@ -87,6 +87,26 @@ CUTE dit *ce que   le code apporte à l'équipe*.
   - **Sur le legacy de l'atelier** : la règle est rouge. `domain/model/freshness.py` lit `date.today()` (`EI001`) et
     ses tests figent l'horloge avec `patch` (`EI002`). Elle passe au vert quand l'heure entre en paramètre et que
     les tests passent une date. Sur un modèle sans effet ni `patch`, elle compte 0 constat.
+- **Règle 7 ✅** : un état illégal ne se construit pas. Le harnais lit trois indices dans `domain/model` et
+  `anemic_model` (`harness/rules/etat_illegal.py`), avec des heuristiques `ast`.
+  - **`EL001`, drapeau stocké** : un champ `is_*` ou `has_*` annoté `bool`. Le drapeau et les champs qu'il commande
+    peuvent se contredire. Chaque valeur devient une variante d'union fermée. Une méthode `is_perishable()` n'est pas
+    un champ stocké : elle n'est pas lue.
+  - **`EL002`, `None` par paires** : une classe avec au moins deux champs `X | None` (`Optional[X]`, `Union[X, None]`
+    et `Mapped[X | None]` de SQLAlchemy compris) donne un constat, posé sur la classe. Une variante par combinaison
+    légale, et plus de `None`. Un seul champ optionnel est permis.
+  - **`EL003`, `raise` à la construction** : un `raise` dans `__init__` ou `__post_init__`. L'invariant
+    (`sell_by <= use_by`) se valide dans une fabrique qui rend un résultat, avant que l'objet existe. Le même `raise`
+    compte aussi pour la règle 5 : le corriger fait baisser les deux.
+  - **Exceptions** : énumérations, `Protocol`, `TypedDict` et exceptions, comme pour les règles 2 et 4.
+  - **Le refactoring attendu** : une union fermée de dataclasses frozen (`Perishable(sell_by, use_by)` ou
+    `NonExpiring(best_before)`), et un `match` exhaustif vérifié par pyright.
+  - **Limites** : le harnais lit la forme des champs, pas l'intention. Deux champs optionnels indépendants donnent un
+    faux positif, et deux champs liés par un type différent de `None` lui échappent. Le point ouvert 5 reste ouvert :
+    un test par propriétés (`hypothesis`) compléterait les heuristiques.
+  - **Sur le legacy de l'atelier** : la règle est rouge. `PerishableProduct` porte `expiration_date` et
+    `shelf_life_days`, `Price` et `RegionSupplier` trois champs optionnels chacun, et `TransportRequest` valide dans
+    `__post_init__`.
 - **Règles 4 et 7** : la même union (`ShelfLife`) peut satisfaire les deux, mais ce sont deux questions distinctes.
   La 4 demande de composer au lieu d'hériter. La 7 demande que l'incohérent ne puisse pas se construire.
 - **Règle 8 ✅ (I)** : les idiomes que la communauté Python recommande déjà. Ils se vérifient avec ruff, sans code
@@ -120,14 +140,14 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | ✅ en place (`heritage.py`) |
 | 5 | Un échec métier est une valeur | `FV001` | **P** | 2, tactique | ✅ en place (`echec_valeur.py`) |
 | 6 | Effets impurs hors du cœur | `EI001` (modèle), `EI002` (tests) | **P** | 2, tactique | ✅ en place (`effet_impur.py`) |
-| 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |
+| 7 | État illégal impossible à construire | `EL001`, `EL002`, `EL003` | **P** | 2, tactique | ✅ en place (`etat_illegal.py`) |
 | 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ⏳ à faire |
 | 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |
 | 10 | Architecture en oignon | à venir | **C** | 3, aboutissement | ⏳ à faire |
 
 Le numéro de la règle est celui du tableau « Les 10 règles » plus haut, qui donne la question, le refactoring attendu et
 la vérification. Les préfixes des codes viennent du nom de la règle : **C**ontexte **B**orné, **E**ntité **V**aleur,
-**M**odèle **A**némique, **H**éritag**E**, **F**ailure **V**alue (l'échec valeur), **E**ffet **I**mpur.
+**M**odèle **A**némique, **H**éritag**E**, **F**ailure **V**alue (l'échec valeur), **E**ffet **I**mpur, **E**tat **L**égal (`EI` étant pris).
 
 ## Stratégique, puis tactique (DDD, all the way)
 

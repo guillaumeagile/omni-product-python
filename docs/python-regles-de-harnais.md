@@ -54,9 +54,10 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 
 ### Notes sur les règles
 
-- **Périmètre** : le harnais analyse `omni_product/`, hors `controller/`, `service/`, `dal/`, `config.py` et
-  `database.py` (`harness/perimetre.py`). Ces fichiers sont de la plomberie : l'architecture en oignon
-  (règle 10 du tableau) les sortira du cœur. Un mot technique ne s'ajoute jamais à l'ubiquitous language pour faire
+- **Périmètre** : le harnais analyse `omni_product/`, hors `controller/`, `service/`, `config.py` et `database.py`
+  (`harness/perimetre.py`). Ces fichiers sont de la plomberie : l'architecture en oignon (règle 10 du tableau) les
+  sortira du cœur. `dal/` est mesuré : la persistance qu'il porte passe dans `infrastructure/`, et l'exclure ferait
+  compter ce déplacement comme du code ajouté. Un mot technique ne s'ajoute jamais à l'ubiquitous language pour faire
   taire le harnais : on exclut le fichier.
 
 - **Règle 1 : l'agrégat ne traverse qu'un contexte.** Un agrégat par contexte reste utile : il garde ses invariants (un

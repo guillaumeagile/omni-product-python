@@ -10,8 +10,9 @@ ce que le tableau dit de ton code.
 
 ## Ce qui est mesuré
 
-Seul le code que tu fais évoluer est mesuré : le **modèle** et les **services**. Les tests, le controller et le
-harnais ne comptent pas. L'arbitre compare ton code à celui de ton baby step précédent : c'est la **variation** qui
+Seul le code que tu fais évoluer est mesuré : le **modèle**, l'**infrastructure** et la **persistance** (`dal/`). Les
+tests, le controller, les services et le harnais ne comptent pas. `dal/` est mesuré pour que la persistance qui
+passe dans `infrastructure/` (règle 10) ne compte pas comme du code ajouté. L'arbitre compare ton code à celui de ton baby step précédent : c'est la **variation** qui
 compte, pas la valeur absolue.
 
 Les mesures sont déterministes : le même code donne toujours les mêmes chiffres.
@@ -54,7 +55,8 @@ def frais(poids, express):          # 1 chemin de base
 **Pourquoi on le regarde.** C'est le nombre de tests minimum pour couvrir la fonction. À 4, il faut 4 cas de test. À
 15, plus personne n'ose y toucher.
 
-**Ce que l'arbitre additionne.** La somme sur toutes les méthodes du modèle et des services. Retirer des branches
+**Ce que l'arbitre additionne.** La somme sur toutes les fonctions et méthodes du périmètre. Une méthode au corps vide
+(`...`, `pass`, une docstring seule) compte 0 : c'est une signature, comme celles d'un port (`Protocol`). Retirer des branches
 (remplacer un `if/elif` par du polymorphisme, supprimer un cas mort) la fait baisser.
 
 ## 3. La complexité d'une classe : WMC
@@ -82,6 +84,8 @@ Between Objects*) est CK : deux outils, la même idée.
 **Pourquoi on le regarde.** Plus une classe connaît de monde, plus elle casse quand l'un d'eux change. C'est le
 « C » de Composable dans CUPID : un bon module se branche sur peu de choses.
 
+**Ce qui ne compte pas.** La bibliothèque standard et `result` : c'est le socle que la règle 10 permet au cœur.
+
 ## 6. La cohésion : TCC (et LCOM)
 
 **Ce que c'est.** Parmi les paires de méthodes d'une classe, quelle part utilise au moins un attribut en commun. Valeur
@@ -91,7 +95,8 @@ de 0 à 1 : à 1, toutes les méthodes travaillent sur les mêmes données.
 collées ensemble : un groupe de méthodes sur un groupe d'attributs, un autre groupe sur un autre. C'est le signal
 « tu peux la couper en deux ». **LCOM** est la mesure inverse (le manque de cohésion) : plus haut, c'est pire.
 
-L'arbitre regarde la **pire** classe (TCC minimum).
+L'arbitre regarde la **pire** classe (TCC minimum). Une classe dont aucune méthode ne touche d'attribut, comme un port
+(`Protocol`), n'a pas de cohésion mesurable : elle n'entre pas dans ce minimum.
 
 ## 7. Les signaux de style : états, boucles, lambdas
 
@@ -105,6 +110,30 @@ Ces compteurs ne jugent pas le code bon ou mauvais. Ils indiquent **vers quel st
 | **Lambdas** | Petites fonctions anonymes | Un style plus déclaratif ; l'arbitre en récompense un peu |
 
 C'est un parti pris de l'atelier (le style fonctionnel facilite la lecture et le test), pas une vérité universelle.
+
+## 8. Les couches : les métriques de Robert Martin
+
+**Ce que c'est.** Les mesures précédentes regardent une classe. Celles-ci regardent une **couche** (`domain`,
+`infrastructure`, `dal`…) et le **sens** de ses liens avec les autres.
+
+| Mesure | Ce que c'est |
+|---|---|
+| **Ca** (couplage afférent) | Les modules d'autres couches qui importent celle-ci. Ils cassent quand elle change. |
+| **Ce** (couplage efférent) | Les modules de la couche qui importent une autre couche. Elle casse quand l'autre change. |
+| **I** (instabilité) | Ce / (Ca + Ce). À 0, tout le monde dépend d'elle et elle ne dépend de rien : elle est stable. À 1, l'inverse. |
+| **A** (abstraction) | La part de ses classes qui sont abstraites : `Protocol`, `ABC`, une `@abstractmethod`. |
+| **D** (distance) | \|A + I − 1\|. À 0, la couche est sur la *séquence principale*. |
+
+**Pourquoi on le regarde.** Une couche stable doit être abstraite, une couche instable peut être concrète. Le cœur
+d'une architecture en oignon est stable (on dépend de lui) et porte les ports (abstraits) : D proche de 0. Une couche
+stable et concrète est dure à changer, car tout le monde en dépend. Une couche instable et abstraite déclare des
+abstractions que personne n'utilise. Les deux s'éloignent de la séquence principale : D monte vers 1.
+
+La colonne **Dépend de** montre le sens des liens. Dans une architecture en oignon, aucune flèche ne part du cœur vers
+l'extérieur.
+
+**Comment c'est compté.** L'unité est le module, là où Martin compte les classes : `dal/` n'a que des fonctions. Ca ne
+voit que les modules mesurés. Ces mesures sont affichées, base → PR, et ne rapportent pas de points.
 
 ## Comment l'arbitre note
 
@@ -131,5 +160,6 @@ Les chiffres t'aident à trouver où regarder. Ils ne disent pas quoi faire.
 - Complexité cyclomatique : Thomas McCabe, *A Complexity Measure* (1976)
 - Complexité cognitive : G. Ann Campbell, *Cognitive Complexity* (SonarSource)
 - WMC, CBO, LCOM : Chidamber & Kemerer, *A Metrics Suite for Object Oriented Design* (1994)
+- Ca, Ce, I, A, D : Robert C. Martin, *OO Design Quality Metrics: An Analysis of Dependencies* (1994)
 - Outils du harnais Java : [PMD](https://pmd.github.io/), [CK](https://github.com/mauricioaniche/ck),
   [JTokkit](https://github.com/knuddelsgmbh/jtokkit)

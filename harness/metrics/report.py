@@ -4,7 +4,7 @@ import ast
 import json
 from dataclasses import asdict, dataclass
 
-from harness.metrics import cohesion, complexity, coupling, style, tokens
+from harness.metrics import cohesion, complexity, coupling, martin, style, tokens
 from harness.metrics.classes import top_level_classes
 from harness.metrics.sources import SourceFile
 
@@ -43,6 +43,7 @@ class Metrics:
     loops: int
     lambdas: int
     per_class: tuple[ClassMetrics, ...]
+    layers: tuple[martin.LayerMetrics, ...] = ()
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, ensure_ascii=False)
@@ -79,6 +80,7 @@ def measure(sources: list[SourceFile]) -> Metrics:
         loops=styled.loops,
         lambdas=styled.lambdas,
         per_class=per_class,
+        layers=martin.measure(sources),
     )
 
 

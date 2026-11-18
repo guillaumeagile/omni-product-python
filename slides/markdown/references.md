@@ -6,7 +6,7 @@
 
 [SOLID](https://en.wikipedia.org/wiki/SOLID)
 
-[Algebraic data type (Wikipedia)](https://en.wikipedia.org/wiki/Algebraic_data_type)
+[Object-oriented metrics by Robert Martin](https://kariera.future-processing.pl/blog/object-oriented-metrics-by-robert-martin/)
 
 [Functional design: algebraic data types](https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
 

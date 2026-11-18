@@ -1,4 +1,3 @@
-from omni_product.domain.model.transport import Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
 from omni_product.domain.model.transport_request import TransportRequest
 from omni_product.domain.port.transport_carbon_port import TransportCarbonPort
@@ -11,9 +10,5 @@ class ProductTransportService:
     def calculate_shipment_carbon(
         self, transport_mode: str, distance_km: float, weight_kg: float
     ) -> TransportCarbonMetrics:
-        request = TransportRequest(
-            TransportMode.parse(transport_mode),
-            Distance(round(distance_km)),
-            Kilos(weight_kg),
-        )
+        request = TransportRequest(transport_mode, round(distance_km), weight_kg)
         return self._transport_carbon_port.calculate_emissions(request)

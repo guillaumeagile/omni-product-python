@@ -17,6 +17,7 @@ from harness.rules import (
     echec_valeur,
     effet_impur,
     entite_valeur,
+    etat_illegal,
     heritage,
     modele_anemique,
 )
@@ -72,6 +73,13 @@ RULES: tuple[Rule, ...] = (
         ("omni_product/domain/model", "omni_product/anemic_model"),
         effet_impur.check,
         tests=effet_impur.check_tests,
+    ),
+    # Le modèle, comme les règles 4 à 6 : drapeaux et `None` par paires.
+    Rule(
+        7,
+        "État illégal impossible à construire",
+        ("omni_product/domain/model", "omni_product/anemic_model"),
+        etat_illegal.check,
     ),
     # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même.
     Rule(

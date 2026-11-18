@@ -8,7 +8,7 @@ from pathlib import Path
 
 PACKAGE = "omni_product"
 # Sous-paquets et modules de `omni_product/` exclus du périmètre : les couches et la plomberie qui ne sont pas le cœur.
-# `config.py` et `database.py` sont de la plomberie : l'architecture en oignon (règle 6) les sortira du cœur.
+# `config.py` et `database.py` sont de la plomberie : l'architecture en oignon (règle 10) les sortira du cœur.
 HORS_PERIMETRE = ("controller", "service", "dal", "config.py", "database.py")
 
 

@@ -7,11 +7,11 @@ from omni_product.domain.model import (
     Slug,
     SupplierId,
 )
-from omni_product.domain.model.errors import ErreurIntrouvable
 from omni_product.infrastructure.persistence.in_memory import (
     InMemoryRepository,
     InMemorySupplierRepository,
 )
+from omni_product.kernel.errors import ErreurIntrouvable
 from omni_product.service.supplier_service import SupplierService
 
 

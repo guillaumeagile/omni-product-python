@@ -1,7 +1,7 @@
 from result import Err, Ok
 
-from omni_product.domain.model.errors import ErreurTarification
 from omni_product.domain.model.pricing import Amount, PrixAvecTaxe, PrixHorsTaxe, Rate, prix_of
+from omni_product.kernel.errors import ErreurTarification
 
 MSG_TAXE_SANS_BASE = "Une taxe demande un prix de base"
 MSG_TAXE_MONTANT_ET_TAUX = "Une taxe demande son montant et son taux"

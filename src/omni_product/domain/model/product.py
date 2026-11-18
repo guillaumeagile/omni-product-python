@@ -6,20 +6,12 @@ from functools import partial
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import ErreurProduit
-from omni_product.domain.model.invariants import require_at_least_zero, require_text
+from omni_product.kernel.errors import ErreurProduit
+from omni_product.kernel.ids import ProductId
+from omni_product.kernel.invariants import require_at_least_zero, require_text
 
 # Contexte Catalogue : le produit, ses images et ses types. Les autres contextes (prix, transport,
 # stockage, approvisionnement) ont leurs propres classes, reliées au produit par son identifiant.
-
-
-@dataclass(frozen=True)
-class ProductId:
-    value: str
-
-    @classmethod
-    def of(cls, value: str) -> Result[ProductId, ErreurProduit]:
-        return require_text(cls, value, ErreurProduit).map(cls)
 
 
 @dataclass(frozen=True)

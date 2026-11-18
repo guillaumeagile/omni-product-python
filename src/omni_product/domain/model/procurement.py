@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import ErreurFournisseur
-from omni_product.domain.model.invariants import require_text
 from omni_product.domain.model.product import ProductId
 from omni_product.domain.model.supplier import Region, SupplierId
+from omni_product.kernel.errors import ErreurFournisseur
+from omni_product.kernel.invariants import require_text
 
 
 @dataclass(frozen=True)

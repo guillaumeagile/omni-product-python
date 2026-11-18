@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.kernel.errors import InvalidValueError
 
 
 def require_text[E: InvalidValueError](

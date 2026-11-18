@@ -4,9 +4,9 @@ from dataclasses import dataclass
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import ErreurTransport
-from omni_product.domain.model.invariants import require_at_least_zero, require_text
 from omni_product.domain.model.product import ProductId
+from omni_product.kernel.errors import ErreurTransport
+from omni_product.kernel.invariants import require_at_least_zero, require_text
 
 
 @dataclass(frozen=True)

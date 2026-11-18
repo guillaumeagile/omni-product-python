@@ -4,20 +4,12 @@ from dataclasses import dataclass
 
 from result import Result
 
-from omni_product.domain.model.errors import ErreurFournisseur
-from omni_product.domain.model.invariants import require_text
+from omni_product.kernel.errors import ErreurFournisseur
+from omni_product.kernel.ids import SupplierId
+from omni_product.kernel.invariants import require_text
 
 # Contexte Approvisionnement : le fournisseur lui-même. Les produits qu'il fournit sont liés
 # par `ProductSupply`, dans `procurement.py`.
-
-
-@dataclass(frozen=True)
-class SupplierId:
-    value: str
-
-    @classmethod
-    def of(cls, value: str) -> Result[SupplierId, ErreurFournisseur]:
-        return require_text(cls, value, ErreurFournisseur).map(cls)
 
 
 @dataclass(frozen=True)

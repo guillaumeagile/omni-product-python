@@ -9,7 +9,7 @@ from __future__ import annotations
 from result import Err, Ok
 
 from omni_product.domain.model import Supplier
-from omni_product.domain.model.errors import ErreurIntrouvable, InvalidValueError
+from omni_product.kernel.errors import ErreurIntrouvable, InvalidValueError
 from omni_product.service.supplier_service import SupplierService
 
 Reponse = tuple[int, object]

@@ -5,9 +5,9 @@ from functools import partial
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import ErreurTarification
-from omni_product.domain.model.invariants import require_at_least_zero, require_rate, require_text
 from omni_product.domain.model.product import ProductId
+from omni_product.kernel.errors import ErreurTarification
+from omni_product.kernel.invariants import require_at_least_zero, require_rate, require_text
 
 
 @dataclass(frozen=True)

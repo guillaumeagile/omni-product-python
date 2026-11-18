@@ -91,3 +91,17 @@ forbidden_modules = [
     "omni_product.service",
     "httpx",
 ]
+
+# Refacto en couches : le noyau (erreurs, validations, identifiants) ne dépend de rien d'autre ;
+# les ports ne dépendent que du noyau. Le domaine dépend du noyau et des ports, jamais l'inverse.
+[[tool.importlinter.contracts]]
+name = "Le noyau ne dépend de rien d'autre"
+type = "forbidden"
+source_modules = ["omni_product.kernel"]
+forbidden_modules = ["omni_product.domain", "omni_product.ports", "omni_product.service", "omni_product.infrastructure"]
+
+[[tool.importlinter.contracts]]
+name = "Les ports ne dépendent que du noyau"
+type = "forbidden"
+source_modules = ["omni_product.ports"]
+forbidden_modules = ["omni_product.domain", "omni_product.service", "omni_product.infrastructure"]

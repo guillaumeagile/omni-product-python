@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from omni_product.domain.model.product import ProductId
+from omni_product.kernel.ids import ProductId
 
 
 class ContextRepository[T](Protocol):

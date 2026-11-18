@@ -6,7 +6,7 @@ l'horloge réelle, les tests fournissent une horloge figée.
 
 from datetime import date
 
-from omni_product.domain.port.clock import Clock
+from omni_product.ports.clock import Clock
 
 
 def days_before_expiry(expiration_date: date, clock: Clock) -> int:

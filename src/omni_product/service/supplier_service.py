@@ -3,9 +3,9 @@ from functools import partial
 from result import Err, Ok, Result
 
 from omni_product.domain.model import Product, ProductId, ProductSupply, Supplier, SupplierId
-from omni_product.domain.model.errors import ErreurIntrouvable, InvalidValueError
-from omni_product.domain.port.context_repository import ContextRepository
-from omni_product.domain.port.supplier_repository import SupplierRepository
+from omni_product.kernel.errors import ErreurIntrouvable, InvalidValueError
+from omni_product.ports.context_repository import ContextRepository
+from omni_product.ports.supplier_repository import SupplierRepository
 
 
 class SupplierService:
@@ -13,7 +13,7 @@ class SupplierService:
 
     def __init__(
         self,
-        suppliers: SupplierRepository,
+        suppliers: SupplierRepository[Supplier],
         products: ContextRepository[Product],
         supplies: ContextRepository[ProductSupply],
     ) -> None:

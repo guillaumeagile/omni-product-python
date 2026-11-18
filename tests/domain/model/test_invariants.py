@@ -20,7 +20,7 @@ from omni_product.domain.model import (
     TvaId,
     Volume,
 )
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.kernel.errors import InvalidValueError
 
 TEXT_VALUES = [
     ProductId,

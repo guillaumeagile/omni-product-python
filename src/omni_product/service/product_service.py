@@ -1,10 +1,10 @@
 from result import Result
 
 from omni_product.domain.model import Product, ProductId, date_limite
-from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.freshness import is_expired
-from omni_product.domain.port.clock import Clock
-from omni_product.domain.port.context_repository import ContextRepository
+from omni_product.kernel.errors import InvalidValueError
+from omni_product.ports.clock import Clock
+from omni_product.ports.context_repository import ContextRepository
 
 
 class ProductService:

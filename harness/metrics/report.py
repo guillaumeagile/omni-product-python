@@ -34,7 +34,6 @@ class Metrics:
     max_cyclomatic: int
     max_wmc: int
     cognitive: int
-    max_cognitive: int
     min_tcc: float
     max_lcom: float
     max_fan_out: int
@@ -72,7 +71,6 @@ def measure(sources: list[SourceFile]) -> Metrics:
         max_cyclomatic=max((fn.cyclomatic for fn in every_function), default=0),
         max_wmc=max((m.wmc for m in per_class), default=0),
         cognitive=sum(fn.cognitive for fn in every_function),
-        max_cognitive=max((fn.cognitive for fn in every_function), default=0),
         min_tcc=min(tccs, default=1.0),
         max_lcom=max(lcoms, default=0.0),
         max_fan_out=max((m.fan_out for m in per_class), default=0),

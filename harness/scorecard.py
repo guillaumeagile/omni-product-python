@@ -59,13 +59,6 @@ ROWS = (
     ),
     Row("WMC (pire classe)", lambda m: m.max_wmc, -1, scored=True, weight=0),
     Row("Complexité cognitive (total)", lambda m: m.cognitive, -1),
-    Row(
-        "Complexité cognitive (max par fonction)",
-        lambda m: m.max_cognitive,
-        -1,
-        scored=True,
-        weight=2,
-    ),
     Row("TCC (pire classe, 1 = cohésive)", lambda m: m.min_tcc, +1, scored=True, weight=0),
     Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1, scored=True, weight=0),
     Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1, scored=True, weight=1),

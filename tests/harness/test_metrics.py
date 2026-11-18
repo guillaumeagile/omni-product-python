@@ -408,3 +408,13 @@ def test_the_result_library_counts_as_the_foundation_like_the_stdlib():
     ]
 
     assert coupling.measure(sources)["pkg.mod.A"].dependencies == {"other.Gadget"}
+
+
+def test_the_cognitive_complexity_is_shown_but_not_scored():
+    metrics = measure([source("def f(x):\n    return 1 if x else 2\n")])
+    card = scorecard.render(metrics, metrics)
+    scored = dict(scorecard.metric_lines(metrics, metrics))
+
+    assert "Complexité cognitive (total)" in card
+    assert "Complexité cognitive (max par fonction)" not in card
+    assert not [label for label in scored if "cognitive" in label]

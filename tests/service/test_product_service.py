@@ -1,0 +1,39 @@
+from datetime import date
+from unittest.mock import patch
+
+import pytest
+from sqlalchemy.orm import Session
+
+from omni_product.dal.product_dal import ProductSheet
+from omni_product.domain.model import NonExpiring, Perishable, Product, ProductId, Slug, freshness
+from omni_product.service.product_service import ProductService
+
+
+@pytest.fixture
+def product_service(session: Session) -> ProductService:
+    return ProductService(session)
+
+
+def _sheet(product_id: str, shelf_life: Perishable | NonExpiring | None) -> ProductSheet:
+    return ProductSheet(
+        product=Product(
+            id=ProductId(product_id), name=product_id, slug=Slug(product_id), shelf_life=shelf_life
+        )
+    )
+
+
+def test_find_expired_returns_only_perishable_products_past_their_date(
+    product_service: ProductService,
+) -> None:
+    product_service.save(_sheet("p1", Perishable(expiration_date=date(2026, 11, 1))))
+    product_service.save(_sheet("p2", Perishable(expiration_date=date(2026, 12, 1))))
+    product_service.save(_sheet("p3", Perishable()))
+    product_service.save(_sheet("p4", NonExpiring()))
+
+    # Legacy : l'horloge se fige avec `patch`.
+    # La règle 6 supprime ce besoin : l'heure passe en paramètre.
+    with patch.object(freshness, "date") as fake_date:
+        fake_date.today.return_value = date(2026, 11, 10)
+        expired = product_service.find_expired()
+
+    assert [sheet.product.id.value for sheet in expired] == ["p1"]

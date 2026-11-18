@@ -155,7 +155,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 5 | Un échec métier est une valeur | `FV001` | **P** | 2, tactique | ✅ en place (`echec_valeur.py`) |
 | 6 | Effets impurs hors du cœur | `EI001` (modèle), `EI002` (tests) | **P** | 2, tactique | ✅ en place (`effet_impur.py`) |
 | 7 | État illégal impossible à construire | `EL001`, `EL002` | **P** | 2, tactique | ✅ en place (`etat_illegal.py`) |
-| 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ⏳ à faire |
+| 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ✅ en place (`idiomes.py`, ruff, sans code maison) |
 | 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |
 | 10 | Architecture en oignon | `AO001` | **C** | 3, aboutissement | ✅ en place (`architecture_oignon.py`), rouge sur le legacy |
 

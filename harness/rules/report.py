@@ -11,8 +11,11 @@ from harness.rules.points import (
 )
 
 
-def section(results: tuple[RuleResult, ...], metric_steps: Sequence[int] = ()) -> str:
-    result = score(results, metric_steps)
+def section(
+    results: tuple[RuleResult, ...],
+    metric_lines: Sequence[tuple[str, int]] = (),
+) -> str:
+    result = score(results, metric_lines)
     has_base = any(r.before is not None for r in results)
     lines = [
         "### 🧪 Règles du harnais",
@@ -32,7 +35,10 @@ def section(results: tuple[RuleResult, ...], metric_steps: Sequence[int] = ()) -
             ),
             f"| Constats retirés sur les règles encore rouges (plafond +{REMOVED_ON_RED_CAP}) | +{result.removed_points} |",
             f"| 🍼 Baby step : une seule règle passée au vert | +{result.baby_step_points} |",
-            f"| Variations de métriques (±1 chacune, plafond ±{METRIC_CAP}) | {result.metric_points:+d} |",
+            *(
+                f"| Métrique : {label} (plafond ±{METRIC_CAP}) | {points:+d} |"
+                for label, points in result.metric_lines
+            ),
             f"| **Total** | **+{result.total}** |",
         ]
         lines += [

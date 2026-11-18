@@ -7,9 +7,8 @@ from omni_product.domain.model import (
     Slug,
     SupplierId,
 )
-from omni_product.domain.model.product_sheet import ProductSheet
 from omni_product.infrastructure.persistence.in_memory import (
-    InMemoryProductRepository,
+    InMemoryRepository,
     InMemorySupplierRepository,
 )
 from omni_product.service.supplier_service import SupplierService
@@ -17,9 +16,11 @@ from omni_product.service.supplier_service import SupplierService
 
 @pytest.fixture
 def supplier_service(
-    suppliers: InMemorySupplierRepository, products: InMemoryProductRepository
+    suppliers: InMemorySupplierRepository,
+    products: InMemoryRepository[Product],
+    supplies: InMemoryRepository[ProductSupply],
 ) -> SupplierService:
-    return SupplierService(suppliers, products)
+    return SupplierService(suppliers, products, supplies)
 
 
 def _create(service: SupplierService, supplier_id: str, name: str) -> None:
@@ -95,15 +96,13 @@ def test_should_raise_when_deleting_non_existent_supplier(
 
 
 def test_should_cascade_delete_products_when_supplier_deleted(
-    supplier_service: SupplierService, products: InMemoryProductRepository
+    supplier_service: SupplierService,
+    products: InMemoryRepository[Product],
+    supplies: InMemoryRepository[ProductSupply],
 ) -> None:
     _create(supplier_service, "sup1", "Supplier A")
-    products.save(
-        ProductSheet(
-            product=Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
-            supply=ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")),
-        ),
-    )
+    products.save(Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")))
+    supplies.save(ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")))
     assert products.find_by_id(ProductId("prod1")) is not None
 
     supplier_service.delete_supplier("sup1").unwrap()
@@ -112,17 +111,15 @@ def test_should_cascade_delete_products_when_supplier_deleted(
 
 
 def test_should_get_suppliers_by_product(
-    supplier_service: SupplierService, products: InMemoryProductRepository
+    supplier_service: SupplierService,
+    products: InMemoryRepository[Product],
+    supplies: InMemoryRepository[ProductSupply],
 ) -> None:
-    """Désactivé en Java (LAZY_LOADING_ISSUE.md) : le lien passe par la fiche du produit."""
+    """Désactivé en Java (LAZY_LOADING_ISSUE.md) : le lien passe par l'approvisionnement."""
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
-    products.save(
-        ProductSheet(
-            product=Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
-            supply=ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")),
-        ),
-    )
+    products.save(Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")))
+    supplies.save(ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")))
 
     suppliers = supplier_service.get_suppliers_by_product("prod1").unwrap()
 

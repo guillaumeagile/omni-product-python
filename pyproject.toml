@@ -4,11 +4,9 @@ version = "0.1.0"
 description = "Port Python (FastAPI + SQLAlchemy) de omni-product-spring-boot-java-bdxio-phase1"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.162.0",
     "httpx>=0.28.1",
-    "pydantic-settings>=2.16.2",
+    "pydantic>=2.14.3",
     "result==0.17.0",
-    "uvicorn[standard]>=0.54.0",
 ]
 
 [dependency-groups]
@@ -90,12 +88,7 @@ name = "Le cœur ne dépend pas de l'extérieur"
 type = "forbidden"
 source_modules = ["omni_product.domain"]
 forbidden_modules = [
-    "omni_product.controller",
     "omni_product.infrastructure",
     "omni_product.service",
-    "omni_product.config",
-    "omni_product.dependencies",
-    "omni_product.main",
-    "fastapi",
     "httpx",
 ]

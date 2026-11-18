@@ -1,17 +1,23 @@
 from result import Err, Ok, Result
 
-from omni_product.domain.model import ProductId, Supplier, SupplierId
+from omni_product.domain.model import Product, ProductId, ProductSupply, Supplier, SupplierId
 from omni_product.domain.model.errors import InvalidValueError
-from omni_product.domain.port.product_repository import ProductRepository
+from omni_product.domain.port.context_repository import ContextRepository
 from omni_product.domain.port.supplier_repository import SupplierRepository
 
 
 class SupplierService:
-    """Le cas d'usage des fournisseurs. Il ne connaît que les ports de persistance."""
+    """Le cas d'usage des fournisseurs. L'approvisionnement fait le lien avec les produits."""
 
-    def __init__(self, suppliers: SupplierRepository, products: ProductRepository) -> None:
+    def __init__(
+        self,
+        suppliers: SupplierRepository,
+        products: ContextRepository[Product],
+        supplies: ContextRepository[ProductSupply],
+    ) -> None:
         self._suppliers = suppliers
         self._products = products
+        self._supplies = supplies
 
     def create_supplier(self, id: str, name: str) -> Result[Supplier, InvalidValueError]:
         match SupplierId.of(id):
@@ -45,12 +51,21 @@ class SupplierService:
         return SupplierId.of(supplier_id).map(self._delete)
 
     def _delete(self, supplier_id: SupplierId) -> None:
-        self._suppliers.delete(self._get_or_raise(supplier_id))
+        supplier = self._get_or_raise(supplier_id)
+        # Comportement conservé : supprimer un fournisseur supprime les produits qu'il fournit.
+        for supply in self._supplies.find_all():
+            if supply.supplier_id == supplier.id:
+                self._products.delete_by_id(supply.id)
+                self._supplies.delete_by_id(supply.id)
+        self._suppliers.delete(supplier)
 
     def _suppliers_of_existing_product(self, product: ProductId) -> list[Supplier]:
         if self._products.find_by_id(product) is None:
             raise ValueError(f"Product not found: {product.value}")
-        return self._suppliers.find_by_product_id(product)
+        supply = self._supplies.find_by_id(product)
+        supplier_id = None if supply is None else supply.supplier_id
+        supplier = None if supplier_id is None else self._suppliers.find_by_id(supplier_id)
+        return [] if supplier is None else [supplier]
 
     def _get_or_raise(self, supplier_id: SupplierId) -> Supplier:
         supplier = self._suppliers.find_by_id(supplier_id)

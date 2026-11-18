@@ -1,14 +1,12 @@
 # omni-product (port Python)
 
-Port de `omni-product-spring-boot-java-bdxio-phase1` : FastAPI, données en mémoire.
+Port de `omni-product-spring-boot-java-bdxio-phase1` : le cœur métier et ses services, données en mémoire. L'API HTTP est retirée pour l'instant ; elle sera réécrite.
 
 | Java | Python |
 |---|---|
-| Spring Boot / MVC | FastAPI |
-| Spring Data `JpaRepository` | ports `ProductRepository` / `SupplierRepository`, adaptateurs en mémoire (`infrastructure/persistence/in_memory.py`) |
+| Spring Data `JpaRepository` | ports `ContextRepository[T]` / `SupplierRepository`, adaptateurs en mémoire (`infrastructure/persistence/in_memory.py`) |
 | RestTemplate | httpx |
-| Jackson | Pydantic (JSON en camelCase) |
-| JUnit / AssertJ / MockMvc | pytest / `TestClient` |
+| JUnit / AssertJ | pytest |
 
 ## Commandes
 
@@ -18,5 +16,4 @@ uv run ruff check . && uv run ruff format --check .   # lint + format
 uv run pyright                                   # types (mode strict)
 uv run pytest                                    # tests
 uv build                                         # wheel + sdist dans dist/
-uv run uvicorn omni_product.main:app --reload    # lance l'API (http://localhost:8000/docs)
 ```

@@ -58,8 +58,8 @@ uv run python -m harness.rules                        # les constats de chaque r
 ```
 
 La scorecard affiche les règles en tête, avec leurs points : +10 par règle passée au vert, +5 pour un vrai baby step.
-Elle ajoute aussi un point par variation de métrique qui va dans le bon sens, et retire un point par variation dans le
-mauvais sens (les lignes marquées dans la scorecard, dont les lambdas), net et plafonné à ±10.
+Elle ajoute aussi, pour chaque métrique marquée dans la scorecard, son chiffre de variation, compté dans le sens « mieux »
+de la métrique : une hausse de complexité retranche ses points, une baisse les ajoute. Chaque métrique est plafonnée à ±15.
 
 ### 4. L'arbitre : le score (à venir)
 

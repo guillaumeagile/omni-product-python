@@ -11,7 +11,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from harness.perimetre import dossiers_exclus
-from harness.rules import contexte_borne, echec_valeur, entite_valeur, heritage, modele_anemique
+from harness.rules import (
+    contexte_borne,
+    echec_valeur,
+    effet_impur,
+    entite_valeur,
+    heritage,
+    modele_anemique,
+)
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect
 from harness.rules.ubiquitous_language import UbiquitousLanguage
@@ -54,6 +61,13 @@ RULES: tuple[Rule, ...] = (
         "Un échec métier est une valeur",
         ("omni_product/domain/model", "omni_product/anemic_model"),
         echec_valeur.check,
+    ),
+    # Le modèle, comme les règles 4 et 5 : l'horloge, l'aléatoire, les fichiers et le réseau n'y entrent pas.
+    Rule(
+        6,
+        "Effets impurs hors du cœur",
+        ("omni_product/domain/model", "omni_product/anemic_model"),
+        effet_impur.check,
     ),
 )
 

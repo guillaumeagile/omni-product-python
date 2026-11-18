@@ -170,9 +170,9 @@ def test_a_core_that_raises_the_business_exception_is_red(tmp_path: Path):
         """,
     )
 
-    assert [finding.target for finding in evaluate(src)[10]] == [
-        "omni_product.exception.business_exception"
-    ]
+    [finding] = [str(finding) for finding in evaluate(src)[10]]
+
+    assert "AO001 `omni_product.exception.business_exception` dans le cœur" in finding
 
 
 def test_a_core_whose_failures_are_values_is_green(tmp_path: Path):

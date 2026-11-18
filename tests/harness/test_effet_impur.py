@@ -1,12 +1,14 @@
-"""La règle 6 : une référence à un effet impur (horloge, hasard, fichier, réseau) est un constat."""
+"""La règle 6 : un effet impur dans le modèle (EI001), son remplacement dans les tests (EI002)."""
 
 import textwrap
+from pathlib import Path
 
 import pytest
 
-from harness.rules import effet_impur
-from harness.rules.sources import Source
+from harness.rules import effet_impur, evaluate
+from harness.rules.sources import Source, collect_tests
 from harness.rules.ubiquitous_language import UbiquitousLanguage
+from harness.scorecard import checkout
 
 
 def source(text: str) -> Source:
@@ -157,3 +159,155 @@ def test_the_finding_names_the_fix():
     [finding] = findings("import time\n\ndef f():\n    return time.time()\n")
 
     assert "`Clock`" in finding.message
+
+
+# --- EI002 : le remplacement d'un effet dans les tests -----------------------------------------
+
+
+def patches_of(text: str) -> list[str]:
+    found = effet_impur.check_tests(source(text), UbiquitousLanguage.load())
+    return [finding.effect for finding in found]
+
+
+@pytest.mark.parametrize(
+    ("imports", "usage", "effect"),
+    [
+        ("from unittest.mock import patch", "@patch('m.date')\ndef test_a(fake): ...", "patch"),
+        (
+            "from unittest.mock import patch",
+            "def test_a():\n    with patch.object(m, 'date'): ...",
+            "patch.object",
+        ),
+        (
+            "from unittest import mock",
+            "def test_a():\n    with mock.patch('m.date'): ...",
+            "mock.patch",
+        ),
+        (
+            "import unittest.mock",
+            "def test_a():\n    unittest.mock.patch.dict('os.environ', {})",
+            "unittest.mock.patch.dict",
+        ),
+        (
+            "from freezegun import freeze_time",
+            "@freeze_time('2026-01-01')\ndef test_a(): ...",
+            "freeze_time",
+        ),
+        (
+            "import freezegun",
+            "def test_a():\n    freezegun.freeze_time('2026-01-01')",
+            "freezegun.freeze_time",
+        ),
+        (
+            "import time_machine",
+            "def test_a():\n    time_machine.travel('2026-01-01')",
+            "time_machine.travel",
+        ),
+        (
+            "",
+            "def test_a(monkeypatch):\n    monkeypatch.setattr('m.date', None)",
+            "monkeypatch.setattr",
+        ),
+        ("", "def test_a(monkeypatch):\n    monkeypatch.setenv('HOME', 'x')", "monkeypatch.setenv"),
+        ("", "def test_a(mocker):\n    mocker.patch('m.date')", "mocker.patch"),
+        ("", "def test_a(mocker):\n    mocker.patch.object(m, 'date')", "mocker.patch.object"),
+    ],
+)
+def test_replacing_an_effect_in_a_test_is_a_finding(imports: str, usage: str, effect: str):
+    assert patches_of(f"{imports}\n\n{usage}\n") == [effect]
+
+
+def test_a_fake_passed_as_parameter_is_not_a_finding():
+    text = """
+        from datetime import date
+        from unittest.mock import MagicMock
+
+        def test_a():
+            clock = MagicMock()
+            clock.today.return_value = date(2026, 11, 10)
+            assert days_before_expiry(date(2026, 11, 15), clock.today()) == 5
+        """
+
+    assert patches_of(text) == []
+
+
+def test_a_mocker_spy_is_not_a_patch():
+    assert patches_of("def test_a(mocker):\n    mocker.MagicMock()\n") == []
+
+
+def test_a_test_finding_has_its_own_code_and_names_the_fix():
+    [finding] = effet_impur.check_tests(
+        source("from unittest.mock import patch\n\n@patch('x')\ndef test_a(fake): ...\n"),
+        UbiquitousLanguage.load(),
+    )
+
+    assert finding.code == effet_impur.CODE_TESTS == "EI002"
+    assert "dans un test" in finding.message
+    assert "un faux en paramètre" in finding.message
+
+
+def test_every_patch_is_reported_in_line_order():
+    text = """
+        from unittest.mock import patch
+
+        def test_a():
+            with patch.object(m, 'a'), patch.object(m, 'b'):
+                ...
+        """
+
+    found = effet_impur.check_tests(source(text), UbiquitousLanguage.load())
+
+    assert [(f.line, f.col) for f in found] == [(5, 10), (5, 32)]
+
+
+def write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(textwrap.dedent(text), encoding="utf-8")
+
+
+def test_collect_tests_reads_every_file_under_tests_except_the_excluded(tmp_path: Path):
+    write(tmp_path / "tests" / "test_a.py", "x = 1\n")
+    write(tmp_path / "tests" / "conftest.py", "y = 2\n")
+    write(tmp_path / "tests" / "harness" / "test_h.py", "z = 3\n")
+
+    found = collect_tests(tmp_path / "tests", [tmp_path / "tests" / "harness"])
+
+    assert [source.module for source in found] == ["tests.conftest", "tests.test_a"]
+
+
+def project(tmp_path: Path, test_text: str | None) -> Path:
+    src = tmp_path / "src"
+    write(src / "omni_product" / "domain" / "model" / "pure.py", "def f() -> int:\n    return 1\n")
+    if test_text is not None:
+        write(tmp_path / "tests" / "test_pure.py", test_text)
+        write(tmp_path / "tests" / "harness" / "test_h.py", test_text)
+    return src
+
+
+def test_the_rule_counts_the_patches_of_the_tests_with_its_findings(tmp_path: Path):
+    src = project(
+        tmp_path, "from unittest.mock import patch\n\n@patch('x')\ndef test_a(fake): ...\n"
+    )
+
+    [finding] = evaluate(src)[6]
+
+    assert "tests/test_pure.py:3:2: EI002" in str(finding)
+
+
+def test_the_tests_of_the_harness_are_not_read(tmp_path: Path):
+    src = project(tmp_path, "def test_a(monkeypatch):\n    monkeypatch.setenv('A', 'b')\n")
+
+    findings = [str(finding) for finding in evaluate(src)[6]]
+
+    assert all("tests/harness" not in finding for finding in findings)
+    assert len(findings) == 1
+
+
+def test_a_project_without_tests_has_no_test_finding(tmp_path: Path):
+    assert evaluate(project(tmp_path, None))[6] == []
+
+
+def test_the_base_of_the_scorecard_brings_its_tests_along():
+    with checkout("HEAD") as base_src:
+        assert base_src is not None
+        assert (base_src.parent / "tests").is_dir()

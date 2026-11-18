@@ -20,7 +20,7 @@ from harness.rules import (
     modele_anemique,
 )
 from harness.rules.points import RuleResult
-from harness.rules.sources import Source, collect
+from harness.rules.sources import Source, collect, collect_tests
 from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 
@@ -34,6 +34,8 @@ class Rule:
     check: Callable[[Source, UbiquitousLanguage], Sequence[object]]
     # Avertissements complémentaires, affichés sans entrer dans les points de la scorecard.
     complement: Callable[[Source, UbiquitousLanguage], Sequence[object]] | None = None
+    # Constats lus dans les fichiers de `tests/` (hors `tests/harness`), ajoutés à ceux du code et comptés avec eux.
+    tests: Callable[[Source, UbiquitousLanguage], Sequence[object]] | None = None
 
 
 RULES: tuple[Rule, ...] = (
@@ -68,6 +70,7 @@ RULES: tuple[Rule, ...] = (
         "Effets impurs hors du cœur",
         ("omni_product/domain/model", "omni_product/anemic_model"),
         effet_impur.check,
+        tests=effet_impur.check_tests,
     ),
 )
 
@@ -100,7 +103,22 @@ def _run(
             [src_root / root for root in rule.roots], src_root, dossiers_exclus(src_root)
         )
         output[rule.number] = [finding for source in sources for finding in check(source, language)]
+        if rule.tests is not None and pick(rule) is rule.check:
+            output[rule.number] += _run_tests(src_root, rule.tests, language)
     return output
+
+
+def _run_tests(
+    src_root: Path,
+    check: Callable[[Source, UbiquitousLanguage], Sequence[object]],
+    language: UbiquitousLanguage,
+) -> list[object]:
+    """Les constats des fichiers de `tests/`, frère de `src`. Les tests du harnais sont exclus : ils testent le harnais."""
+    tests_root = src_root.parent / "tests"
+    if not tests_root.is_dir():
+        return []
+    sources = collect_tests(tests_root, [tests_root / "harness"])
+    return [finding for source in sources for finding in check(source, language)]
 
 
 def results(

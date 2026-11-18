@@ -78,11 +78,15 @@ CUTE dit *ce que   le code apporte à l'équipe*.
     port `Clock` écrit dans le métier. Le service, hors périmètre, fournit l'horloge réelle.
   - **Limites** : la règle travaille fichier par fichier. Un effet atteint par un autre module pur n'est pas vu. Elle
     constate l'absence d'effet. Elle ne peut pas exiger qu'un port soit injecté : les tests avec faux le démontrent.
-  - **Reste à faire ❓** : refuser `patch`, `monkeypatch` et `freezegun` dans les tests. Les tests sont hors du
-    périmètre du harnais (`collect` les écarte), ce contrôle demande un second parcours.
-  - **Verte sur un modèle pur** : sur un modèle qui ne touche ni l'horloge, ni le hasard, ni les fichiers, la règle
-    compte 0 constat. Elle bouge quand le modèle gagne un effet, par exemple en passant à la règle 7 un
-    « est périmé ? » qui appelle `date.today()`.
+  - **Les tests, `EI002`** : un `patch`, `patch.object`, `patch.dict` (`unittest.mock`), un `monkeypatch.*`, un
+    `mocker.patch`, un `freezegun` ou un `time_machine` dans `tests/` remplace l'effet au lieu de le recevoir. Chaque
+    référence est un constat, et il compte avec ceux de `EI001` : la règle 6 est verte quand les deux sont à 0. Un
+    `MagicMock` passé en paramètre reste permis, c'est le faux que la règle demande. Les tests du harnais
+    (`tests/harness/`) restent hors lecture : ils testent le harnais. La scorecard extrait `tests/` de la base
+    comme elle extrait `src/`, pour comparer ce qui est comparable.
+  - **Sur le legacy de l'atelier** : la règle est rouge. `domain/model/freshness.py` lit `date.today()` (`EI001`) et
+    ses tests figent l'horloge avec `patch` (`EI002`). Elle passe au vert quand l'heure entre en paramètre et que
+    les tests passent une date. Sur un modèle sans effet ni `patch`, elle compte 0 constat.
 - **Règles 4 et 7** : la même union (`ShelfLife`) peut satisfaire les deux, mais ce sont deux questions distinctes.
   La 4 demande de composer au lieu d'hériter. La 7 demande que l'incohérent ne puisse pas se construire.
 - **Règle 8 ✅ (I)** : les idiomes que la communauté Python recommande déjà. Ils se vérifient avec ruff, sans code
@@ -115,7 +119,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 3 | Pas de modèle anémique | `MA001` | **D** | 1, stratégique | ✅ en place (`modele_anemique.py`) |
 | 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | ✅ en place (`heritage.py`) |
 | 5 | Un échec métier est une valeur | `FV001` | **P** | 2, tactique | ✅ en place (`echec_valeur.py`) |
-| 6 | Effets impurs hors du cœur | `EI001` | **P** | 2, tactique | ✅ en place (`effet_impur.py`) ; les tests sans `patch` restent ⏳ |
+| 6 | Effets impurs hors du cœur | `EI001` (modèle), `EI002` (tests) | **P** | 2, tactique | ✅ en place (`effet_impur.py`) |
 | 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |
 | 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ⏳ à faire |
 | 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |

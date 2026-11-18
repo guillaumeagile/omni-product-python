@@ -176,17 +176,25 @@ def measure_tree(src_root: Path, roots: list[str]) -> Metrics:
 
 @contextmanager
 def checkout(ref: str) -> Generator[Path | None]:
-    """Le dossier `src` tel qu'il est à `ref` (sans toucher à l'arbre de travail) ; `None` s'il n'y existe pas."""
-    archive = subprocess.run(["git", "archive", ref, "src"], check=False, capture_output=True)
-    if archive.returncode != 0:
+    """Le dossier `src` tel qu'il est à `ref` (sans toucher à l'arbre de travail) ; `None` s'il n'y existe pas.
+
+    `tests` est extrait à côté, quand il existe : la règle 6 y lit les `patch`.
+    """
+    archive = _archive(ref, "src")
+    if archive is None:
         yield None
         return
-    with (
-        tempfile.TemporaryDirectory() as tmp,
-        tarfile.open(fileobj=io.BytesIO(archive.stdout)) as tar,
-    ):
-        tar.extractall(tmp, filter="data")
+    with tempfile.TemporaryDirectory() as tmp:
+        for content in (archive, _archive(ref, "tests")):
+            if content is not None:
+                with tarfile.open(fileobj=io.BytesIO(content)) as tar:
+                    tar.extractall(tmp, filter="data")
         yield Path(tmp) / "src"
+
+
+def _archive(ref: str, folder: str) -> bytes | None:
+    result = subprocess.run(["git", "archive", ref, folder], check=False, capture_output=True)
+    return result.stdout if result.returncode == 0 else None
 
 
 def _relative_to_src(root: str) -> str:

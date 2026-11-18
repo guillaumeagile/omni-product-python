@@ -1,3 +1,15 @@
+---
+
+# Thank you!
+
+--
+
+## Feedback?
+
+come talk to us 🗣️🍻
+
+--
+
 #### This presentation is licensed under the following licenses
 
 ### [Beerware](https://openlist.fairfieldprogramming.org/licenses/beerware)

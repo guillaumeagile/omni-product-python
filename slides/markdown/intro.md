@@ -12,4 +12,4 @@
 - Demonstrate modern Python idioms, immutable data structures, and algebraic patterns
 - Improve the domain expression
 
-The workshop will show, beyond traditional SOLID principles, other approaches can lead to clearer and more maintainable code, particularly in a Domain-Driven context
+*The workshop will show, beyond traditional SOLID principles, other approaches can lead to clearer and more maintainable code, particularly in a Domain-Driven context*

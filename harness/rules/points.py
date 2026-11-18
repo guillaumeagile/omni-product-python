@@ -72,9 +72,12 @@ class Score:
         return tuple(r for r in self.results if r.regressed)
 
 
-def metric_points(change: float) -> int:
-    """Les points d'une métrique : sa variation arrondie à l'entier, plafonnée à ±METRIC_CAP."""
-    return max(-METRIC_CAP, min(METRIC_CAP, round(change)))
+def metric_points(change: float, better: int) -> int:
+    """Les points d'une métrique : sa variation, comptée dans le sens « mieux » de la ligne, arrondie, plafonnée à ±METRIC_CAP.
+
+    `better` vaut -1 quand moins c'est mieux (une hausse fait perdre des points) et +1 sinon.
+    """
+    return max(-METRIC_CAP, min(METRIC_CAP, round(change * better)))
 
 
 def score(

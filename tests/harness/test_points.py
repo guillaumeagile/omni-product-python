@@ -77,19 +77,25 @@ def test_without_base_the_table_has_no_score():
     assert "| **Total**" not in text
 
 
-def test_a_metric_reports_its_own_variation_as_points():
-    assert metric_points(-4) == -4
-    assert metric_points(3) == 3
+def test_a_lower_is_better_metric_going_up_loses_points_and_going_down_gains_them():
+    assert metric_points(4, -1) == -4
+    assert metric_points(-4, -1) == 4
+
+
+def test_a_higher_is_better_metric_going_up_gains_points():
+    # TCC et lambdas : une hausse va dans le bon sens.
+    assert metric_points(3, +1) == 3
+    assert metric_points(-3, +1) == -3
 
 
 def test_each_metric_is_capped_at_ten_in_both_directions():
-    assert metric_points(25) == METRIC_CAP == 10
-    assert metric_points(-25) == -10
+    assert metric_points(-25, -1) == METRIC_CAP == 10
+    assert metric_points(25, -1) == -10
 
 
 def test_a_fractional_variation_is_rounded_to_whole_points():
-    assert metric_points(0.4) == 0
-    assert metric_points(-2.6) == -3
+    assert metric_points(0.4, -1) == 0
+    assert metric_points(2.6, -1) == -3
 
 
 def test_metric_points_add_to_the_total_next_to_the_rules():
@@ -102,7 +108,7 @@ def test_metric_points_add_to_the_total_next_to_the_rules():
 
 def test_the_table_shows_the_points_of_each_metric():
     text = section(
-        (rule(1, 2, 0),), metric_lines=(("Complexité", -4), ("Lambdas", metric_points(15)))
+        (rule(1, 2, 0),), metric_lines=(("Complexité", -4), ("Lambdas", metric_points(15, +1)))
     )
 
     assert "| Métrique : Complexité (plafond ±10) | -4 |" in text

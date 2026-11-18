@@ -110,7 +110,9 @@ def metric_lines(head: Metrics, base: Metrics | None) -> tuple[tuple[str, int], 
     if base is None:
         return ()
     return tuple(
-        (row.label, metric_points(row.read(head) - row.read(base))) for row in ROWS if row.scored
+        (row.label, metric_points(row.read(head) - row.read(base), row.better))
+        for row in ROWS
+        if row.scored
     )
 
 

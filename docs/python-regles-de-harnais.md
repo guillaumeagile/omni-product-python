@@ -65,6 +65,24 @@ CUTE dit *ce que   le code apporte à l'équipe*.
   l'ORM (`Product(Base)`), donc la sortir du modèle coûte cher.
 - **Règle 6 ✅** : elle est séparée de la règle 5. Les effets impurs (horloge comprise) sont une préoccupation à part :
   on les expulse du cœur par injection de dépendance pour que le cœur se teste facilement.
+  - **Ce que le harnais lit** (`EI001`, `harness/rules/effet_impur.py`) : toute référence à un effet impur dans
+    `domain/model` et `anemic_model`. Un effet est l'horloge (`date.today`, `datetime.now`, `time.time`), un
+    identifiant tiré au hasard (`uuid4`, `random.*`, `secrets.*`), un fichier ou la sortie (`open`, `print`, `input`),
+    le réseau (`httpx`, `requests`, `socket`), l'environnement (`os.environ`, `os.getenv`), le journal (`logging`),
+    un processus (`subprocess`).
+  - **Références, appelées ou non** : `field(default_factory=uuid4)` et `default_factory=date.today` sont des
+    constats, car l'effet entre dans le modèle sans appel visible.
+  - **Noms résolus par les imports** : `import datetime as dt` puis `dt.datetime.now()` est vu comme
+    `datetime.datetime.now`. Importer `date` pour typer `sell_by` reste permis : l'effet est `date.today`.
+  - **Le refactoring attendu** : la méthode reçoit la date (`is_expired(self, today: date)`), ou le cœur reçoit un
+    port `Clock` écrit dans le métier. Le service, hors périmètre, fournit l'horloge réelle.
+  - **Limites** : la règle travaille fichier par fichier. Un effet atteint par un autre module pur n'est pas vu. Elle
+    constate l'absence d'effet. Elle ne peut pas exiger qu'un port soit injecté : les tests avec faux le démontrent.
+  - **Reste à faire ❓** : refuser `patch`, `monkeypatch` et `freezegun` dans les tests. Les tests sont hors du
+    périmètre du harnais (`collect` les écarte), ce contrôle demande un second parcours.
+  - **Verte sur un modèle pur** : sur un modèle qui ne touche ni l'horloge, ni le hasard, ni les fichiers, la règle
+    compte 0 constat. Elle bouge quand le modèle gagne un effet, par exemple en passant à la règle 7 un
+    « est périmé ? » qui appelle `date.today()`.
 - **Règles 4 et 7** : la même union (`ShelfLife`) peut satisfaire les deux, mais ce sont deux questions distinctes.
   La 4 demande de composer au lieu d'hériter. La 7 demande que l'incohérent ne puisse pas se construire.
 - **Règle 8 ✅ (I)** : les idiomes que la communauté Python recommande déjà. Ils se vérifient avec ruff, sans code
@@ -96,8 +114,8 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 2 | Entité ou Value Object | `EV001`, `EV002` | **D** | 1, stratégique | ✅ en place (`entite_valeur.py`) |
 | 3 | Pas de modèle anémique | `MA001` | **D** | 1, stratégique | ✅ en place (`modele_anemique.py`) |
 | 4 | Composition plutôt qu'héritage | `HE001` | **C** | 2, tactique | ✅ en place (`heritage.py`) |
-| 5 | Un échec métier est une valeur | `FV001` | **P** | 2, tactique | ⏳ à faire |
-| 6 | Effets impurs hors du cœur | à venir | **P** | 2, tactique | ⏳ à faire |
+| 5 | Un échec métier est une valeur | `FV001` | **P** | 2, tactique | ✅ en place (`echec_valeur.py`) |
+| 6 | Effets impurs hors du cœur | `EI001` | **P** | 2, tactique | ✅ en place (`effet_impur.py`) ; les tests sans `patch` restent ⏳ |
 | 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |
 | 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ⏳ à faire |
 | 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |
@@ -105,7 +123,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 
 Le numéro de la règle est celui du tableau « Les 10 règles » plus haut, qui donne la question, le refactoring attendu et
 la vérification. Les préfixes des codes viennent du nom de la règle : **C**ontexte **B**orné, **E**ntité **V**aleur,
-**M**odèle **A**némique, **H**éritag**E**.
+**M**odèle **A**némique, **H**éritag**E**, **F**ailure **V**alue (l'échec valeur), **E**ffet **I**mpur.
 
 ## Stratégique, puis tactique (DDD, all the way)
 

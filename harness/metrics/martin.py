@@ -57,6 +57,20 @@ def measure(sources: list[SourceFile]) -> tuple[LayerMetrics, ...]:
     return tuple(_layer(name, by_layer[name], sources, targets) for name in sorted(by_layer))
 
 
+def mean_distance(layers: tuple[LayerMetrics, ...]) -> float:
+    """D moyen des couches, pondéré par leur nombre de modules : la distance du code à la séquence principale.
+
+    De 0 (chaque couche est stable et abstraite, ou instable et concrète) à 1. La pondération donne plus de poids à
+    une grosse couche mal placée qu'à un module isolé. Une couche sans lien (D indéfini) n'entre pas dans la moyenne,
+    et la moyenne vaut 0 quand aucune couche n'a de lien.
+    """
+    linked = [(layer.distance, layer.modules) for layer in layers if layer.distance is not None]
+    modules = sum(weight for _, weight in linked)
+    if not modules:
+        return 0.0
+    return round(sum(distance * weight for distance, weight in linked) / modules, 2)
+
+
 def layer_of(module: str) -> str | None:
     """`omni_product.domain.model.product` est dans `domain` ; le paquet racine et le reste du monde n'ont pas de couche."""
     parts = module.split(".")

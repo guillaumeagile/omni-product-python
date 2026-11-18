@@ -23,7 +23,10 @@ class ClassMetrics:
 
 @dataclass(frozen=True)
 class Metrics:
-    """Les agrégats. Le `min_tcc` vaut 1 et le `max_lcom` 0 quand aucune classe n'a de cohésion mesurable."""
+    """Les agrégats. Le `min_tcc` vaut 1 et le `max_lcom` 0 quand aucune classe n'a de cohésion mesurable.
+
+    `distance` résume le couplage entre couches : le D de Robert Martin, moyen et pondéré (voir `martin.mean_distance`).
+    """
 
     classes: int
     cyclomatic: int
@@ -33,10 +36,9 @@ class Metrics:
     max_cognitive: int
     min_tcc: float
     max_lcom: float
-    fan_out: int
     max_fan_out: int
-    cbo: int
     max_cbo: int
+    distance: float
     tokens: int
     mutable_attributes: int
     assignments: int
@@ -61,6 +63,7 @@ def measure(sources: list[SourceFile]) -> Metrics:
     tccs = [m.tcc for m in per_class if m.tcc is not None]
     lcoms = [m.lcom for m in per_class if m.lcom is not None]
     styled = style.measure(sources)
+    layers = martin.measure(sources)
     return Metrics(
         classes=len(per_class),
         cyclomatic=sum(fn.cyclomatic for fn in every_function),
@@ -70,17 +73,16 @@ def measure(sources: list[SourceFile]) -> Metrics:
         max_cognitive=max((fn.cognitive for fn in every_function), default=0),
         min_tcc=min(tccs, default=1.0),
         max_lcom=max(lcoms, default=0.0),
-        fan_out=sum(m.fan_out for m in per_class),
         max_fan_out=max((m.fan_out for m in per_class), default=0),
-        cbo=sum(m.cbo for m in per_class),
         max_cbo=max((m.cbo for m in per_class), default=0),
+        distance=martin.mean_distance(layers),
         tokens=sum(tokens.count(tokens.effective_code(source.tree)) for source in sources),
         mutable_attributes=styled.mutable_attributes,
         assignments=styled.assignments,
         loops=styled.loops,
         lambdas=styled.lambdas,
         per_class=per_class,
-        layers=martin.measure(sources),
+        layers=layers,
     )
 
 

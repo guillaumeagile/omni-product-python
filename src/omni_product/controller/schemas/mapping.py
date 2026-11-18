@@ -53,9 +53,8 @@ from omni_product.domain.model import (
     prix_of,
     region_supplier_of,
 )
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurProduit, InvalidValueError
 from omni_product.domain.model.invariants import optionnel, premiere_erreur
-from omni_product.exception.product_name_exception import ProductNameException
 
 
 def _kind_of(product: Product) -> ProductKind:
@@ -144,9 +143,9 @@ def schema_to_product(
     """
     # Un produit doit avoir un nom et un slug : sans eux, la base refusait l'écriture.
     if schema.name is None:
-        raise ProductNameException("Product name is missing")
+        return Err(ErreurProduit("Product name is missing"))
     if schema.slug is None:
-        raise ValueError("Product slug is missing")
+        return Err(ErreurProduit("Product slug is missing"))
     erreur = premiere_erreur(_valeurs_a_valider(schema, product_id, schema.slug))
     if erreur is not None:
         return Err(erreur)

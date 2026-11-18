@@ -6,6 +6,8 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session, sessionmaker
 
 from omni_product.config import Settings
+from omni_product.dal.product_dal import SqlProductRepository
+from omni_product.dal.supplier_dal import SqlSupplierRepository
 from omni_product.domain.port.transport_carbon_port import TransportCarbonPort
 from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2ApiClient
 from omni_product.infrastructure.adapter.impact_co2_transport_adapter import (
@@ -26,11 +28,11 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 
 def get_product_service(session: SessionDep) -> ProductService:
-    return ProductService(session)
+    return ProductService(SqlProductRepository(session))
 
 
 def get_supplier_service(session: SessionDep) -> SupplierService:
-    return SupplierService(session)
+    return SupplierService(SqlSupplierRepository(session), SqlProductRepository(session))
 
 
 def get_transport_carbon_port(request: Request) -> TransportCarbonPort:

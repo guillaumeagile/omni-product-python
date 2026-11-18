@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.dal.product_dal import ProductSheet
+from omni_product.dal.product_dal import ProductSheet, SqlProductRepository
 from omni_product.domain.model import (
     NonExpiring,
     ParDateLimite,
@@ -27,7 +27,7 @@ class FakeClock:
 
 @pytest.fixture
 def product_service(session: Session) -> ProductService:
-    return ProductService(session)
+    return ProductService(SqlProductRepository(session))
 
 
 def _sheet(product_id: str, shelf_life: Perishable | NonExpiring | None) -> ProductSheet:

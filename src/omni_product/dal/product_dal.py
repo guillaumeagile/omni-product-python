@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 
 from result import Err, Ok, Result
@@ -48,21 +47,26 @@ from omni_product.domain.model import (
     region_supplier_of,
 )
 from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.product_sheet import ProductSheet
 
 
-@dataclass
-class ProductSheet:
-    """La fiche d'un produit : le Catalogue et les données des autres contextes, assemblés.
+class SqlProductRepository:
+    """Implémente `ProductRepository` avec SQLAlchemy : l'adaptateur de persistance du catalogue."""
 
-    Chaque contexte reste un objet du modèle, identifié par le produit. La fiche ne sert qu'à lire
-    et écrire l'ensemble d'un coup, comme l'API le fait.
-    """
+    def __init__(self, session: Session) -> None:
+        self._session = session
 
-    product: Product
-    pricing: ProductPrice | None = None
-    transport: ProductTransport | None = None
-    stock: ProductStock | None = None
-    supply: ProductSupply | None = None
+    def find_all(self) -> list[ProductSheet]:
+        return find_all(self._session)
+
+    def find_by_id(self, product_id: ProductId) -> ProductSheet | None:
+        return find_by_id(self._session, product_id)
+
+    def save(self, sheet: ProductSheet) -> ProductSheet:
+        return save(self._session, sheet)
+
+    def delete_by_id(self, product_id: ProductId) -> None:
+        delete_by_id(self._session, product_id)
 
 
 def find_all(session: Session) -> list[ProductSheet]:

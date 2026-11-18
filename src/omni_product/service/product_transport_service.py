@@ -26,6 +26,6 @@ class ProductTransportService:
                             case Err(erreur):
                                 return Err(erreur)
                             case Ok(weight):
-                                return TransportRequest.of(mode, distance, weight).map(
+                                return TransportRequest.of(mode, distance, weight).and_then(
                                     self._transport_carbon_port.calculate_emissions
                                 )

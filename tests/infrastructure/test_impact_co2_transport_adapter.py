@@ -1,9 +1,7 @@
 import json
 
 import httpx
-import pytest
 
-from omni_product.domain.exception.transport_carbon_exception import TransportCarbonException
 from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_request import TransportRequest
 from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2ApiClient
@@ -40,7 +38,7 @@ def test_maps_request_and_response() -> None:
             },
         )
 
-    metrics = _adapter(httpx.MockTransport(handle)).calculate_emissions(_request())
+    metrics = _adapter(httpx.MockTransport(handle)).calculate_emissions(_request()).unwrap()
 
     assert seen["url"] == f"{BASE_URL}/transport/emissions"
     assert seen["body"] == {"transport_mode": "truck", "distance_km": 100.0, "weight_kg": 5.0}
@@ -51,21 +49,25 @@ def test_maps_request_and_response() -> None:
     assert metrics.weight.value == 5.0
 
 
-def test_http_error_is_wrapped() -> None:
+def test_http_error_is_returned_as_a_value() -> None:
     adapter = _adapter(httpx.MockTransport(lambda _: httpx.Response(503)))
 
-    with pytest.raises(TransportCarbonException, match="Failed to calculate transport emissions"):
-        adapter.calculate_emissions(_request())
+    result = adapter.calculate_emissions(_request())
+
+    assert result.is_err()
+    assert str(result.unwrap_err()).startswith("Failed to calculate transport emissions")
 
 
-def test_malformed_response_is_wrapped_as_unexpected() -> None:
+def test_malformed_response_is_returned_as_an_unexpected_error() -> None:
     adapter = _adapter(httpx.MockTransport(lambda _: httpx.Response(200, json={"oops": 1})))
 
-    with pytest.raises(TransportCarbonException, match="Unexpected error"):
-        adapter.calculate_emissions(_request())
+    result = adapter.calculate_emissions(_request())
+
+    assert result.is_err()
+    assert str(result.unwrap_err()).startswith("Unexpected error")
 
 
-def test_response_with_a_mode_outside_the_closed_list_is_wrapped_as_unexpected() -> None:
+def test_response_with_a_mode_outside_the_closed_list_is_an_unexpected_error() -> None:
     body = {
         "co2_equivalent_kg": 4.2,
         "co2_direct_kg": None,
@@ -75,5 +77,7 @@ def test_response_with_a_mode_outside_the_closed_list_is_wrapped_as_unexpected()
     }
     adapter = _adapter(httpx.MockTransport(lambda _: httpx.Response(200, json=body)))
 
-    with pytest.raises(TransportCarbonException, match="Unexpected error"):
-        adapter.calculate_emissions(_request())
+    result = adapter.calculate_emissions(_request())
+
+    assert result.is_err()
+    assert str(result.unwrap_err()).startswith("Unexpected error")

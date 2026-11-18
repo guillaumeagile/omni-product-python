@@ -1,8 +1,7 @@
 import httpx
 from result import Err, Ok, Result
 
-from omni_product.domain.exception.transport_carbon_exception import TransportCarbonException
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurTransport, InvalidValueError
 from omni_product.domain.model.invariants import optionnel, premiere_erreur
 from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
@@ -12,31 +11,29 @@ from omni_product.infrastructure.adapter.impact_co2_dtos import ImpactCo2Request
 
 
 class ImpactCo2TransportAdapter:
-    """Implémente `TransportCarbonPort`."""
+    """Implémente `TransportCarbonPort`. Les échecs du service externe sont rendus comme valeurs."""
 
     def __init__(self, api_client: ImpactCo2ApiClient) -> None:
         self._api_client = api_client
 
-    def calculate_emissions(self, transport_request: TransportRequest) -> TransportCarbonMetrics:
+    def calculate_emissions(
+        self, transport_request: TransportRequest
+    ) -> Result[TransportCarbonMetrics, ErreurTransport]:
         try:
             api_response = self._api_client.calculate_emissions(
                 self._map_to_api_request(transport_request)
             )
         except httpx.HTTPError as e:
-            raise TransportCarbonException(f"Failed to calculate transport emissions: {e}") from e
+            return Err(ErreurTransport(f"Failed to calculate transport emissions: {e}"))
         except Exception as e:
-            raise TransportCarbonException(
-                f"Unexpected error during carbon calculation: {e}"
-            ) from e
+            return Err(ErreurTransport(f"Unexpected error during carbon calculation: {e}"))
         # Une réponse dont les valeurs ne passent pas le domaine relève de l'infrastructure : c'est
-        # une erreur du service externe, reportée avec les autres erreurs de calcul.
+        # une erreur du service externe, rendue avec les autres erreurs de calcul.
         match self._map_to_domain_model(api_response):
             case Ok(metrics):
-                return metrics
+                return Ok(metrics)
             case Err(erreur):
-                raise TransportCarbonException(
-                    f"Unexpected error during carbon calculation: {erreur}"
-                ) from erreur
+                return Err(ErreurTransport(f"Unexpected error during carbon calculation: {erreur}"))
 
     @staticmethod
     def _map_to_api_request(transport_request: TransportRequest) -> ImpactCo2Request:

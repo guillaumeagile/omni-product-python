@@ -16,6 +16,7 @@ dependencies = [
 dev = [
     "cognitive-complexity>=1.3.0",
     "httpx2>=2.16.0",
+    "import-linter>=2.16",
     "mutmut>=3.8.1",
     "pyright>=1.1.414",
     "pytest>=9.2.0",
@@ -78,3 +79,27 @@ reportUnnecessaryComparison = false
 reportMissingTypeStubs = false
 venvPath = "."
 venv = ".venv"
+
+[tool.importlinter]
+root_packages = ["omni_product"]
+include_external_packages = true
+
+# La règle 10 : le cœur (modèle, ports, exceptions du domaine) ne dépend que de lui-même et de
+# bibliothèques pures. Les adaptateurs (FastAPI, SQLAlchemy, HTTP) et la plomberie sont à l'extérieur.
+[[tool.importlinter.contracts]]
+name = "Le cœur ne dépend pas de l'extérieur"
+type = "forbidden"
+source_modules = ["omni_product.domain"]
+forbidden_modules = [
+    "omni_product.controller",
+    "omni_product.dal",
+    "omni_product.infrastructure",
+    "omni_product.service",
+    "omni_product.config",
+    "omni_product.database",
+    "omni_product.dependencies",
+    "omni_product.main",
+    "fastapi",
+    "sqlalchemy",
+    "httpx",
+]

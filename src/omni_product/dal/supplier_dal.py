@@ -6,6 +6,28 @@ from omni_product.dal.rows import ProductSupplyRow, SupplierRow
 from omni_product.domain.model import ProductId, Supplier, SupplierId
 
 
+class SqlSupplierRepository:
+    """Implémente `SupplierRepository` avec SQLAlchemy : l'adaptateur des fournisseurs."""
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def find_all(self) -> list[Supplier]:
+        return find_all(self._session)
+
+    def find_by_id(self, supplier_id: SupplierId) -> Supplier | None:
+        return find_by_id(self._session, supplier_id)
+
+    def find_by_product_id(self, product_id: ProductId) -> list[Supplier]:
+        return find_by_product_id(self._session, product_id)
+
+    def save(self, supplier: Supplier) -> Supplier:
+        return save(self._session, supplier)
+
+    def delete(self, supplier: Supplier) -> None:
+        delete(self._session, supplier)
+
+
 def find_all(session: Session) -> list[Supplier]:
     rows = session.scalars(select(SupplierRow).order_by(SupplierRow.id)).all()
     return [_supplier(row) for row in rows]

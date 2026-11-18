@@ -4,16 +4,15 @@ from result import Err, Ok
 from omni_product.controller.erreurs import valeur_invalide
 from omni_product.controller.schemas import ProductSchema, product_to_schema, schema_to_product
 from omni_product.dependencies import ProductServiceDep
-from omni_product.exception.product_name_exception import ProductNameException
 from omni_product.service.product_service import ProductService
+
+FAILED_DEPENDENCY = 424
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
 @router.get("")
 def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
-    if product_service is None:
-        raise ProductNameException("The universe has collapsed: service is null")
     return [product_to_schema(p) for p in product_service.find_all()]
 
 
@@ -31,13 +30,11 @@ def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> Pr
 @router.post("")
 def create_product(body: ProductSchema, product_service: ProductServiceDep) -> ProductSchema:
     if body.name is None or not body.name.strip():
-        raise ProductNameException("Product name is missing")
+        # Le statut 424 est celui du contrat de l'API pour un nom absent à la création.
+        raise HTTPException(FAILED_DEPENDENCY, "Product name is missing")
     if body.id is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
-    if body is not None:
-        if body.name is not None:
-            return _sauver(body, body.id, product_service)
-    raise ProductNameException("Something went wrong in the void")
+    return _sauver(body, body.id, product_service)
 
 
 @router.put("/{product_id}")

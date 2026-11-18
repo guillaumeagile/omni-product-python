@@ -1,3 +1,6 @@
+from result import Ok, Result
+
+from omni_product.domain.model.errors import ErreurTransport
 from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
 from omni_product.domain.model.transport_request import TransportRequest
@@ -8,14 +11,18 @@ class FakePort:
     def __init__(self) -> None:
         self.received: TransportRequest | None = None
 
-    def calculate_emissions(self, transport_request: TransportRequest) -> TransportCarbonMetrics:
+    def calculate_emissions(
+        self, transport_request: TransportRequest
+    ) -> Result[TransportCarbonMetrics, ErreurTransport]:
         self.received = transport_request
-        return TransportCarbonMetrics(
-            CarbonKilos(2.5),
-            CarbonKilos(2.0),
-            transport_request.transport_mode,
-            transport_request.distance_km,
-            transport_request.weight_kg,
+        return Ok(
+            TransportCarbonMetrics(
+                CarbonKilos(2.5),
+                CarbonKilos(2.0),
+                transport_request.transport_mode,
+                transport_request.distance_km,
+                transport_request.weight_kg,
+            )
         )
 
 

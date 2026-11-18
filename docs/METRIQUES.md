@@ -169,8 +169,23 @@ métrique ne fasse pas tout le score. La complexité cyclomatique pèse plus que
 (CK) fait perdre quelques points. Le barème exact apparaît dans le commentaire de l'arbitre sur ta PR, ligne par
 ligne : c'est lui la référence, pas ce document.
 
-Quelques badges viennent de ces mesures : **🤏 Small diff** (peu de tokens modifiés) et **🧹 Clean Coder** (les
-métriques de qualité s'améliorent d'un seuil minimum).
+### Les badges
+
+Un badge salue un geste précis de la PR et ajoute ses points au total. Il se gagne seulement avec une base à comparer.
+Une PR vide n'en gagne aucun.
+
+| Badge | Ce qui le donne | Points |
+|---|---|---:|
+| 🍼 Baby step | Une seule règle passe au vert | +5 |
+| 🤏 Small diff | Au plus 400 tokens de code modifiés | +2 |
+| 🧹 Clean Coder | Les métriques notées rapportent au moins +5 au total | +3 |
+| ✂️ Less is more | Le code du périmètre perd des tokens | +2 |
+| 🛡️ Sans casse | Aucune règle ne régresse, aucune métrique ne perd de points | +2 |
+| 🔌 Port | Une classe abstraite de plus (`Protocol`, `ABC`) | +2 |
+| 🧭 Uncle Bob approuve | La métrique Uncle Bob baisse d'au moins 0,1, sans violation du sens des dépendances en plus | +3 |
+| 🧊 Immuable | Moins d'attributs mutables | +2 |
+
+Une PR vide (🫥) perd 5 points.
 
 ## Ce que les métriques ne voient pas
 

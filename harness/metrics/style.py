@@ -1,10 +1,16 @@
-"""Les signaux de style : états mutables, affectations, boucles, lambdas. Ils décrivent, ils ne jugent pas."""
+"""Les signaux de style : états mutables, affectations, boucles, lambdas. Ils décrivent, ils ne jugent pas.
+
+Deux comptes de lambdas : toutes, et celles qui sont une étape des rails d'un `Result` (`.map(lambda p: p.prix)`).
+Sur une liste, la compréhension est préférée à `map(lambda ...)` (règle 8) : seules les secondes disent le style
+que l'atelier vise (règle 9, ROP).
+"""
 
 import ast
 from dataclasses import dataclass
 
 from harness.metrics.classes import Function, functions_of, top_level_classes
 from harness.metrics.sources import SourceFile
+from harness.rop import RAIL_METHODS
 
 
 @dataclass(frozen=True)
@@ -13,6 +19,7 @@ class Style:
     assignments: int
     loops: int
     lambdas: int
+    rail_lambdas: int
 
 
 def measure(sources: list[SourceFile]) -> Style:
@@ -25,7 +32,20 @@ def measure(sources: list[SourceFile]) -> Style:
         assignments=sum(_is_assignment(node) for node in nodes),
         loops=sum(isinstance(node, ast.For | ast.AsyncFor | ast.While) for node in nodes),
         lambdas=sum(isinstance(node, ast.Lambda) for node in nodes),
+        rail_lambdas=sum(_rail_lambdas(node) for node in nodes),
     )
+
+
+def _rail_lambdas(node: ast.AST) -> int:
+    """Les `lambda` passées à une méthode des rails : `.map(lambda ...)`, `.and_then(lambda ...)`."""
+    if not (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr in RAIL_METHODS
+    ):
+        return 0
+    arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
+    return sum(isinstance(argument, ast.Lambda) for argument in arguments)
 
 
 def _is_assignment(node: ast.AST) -> bool:

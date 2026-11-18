@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness.perimetre import dossiers_exclus
+from harness.perimetre import HORS_PERIMETRE, TOUT_LE_PAQUET, dossiers_exclus
 from harness.rules import (
     architecture_oignon,
     contexte_borne,
@@ -19,7 +19,9 @@ from harness.rules import (
     entite_valeur,
     etat_illegal,
     heritage,
+    idiomes,
     modele_anemique,
+    style_fonctionnel,
 )
 from harness.rules.points import RuleResult
 from harness.rules.sources import Source, collect, collect_tests
@@ -38,6 +40,8 @@ class Rule:
     complement: Callable[[Source, UbiquitousLanguage], Sequence[object]] | None = None
     # Constats lus dans les fichiers de `tests/` (hors `tests/harness`), ajoutés à ceux du code et comptés avec eux.
     tests: Callable[[Source, UbiquitousLanguage], Sequence[object]] | None = None
+    # Entrées de `omni_product/` écartées (voir `harness.perimetre`) : le cœur par défaut.
+    hors: tuple[str, ...] = HORS_PERIMETRE
 
 
 RULES: tuple[Rule, ...] = (
@@ -81,6 +85,16 @@ RULES: tuple[Rule, ...] = (
         ("omni_product/domain/model", "omni_product/anemic_model"),
         etat_illegal.check,
     ),
+    # Tout le code de `omni_product` (hors périmètre), comme la règle 1 : ruff lit chaque fichier.
+    Rule(8, "Idiomes courants de Python", ("omni_product",), idiomes.check),
+    # Tout le paquet, controllers et services compris : le ROP traverse les couches.
+    Rule(
+        9,
+        "Style fonctionnel et ROP (II)",
+        ("omni_product",),
+        style_fonctionnel.check,
+        hors=TOUT_LE_PAQUET,
+    ),
     # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même.
     Rule(
         10,
@@ -116,7 +130,7 @@ def _run(
         if check is None or not any((src_root / root).is_dir() for root in rule.roots):
             continue
         sources = collect(
-            [src_root / root for root in rule.roots], src_root, dossiers_exclus(src_root)
+            [src_root / root for root in rule.roots], src_root, dossiers_exclus(src_root, rule.hors)
         )
         output[rule.number] = [finding for source in sources for finding in check(source, language)]
         if rule.tests is not None and pick(rule) is rule.check:

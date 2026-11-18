@@ -25,7 +25,7 @@ def test_a_frozen_dataclass_without_id_is_a_value_object():
 
         @dataclass(frozen=True)
         class Price:
-            amount: float
+            label: str
         """
     assert codes(text) == []
 
@@ -74,7 +74,7 @@ def test_a_non_frozen_dataclass_without_id_is_a_violation():
 
         @dataclass
         class Price:
-            amount: float
+            label: str
         """
     assert codes(text) == ["EV001"]
 

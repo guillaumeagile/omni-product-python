@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 
 from result import Err, Ok, Result
 
@@ -67,15 +68,17 @@ def prix_of(
         if tax is None and tax_rate is None:
             return Ok(None)
         return Err(ErreurTarification("Une taxe demande un prix de base"))
-    match Amount.of(base):
-        case Err(erreur):
-            return Err(erreur)
-        case Ok(montant):
-            if tax is None and tax_rate is None:
-                return Ok(PrixHorsTaxe(montant))
-            if tax is None or tax_rate is None:
-                return Err(ErreurTarification("Une taxe demande son montant et son taux"))
-            return _prix_avec_taxe(montant, tax, tax_rate)
+    return Amount.of(base).and_then(partial(_prix_depuis_montant, tax=tax, tax_rate=tax_rate))
+
+
+def _prix_depuis_montant(
+    montant: Amount, tax: float | None, tax_rate: float | None
+) -> Result[Price | None, ErreurTarification]:
+    if tax is None and tax_rate is None:
+        return Ok(PrixHorsTaxe(montant))
+    if tax is None or tax_rate is None:
+        return Err(ErreurTarification("Une taxe demande son montant et son taux"))
+    return _prix_avec_taxe(montant, tax, tax_rate)
 
 
 def _prix_avec_taxe(

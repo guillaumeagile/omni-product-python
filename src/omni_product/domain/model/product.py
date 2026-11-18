@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from functools import partial
 
 from result import Err, Ok, Result
 
@@ -114,13 +115,13 @@ def perissable_of(
         if expiration_date is None:
             return Err(ErreurProduit("Un produit périssable a une date limite ou une durée"))
         return Ok(ParDateLimite(expiration_date))
-    match ShelfLifeDays.of(shelf_life_days):
-        case Err(erreur):
-            return Err(erreur)
-        case Ok(duree):
-            if expiration_date is None:
-                return Ok(ParDureeDeConservation(duree))
-            return Ok(ParDateEtDuree(expiration_date, duree))
+    return ShelfLifeDays.of(shelf_life_days).map(partial(_perissable_avec_duree, expiration_date))
+
+
+def _perissable_avec_duree(expiration_date: date | None, duree: ShelfLifeDays) -> Perishable:
+    if expiration_date is None:
+        return ParDureeDeConservation(duree)
+    return ParDateEtDuree(expiration_date, duree)
 
 
 @dataclass

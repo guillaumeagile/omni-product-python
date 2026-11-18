@@ -1,4 +1,6 @@
-from result import Err, Ok, Result
+from functools import partial
+
+from result import Result
 
 from omni_product.domain.model import Product, ProductId, ProductSupply, Supplier, SupplierId
 from omni_product.domain.model.errors import InvalidValueError
@@ -20,12 +22,10 @@ class SupplierService:
         self._supplies = supplies
 
     def create_supplier(self, id: str, name: str) -> Result[Supplier, InvalidValueError]:
-        match SupplierId.of(id):
-            case Err(erreur):
-                return Err(erreur)
-            case Ok(supplier_id):
-                supplier = Supplier(id=supplier_id, name=name)
-                return Ok(self._suppliers.save(supplier))
+        return SupplierId.of(id).map(partial(self._create, name=name))
+
+    def _create(self, supplier_id: SupplierId, *, name: str) -> Supplier:
+        return self._suppliers.save(Supplier(id=supplier_id, name=name))
 
     def get_supplier(self, supplier_id: str) -> Result[Supplier | None, InvalidValueError]:
         return SupplierId.of(supplier_id).map(self._suppliers.find_by_id)
@@ -39,13 +39,12 @@ class SupplierService:
         return ProductId.of(product_id).map(self._suppliers_of_existing_product)
 
     def update_supplier(self, id: str, name: str | None) -> Result[Supplier, InvalidValueError]:
-        match SupplierId.of(id):
-            case Err(erreur):
-                return Err(erreur)
-            case Ok(supplier_id):
-                supplier = self._get_or_raise(supplier_id)
-                supplier.name = name or supplier.name
-                return Ok(self._suppliers.save(supplier))
+        return SupplierId.of(id).map(partial(self._update, name=name))
+
+    def _update(self, supplier_id: SupplierId, *, name: str | None) -> Supplier:
+        supplier = self._get_or_raise(supplier_id)
+        supplier.name = name or supplier.name
+        return self._suppliers.save(supplier)
 
     def delete_supplier(self, supplier_id: str) -> Result[None, InvalidValueError]:
         return SupplierId.of(supplier_id).map(self._delete)

@@ -64,13 +64,13 @@ ROWS = (
     Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1, scored=True, weight=0),
     Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1, scored=True, weight=1),
     # Remplace les totaux de fan-out et de CBO : le couplage entre couches, dans le sens des liens (0 = le mieux).
-    # D varie par dixièmes : le poids 10 fait valoir 1 point à une variation de 0,1.
+    # D varie par dixièmes : le poids 20 fait valoir 1 point à une variation de 0,05.
     Row(
         "Métrique Uncle Bob (D moyen des couches, 0 = le mieux)",
         lambda m: m.uncle_bob,
         -1,
         scored=True,
-        weight=10,
+        weight=20,
     ),
     # Le sens de chaque lien, que D ne voit pas : une violation ajoutée coûte 1 point.
     Row(

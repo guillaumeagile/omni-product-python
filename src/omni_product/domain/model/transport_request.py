@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurTransport
 from omni_product.domain.model.transport import Distance, Kilos, TransportMode
 
 
@@ -15,9 +15,9 @@ class TransportRequest:
     @classmethod
     def of(
         cls, transport_mode: TransportMode, distance_km: Distance, weight_kg: Kilos
-    ) -> Result["TransportRequest", InvalidValueError]:
+    ) -> Result["TransportRequest", ErreurTransport]:
         if distance_km.value <= 0:
-            return Err(InvalidValueError("Distance must be positive"))
+            return Err(ErreurTransport("Distance must be positive"))
         if weight_kg.value <= 0:
-            return Err(InvalidValueError("Weight must be positive"))
+            return Err(ErreurTransport("Weight must be positive"))
         return Ok(cls(transport_mode, distance_km, weight_kg))

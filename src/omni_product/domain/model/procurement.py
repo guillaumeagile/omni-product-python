@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from result import Result
 
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurFournisseur
 from omni_product.domain.model.invariants import require_text
 from omni_product.domain.model.product import ProductId
 from omni_product.domain.model.supplier import Region, SupplierId
@@ -15,8 +15,8 @@ class Siren:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[Siren, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[Siren, ErreurFournisseur]:
+        return require_text(cls, value, ErreurFournisseur).map(cls)
 
 
 @dataclass(frozen=True)
@@ -24,8 +24,8 @@ class TvaId:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[TvaId, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[TvaId, ErreurFournisseur]:
+        return require_text(cls, value, ErreurFournisseur).map(cls)
 
 
 # Contexte Approvisionnement : qui fournit le produit, et les fournisseurs par région.

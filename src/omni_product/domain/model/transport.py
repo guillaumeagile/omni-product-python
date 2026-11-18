@@ -5,7 +5,7 @@ from typing import Literal, TypeIs, get_args
 
 from result import Err, Ok, Result
 
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurTransport
 from omni_product.domain.model.invariants import require_at_least_zero, require_text
 from omni_product.domain.model.product import ProductId
 
@@ -25,10 +25,10 @@ class TransportMode:
     value: TransportModeName
 
     @classmethod
-    def of(cls, raw: str) -> Result[TransportMode, InvalidValueError]:
+    def of(cls, raw: str) -> Result[TransportMode, ErreurTransport]:
         if not _is_transport_mode(raw):
             return Err(
-                InvalidValueError(f"TransportMode doit être l'un de : {', '.join(TRANSPORT_MODES)}")
+                ErreurTransport(f"TransportMode doit être l'un de : {', '.join(TRANSPORT_MODES)}")
             )
         return Ok(cls(raw))
 
@@ -40,8 +40,8 @@ class Distance:
     value: float
 
     @classmethod
-    def of(cls, value: float) -> Result[Distance, InvalidValueError]:
-        return require_at_least_zero(cls, value).map(cls)
+    def of(cls, value: float) -> Result[Distance, ErreurTransport]:
+        return require_at_least_zero(cls, value, ErreurTransport).map(cls)
 
 
 @dataclass(frozen=True)
@@ -49,8 +49,8 @@ class Kilos:
     value: float
 
     @classmethod
-    def of(cls, value: float) -> Result[Kilos, InvalidValueError]:
-        return require_at_least_zero(cls, value).map(cls)
+    def of(cls, value: float) -> Result[Kilos, ErreurTransport]:
+        return require_at_least_zero(cls, value, ErreurTransport).map(cls)
 
 
 @dataclass(frozen=True)
@@ -60,8 +60,8 @@ class CarbonKilos:
     value: float
 
     @classmethod
-    def of(cls, value: float) -> Result[CarbonKilos, InvalidValueError]:
-        return require_at_least_zero(cls, value).map(cls)
+    def of(cls, value: float) -> Result[CarbonKilos, ErreurTransport]:
+        return require_at_least_zero(cls, value, ErreurTransport).map(cls)
 
 
 @dataclass(frozen=True)
@@ -69,8 +69,8 @@ class Volume:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[Volume, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[Volume, ErreurTransport]:
+        return require_text(cls, value, ErreurTransport).map(cls)
 
 
 # Contexte Transport (livraison) : le poids et l'encombrement qui pèsent sur l'expédition.

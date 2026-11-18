@@ -5,7 +5,7 @@ from datetime import date
 
 from result import Result
 
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurProduit
 from omni_product.domain.model.invariants import require_at_least_zero, require_text
 
 # Contexte Catalogue : le produit, ses images et ses types. Les autres contextes (prix, transport,
@@ -17,8 +17,8 @@ class ProductId:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[ProductId, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[ProductId, ErreurProduit]:
+        return require_text(cls, value, ErreurProduit).map(cls)
 
 
 @dataclass(frozen=True)
@@ -26,8 +26,8 @@ class Slug:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[Slug, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[Slug, ErreurProduit]:
+        return require_text(cls, value, ErreurProduit).map(cls)
 
 
 @dataclass(frozen=True)
@@ -35,8 +35,8 @@ class ImageKey:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[ImageKey, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[ImageKey, ErreurProduit]:
+        return require_text(cls, value, ErreurProduit).map(cls)
 
 
 @dataclass(frozen=True)
@@ -44,8 +44,8 @@ class ImageDetail:
     value: str
 
     @classmethod
-    def of(cls, value: str) -> Result[ImageDetail, InvalidValueError]:
-        return require_text(cls, value).map(cls)
+    def of(cls, value: str) -> Result[ImageDetail, ErreurProduit]:
+        return require_text(cls, value, ErreurProduit).map(cls)
 
 
 @dataclass(frozen=True)
@@ -59,8 +59,8 @@ class ShelfLifeDays:
     value: int
 
     @classmethod
-    def of(cls, value: int) -> Result[ShelfLifeDays, InvalidValueError]:
-        return require_at_least_zero(cls, value).map(cls)
+    def of(cls, value: int) -> Result[ShelfLifeDays, ErreurProduit]:
+        return require_at_least_zero(cls, value, ErreurProduit).map(cls)
 
 
 @dataclass(frozen=True)

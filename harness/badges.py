@@ -4,11 +4,11 @@ Le badge 🍼 Baby step (une seule règle passée au vert) est dans le barème d
 regardent les mesures. Un badge ne se gagne qu'avec une base à comparer, et jamais sur une PR vide.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from harness.metrics.report import Metrics
-from harness.rules.points import RuleResult
+from harness.rules.points import BABY_STEP_POINTS, RuleResult
 
 SMALL_DIFF_TOKENS = 400
 CLEAN_CODER_POINTS = 5  # les points de métriques à atteindre pour 🧹 Clean Coder
@@ -94,3 +94,20 @@ def earned(pr: Pr) -> tuple[Badge, ...]:
 def lines(pr: Pr | None) -> tuple[tuple[str, int], ...]:
     """(libellé, points) de chaque badge gagné, pour le tableau des points."""
     return () if pr is None else tuple((badge.label, badge.points) for badge in earned(pr))
+
+
+def won(pr: Pr | None) -> tuple[tuple[str, int], ...]:
+    """Tous les badges gagnés, 🍼 Baby step compris : ce qu'affiche l'en-tête du commentaire."""
+    if pr is None or pr.changed_tokens == 0:
+        return ()
+    green = sum(result.turned_green for result in pr.results)
+    baby_step = (("🍼 Baby step", BABY_STEP_POINTS),) if green == 1 else ()
+    return baby_step + lines(pr)
+
+
+def banner(won: Sequence[tuple[str, int]]) -> str:
+    """La section des badges gagnés, en tête du commentaire. Vide quand la PR n'en gagne aucun."""
+    if not won:
+        return ""
+    badges = " · ".join(f"**{label}** ({points:+d})" for label, points in won)
+    return f"### 🏅 Badges gagnés\n\n{badges}\n"

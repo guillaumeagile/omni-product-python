@@ -94,8 +94,12 @@ def render(
     changed_tokens: int | None = None,
     rules_md: str = "",
     mutation: tuple[float | None, float | None] = (None, None),
+    badges_md: str = "",
 ) -> str:
-    """`mutation` : le score de mutation (en %) de la base et de la PR, quand la CI les fournit."""
+    """`mutation` : le score de mutation (en %) de la base et de la PR, quand la CI les fournit.
+
+    `badges_md` : la section des badges gagnés, affichée en tête du commentaire.
+    """
     lines = [
         MARKER,
         "## 📊 Scorecard du harnais",
@@ -103,6 +107,7 @@ def render(
         "Des **repères pour guider ton refactoring**  "
         "Le détail de chaque chiffre est dans `docs/METRIQUES.md`.",
         "",
+        *([badges_md] if badges_md else []),
         *([rules_md] if rules_md else []),
         "### 📏 Métriques",
         "",
@@ -326,7 +331,7 @@ def main() -> None:
         else badges.Pr(head, base, changed, results, metrics, *scores)
     )
     rules_md = rules_report.section(results, metrics, changed, badges.lines(pr))
-    card = render(head, base, changed, rules_md, scores)
+    card = render(head, base, changed, rules_md, scores, badges.banner(badges.won(pr)))
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")
     else:

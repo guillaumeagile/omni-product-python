@@ -117,3 +117,21 @@ def test_the_scorecard_shows_the_mutation_score_from_base_to_pr():
 
     assert "| Score de mutation (modèle, % de mutants tués) | 61.5 | 70 | +8.5 | ✅ |" in card
     assert "Score de mutation" not in scorecard.render(BASE, BASE)
+
+
+def test_the_badges_won_head_the_comment():
+    pr = replace(
+        NEUTRAL,
+        changed_tokens=10,
+        results=(RuleResult(number=1, title="r", before=2, after=0),),
+    )
+    card = scorecard.render(BASE, BASE, badges_md=badges.banner(badges.won(pr)))
+
+    assert "**🍼 Baby step** (+5) · **🤏 Small diff** (+2)" in card
+    assert card.index("🏅 Badges gagnés") < card.index("📏 Métriques")
+
+
+def test_no_badge_no_banner():
+    assert badges.banner(badges.won(NEUTRAL)) == ""
+    assert badges.won(None) == ()
+    assert badges.won(replace(NEUTRAL, changed_tokens=0)) == ()

@@ -39,7 +39,7 @@ def section(
                 f"| Métrique : {label} (plafond ±{METRIC_CAP}) | {points:+d} |"
                 for label, points in result.metric_lines
             ),
-            f"| **Total** | **+{result.total}** |",
+            f"| **Total** | **{result.total:+d}** |",
         ]
         lines += [
             f"\n⚠️ Régression sur la règle {r.number} : {r.before} → {r.after} constat(s)."

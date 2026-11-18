@@ -126,3 +126,10 @@ def test_the_table_shows_the_points_of_each_metric():
     assert "| Métrique : Complexité (plafond ±15) | -4 |" in text
     assert "| Métrique : Lambdas (plafond ±15) | +15 |" in text
     assert "| **Total** | **+26** |" in text
+
+
+def test_a_negative_total_shows_a_single_sign():
+    text = section((rule(1, 2, 0),), metric_lines=(("Complexité", -20),))
+
+    assert "| **Total** | **-5** |" in text
+    assert "+-" not in text

@@ -49,6 +49,17 @@ Les mesures disent *combien*. Les **règles** disent *quoi* : « cette classe fa
 Chacune cible un défaut de design précis que ni `ruff` ni `pyright` ne signalent. Elles lisent l'arbre syntaxique du code
 (module `ast`), pas le texte.
 
+Le module `ast` vient de la bibliothèque standard : il donne l'arbre exact que Python compile, sans dépendance. Les
+règles y ajoutent ce que l'arbre seul ne dit pas. Les noms sont résolus par les imports (`import datetime as dt` puis
+`dt.datetime.now()` est vu comme `datetime.datetime.now`), les références comptent même sans appel
+(`default_factory=uuid4`), et une fonction native redéfinie dans le fichier n'est pas confondue avec l'originale.
+Chaque règle a ses tests à réponse connue, dans `tests/harness/`. Les limites sont assumées et écrites en tête de
+chaque règle : la lecture se fait fichier par fichier, sans les types. Un outil multi-langage comme tree-sitter se
+justifiera le jour où le harnais lira un autre langage que Python.
+
+Les règles lisent le même périmètre que les mesures, sauf la règle 9 (style fonctionnel, ROP), qui lit aussi les
+controllers et les services : les rails d'un `Result` traversent toutes les couches.
+
 Une règle est **rouge** tant qu'il reste des constats, **verte** quand il n'y en a plus. Chaque constat s'affiche au
 format de ruff : `chemin:ligne:colonne: CODE message`. La liste des règles, leurs codes et leur état se trouvent dans
 le tableau « Règles Python » de [python-regles-de-harnais.md](python-regles-de-harnais.md).

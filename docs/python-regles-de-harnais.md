@@ -49,7 +49,7 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 | 6 | Les **effets impurs** sont-ils expulsés du cœur ? | **P** | C, D | 🧪 | Heure, aléatoire, UUID, fichiers, réseau et base sortent du cœur du domaine. Le cœur les reçoit en paramètre, ou par un port nommé dans le métier (`Clock`, `IdGenerator`) qu'on injecte. Le cœur devient pur et ses tests se font avec de simples faux, sans `patch`. | `ast` : `anemic_model/` n'appelle pas `date.today`, `datetime.now`, `time.time`, `uuid4`, `random.*`, `open`, `print`, ni `requests` ou `httpx`. Les tests n'utilisent ni `patch` ni `freezegun`. |
 | 7 | **Un état illégal est-il impossible à construire ?** | **P** | D, C | 📖 | Remplacer les combinaisons incohérentes (drapeaux, `None` qui vont par paires) par un ADT : une union fermée de dataclasses frozen. Exemple : `Perishable(sell_by, use_by)` ou `NonExpiring(best_before)`. L'invariant (`sell_by <= use_by`) est validé par une fabrique qui rend un résultat. | `ast` : pas de champ booléen `is_*` ou `has_*` stocké, pas de plusieurs champs `X \| None` qui vont ensemble. Pyright : `match` exhaustif sur l'ADT. |
 | 8 | Le code s'écrit-il avec **les idiomes courants de Python** ? | **I** | P, U | · | Remplacer les formes héritées d'autres langages par les formes que Python recommande : les boucles qui remplissent une liste deviennent des compréhensions, les chaînes de `if` un `match` ou une table, les retours anticipés remplacent l'imbrication. Chaque branche en moins fait baisser la complexité cyclomatique. | ruff durci (`PERF`, `C4`, `SIM`, `UP`, `C90`), sans code maison : `PERF401` repère la boucle qui remplit une liste. En appui, sur la scorecard : `boucles`, complexités cyclomatique et cognitive. |
-| 9 | Le code va-t-il **plus loin vers le fonctionnel** (II) ? | **II** | P, U | · | Pousser le style au-delà de ce que Python impose : `sum`, `any`, `all`, `map`, `filter` et `reduce` à la place des boucles d'accumulation, petits `lambda`, enchaînements fluides sur un `Result` ou un `Option` (`.map`, `.and_then`) à la place des `if` et des `try`. Le style rejoint celui de Rust, Java, C# et Kotlin. | `ast` maison ❓ : pas de boucle `for` qui accumule (`append`, `+=`) dans `anemic_model/` et `service/`. En appui, sur la scorecard : `boucles`, `affectations`, `lambdas`. |
+| 9 | Le code va-t-il **plus loin vers le fonctionnel, jusqu'au ROP** (II) ? | **II** | P, U | · | Écrire en Railway Oriented Programming, du service au controller : chaque étape rend un `Result`, les étapes s'enchaînent avec `.map`, `.and_then` et `.map_err`, sans `if` ni `try` entre elles, et un `match` exhaustif termine le chemin à la frontière. Une petite `lambda` sert d'étape sur les rails. Les accumulateurs deviennent `sum`, `any`, `all` ou `reduce`. Le style rejoint celui de Rust, Java, C# et Kotlin. | `ast` maison sur tout `omni_product/`, controllers et services compris : bascule à la main sur un `Result` (`SF001`), `unwrap` (`SF002`), `try` (`SF003`), accumulateur dans une boucle (`SF004`), `raise` hors du modèle (`SF005`). En appui, sur la scorecard : `lambdas sur les rails`. |
 | 10 | Les dépendances **pointent-elles vers le cœur** (architecture en oignon, ports et adaptateurs) ? | **C** | P | 🧪 | Sortir de l'architecture en couches `controller → service → dal → base`. Le cœur (modèle et cas d'usage) ne connaît que des **ports**, des `Protocol` écrits dans le langage du métier (`ProductRepository`, `Clock`). Les **adaptateurs** (FastAPI, SQLAlchemy) sont à l'extérieur, implémentent les ports, et sont branchés à un seul endroit (la composition root). Le `dal/` disparaît au profit d'adaptateurs. | `import-linter` : contrats de couches (le cœur n'importe ni `controller`, ni `dal`, ni `infrastructure`, ni `fastapi`, ni `sqlalchemy`). Test : les cas d'usage se testent avec des faux en mémoire, sans base ni HTTP. |
 
 ### Notes sur les règles
@@ -58,7 +58,8 @@ CUTE dit *ce que   le code apporte à l'équipe*.
   (`harness/perimetre.py`). Ces fichiers sont de la plomberie : l'architecture en oignon (règle 10 du tableau) les
   sortira du cœur. `dal/` est mesuré : la persistance qu'il porte passe dans `infrastructure/`, et l'exclure ferait
   compter ce déplacement comme du code ajouté. Un mot technique ne s'ajoute jamais à l'ubiquitous language pour faire
-  taire le harnais : on exclut le fichier.
+  taire le harnais : on exclut le fichier. **Exception : la règle 9** lit tout `omni_product/`. Le ROP traverse les
+  couches, et un controller s'écrit sur les rails comme le cœur (`TOUT_LE_PAQUET` dans `harness/perimetre.py`).
 
 - **Règle 1 : l'agrégat ne traverse qu'un contexte.** Un agrégat par contexte reste utile : il garde ses invariants (un
   prix garde ses règles de prix, un stock ses quantités). Un agrégat qui mêle plusieurs contextes doit disparaître.
@@ -119,6 +120,35 @@ CUTE dit *ce que   le code apporte à l'équipe*.
   [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md) (« FP: a New Hope in Idioms ») expose cette divergence. Précision pour
   Python : `reduce` reste rare, car `sum`, `any` et `all` couvrent l'essentiel, et la compréhension reste préférée à
   `map` ou `filter` avec un `lambda` sur une liste. Les `lambda` servent surtout aux enchaînements sur un `Result`.
+  - **Le but : le ROP.** La règle 5 rend l'échec métier en valeur dans le modèle. La règle 9 fait circuler cette
+    valeur jusqu'au bout : services, adaptateurs et controllers enchaînent les `Result` sur deux rails, comme dans
+    [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md) (« Railway Oriented Programming »).
+  - **Ce que le harnais lit** (`harness/rules/style_fonctionnel.py`), sur tout `omni_product/` :
+    - `SF001`, bascule à la main : `.is_ok()`, `.is_err()`, `is_ok(r)`, `isinstance(r, Ok | Err)`, ou un `match` dont
+      la branche `Err` rend l'erreur telle quelle (`case Err(): return r`). C'est un `.map` ou un `.and_then` écrit à
+      la main.
+    - `SF002`, sortie des rails en levant : `.unwrap()`, `.expect()`, `.unwrap_err()`, `.expect_err()`,
+      `.unwrap_or_raise()`. `.unwrap_or(défaut)` et `.unwrap_or_else(...)` terminent le chemin sans lever : permis.
+    - `SF003`, un `try` qui rattrape : à la frontière d'une bibliothèque qui lève, `@as_result(...)` met l'appel sur
+      les rails. Un `try` / `finally` sans `except` reste permis.
+    - `SF005`, un `raise` hors du modèle : le service rend un `Result`, le controller le traduit en réponse HTTP par
+      un `match` exhaustif. Les `raise` du modèle restent comptés par la règle 5, une seule fois.
+    - `SF004`, un accumulateur dans une boucle (`total += prix`) : `sum`, `any`, `all` ou `functools.reduce`. La
+      boucle qui remplit une liste est déjà `PERF401` (règle 8).
+  - **Un `match` exhaustif à la frontière est permis.** C'est la fin des rails : pyright y vérifie que les deux cas
+    sont traités.
+  - **Les `lambda`, tranché ✅.** Elles ne sont jamais des constats. Sur une liste, la compréhension reste préférée :
+    la règle 8 signale `map(lambda ...)` (`C417`). Sur les rails, une petite `lambda` est une étape bienvenue
+    (`.map(lambda produit: produit.prix)`). Une étape qui porte un nom métier devient une fonction nommée
+    (`.and_then(trouver_produit)`), comme chez Scott Wlaschin. La scorecard suit la même ligne : seules les « lambdas
+    sur les rails » (passées à `.map`, `.and_then`, `.map_err`…) rapportent des points, le total des lambdas reste un
+    thermomètre sans points.
+  - **Limites** : la règle lit la syntaxe, sans les types. `.unwrap()` ou `.is_ok()` sur un autre objet qu'un
+    `Result` donne un faux positif. `isinstance` et `match` ne sont reconnus que sur `Ok` et `Err` importés de
+    `result`.
+  - **Sur le legacy de l'atelier** : la règle est rouge. Les controllers et `supplier_service` lèvent (`SF005`),
+    l'adaptateur ImpactCO2 rattrape avec un `try` (`SF003`). Elle passe au vert quand les services rendent des
+    `Result` et que les controllers les traduisent par un `match`.
 - **Règle 10 ✅** : elle généralise la règle 3. La règle 3 sort le stockage du modèle, la règle 10 organise tout le
   projet autour du cœur. Le port `domain/port` et l'adaptateur `infrastructure/adapter`, déjà présents pour le
   transport carbone, sont le modèle à reproduire pour le reste. La règle 3 devient donc la première marche de la 10.
@@ -157,12 +187,12 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 6 | Effets impurs hors du cœur | `EI001` (modèle), `EI002` (tests) | **P** | 2, tactique | ✅ en place (`effet_impur.py`) |
 | 7 | État illégal impossible à construire | `EL001`, `EL002` | **P** | 2, tactique | ✅ en place (`etat_illegal.py`) |
 | 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ✅ en place (`idiomes.py`, ruff, sans code maison) |
-| 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |
+| 9 | Style fonctionnel et ROP (II) | `SF001` à `SF005` | **II** | 2, tactique | ✅ en place (`style_fonctionnel.py`), rouge sur le legacy |
 | 10 | Architecture en oignon | `AO001` | **C** | 3, aboutissement | ✅ en place (`architecture_oignon.py`), rouge sur le legacy |
 
 Le numéro de la règle est celui du tableau « Les 10 règles » plus haut, qui donne la question, le refactoring attendu et
 la vérification. Les préfixes des codes viennent du nom de la règle : **C**ontexte **B**orné, **E**ntité **V**aleur,
-**M**odèle **A**némique, **H**éritag**E**, **F**ailure **V**alue (l'échec valeur), **E**ffet **I**mpur, **E**tat **L**égal (`EI` étant pris).
+**M**odèle **A**némique, **H**éritag**E**, **F**ailure **V**alue (l'échec valeur), **E**ffet **I**mpur, **E**tat **L**égal (`EI` étant pris), **S**tyle **F**onctionnel.
 
 ## Stratégique, puis tactique (DDD, all the way)
 

@@ -84,7 +84,10 @@ ROWS = (
     Row("Attributs mutables", lambda m: m.mutable_attributes, -1, scored=True, weight=1),
     Row("Affectations", lambda m: m.assignments, -1, scored=True, weight=0),
     Row("Boucles", lambda m: m.loops, -1, scored=True, weight=0),
-    Row("Lambdas", lambda m: m.lambdas, +1, scored=True, weight=1),
+    # Toutes les lambdas : un thermomètre, sans points. `map(lambda ...)` sur une liste ne doit rien rapporter.
+    Row("Lambdas", lambda m: m.lambdas, +1, scored=True, weight=0),
+    # Les lambdas qui sont une étape des rails d'un `Result` (règle 9, ROP) : elles seules rapportent.
+    Row("Lambdas sur les rails (ROP)", lambda m: m.rail_lambdas, +1, scored=True, weight=1),
 )
 
 

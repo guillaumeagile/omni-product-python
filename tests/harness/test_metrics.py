@@ -286,6 +286,31 @@ def test_style_signals_count_state_loops_and_lambdas():
     assert styled.assignments == 9
     assert styled.loops == 2
     assert styled.lambdas == 1
+    assert styled.rail_lambdas == 0
+
+
+def test_only_lambdas_on_the_rails_of_a_result_count_as_rail_lambdas():
+    styled = style.measure(
+        [
+            source(
+                """
+                def prix_ttc(produit_id, produits):
+                    tries = sorted(produits, key=lambda p: p.prix)
+                    doubles = list(map(lambda p: p.prix * 2, produits))
+                    return (
+                        trouver(produit_id)
+                        .map(lambda produit: produit.prix)
+                        .and_then(appliquer_remise)
+                        .map_err(lambda erreur: str(erreur))
+                        .unwrap_or_else(lambda _: 0.0)
+                    ), tries, doubles
+                """
+            )
+        ]
+    )
+
+    assert styled.lambdas == 5
+    assert styled.rail_lambdas == 3
 
 
 def test_report_includes_tokens_and_style():

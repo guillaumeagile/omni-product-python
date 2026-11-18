@@ -50,10 +50,28 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
 - Le `Result` remonte jusqu'au contrôleur, qui le traduit en `HTTPException` 422 (`controller/erreurs.py`), comme il traduit déjà les 404. `service/` et `controller/` ne relancent pas d'exception métier.
 - Un `match` sur un `Result` couvre `Ok` et `Err`. Après `.map`, préférer une méthode typée à une lambda : pyright perd le type des paramètres d'une lambda passée à `.map` ou `.and_then` sur un `Result`.
 
+## Le nom de la branche : il désigne l'équipe
+
+Le jeu se joue par équipe. Le classement lit l'équipe et la règle dans le nom de la branche :
+
+```text
+<equipe>/regle-<N>-<slug>
+```
+
+- `<equipe>` : le nom de ton équipe, le même sur toutes ses branches (lettres, chiffres, `-`, `_`). Exemple : `rouges`.
+- `<N>` : le numéro de la règle travaillée, celui de `docs/python-regles-de-harnais.md`.
+- `<slug>` : quelques mots en kebab-case. Exemple : `rouges/regle-3-modele-riche`.
+
+Une branche hors convention ne rapporte aucun point à l'équipe. Si l'humain ne t'a pas donné le nom de l'équipe, tu
+le lui demandes avant de créer la première branche.
+
+Le score d'une PR est le total de sa scorecard. Le score de l'équipe est la somme de ses PR ouvertes. Le classement
+de toutes les équipes est dans l'issue épinglée « Classement de l'atelier CUPID ».
+
 ## La boucle : une PR par règle
 
-1. Une PR par règle. Son titre nomme la règle : « Team T >> Règle N :  … ». T est le nom de ton équipe car le jeu se joue en groupe. Le score est celui de l'équipe (et l'agent en fait partie)
-2.  la base de la PR : `main` pour la première PR, puis la branche de l'étape précédente.
+1. Une PR par règle, sur une branche qui suit la convention ci-dessus. Son titre nomme la règle : « Team T >> Règle N :  … ». T est le nom de ton équipe car le jeu se joue en groupe. Le score est celui de l'équipe (et l'agent en fait partie)
+2.  la base de la PR : `main` pour la première PR, puis la branche de l'étape précédente de l'équipe.
 3. Une itération :
    a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<base>`, puis lis les constats.
    b. Lis la fiche de la règle dans `docs/python-regles-de-harnais.md`.
@@ -61,7 +79,7 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
    d. Attends sa réponse. Tu ne codes rien avant.
    e. Code le choix retenu et lance les tests locaux utiles.
    f. Committe. Le message donne le nombre de constats avant et après, et le choix retenu en une ligne.
-   g. Pousse sans force-push. Suis la CI avec `gh pr checks`, puis le commentaire Scorecard. Le score de mutation testing est à surveiller aussi. et bien évidemment que les tests doivent rester au vert.
+   g. Pousse sans force-push. Suis la CI avec `gh pr checks`, puis le commentaire Scorecard et le classement. Le score de mutation testing est à surveiller aussi. et bien évidemment que les tests doivent rester au vert.
 4. Recommence l'itération tant que la règle a des constats ou que la CI est rouge.
 5. Fin : la règle n'a plus de constats, la CI est verte et l'humain valide. Personne ne fusionne. Tu ne fusionnes pas. les PR restent volontairement ouvertes: c'est pour garder les scores de chaque équipe à chaque étape.
 

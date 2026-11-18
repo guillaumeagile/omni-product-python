@@ -78,6 +78,14 @@ ROWS = (
         scored=True,
         weight=10,
     ),
+    # Le sens de chaque lien, que D ne voit pas : une violation ajoutée coûte 1 point.
+    Row(
+        "Violations du sens des dépendances (vers plus instable)",
+        lambda m: m.stability_violations,
+        -1,
+        scored=True,
+        weight=1,
+    ),
     Row("CBO (pire classe)", lambda m: m.max_cbo, -1, scored=True, weight=1),
     Row("Attributs mutables", lambda m: m.mutable_attributes, -1, scored=True, weight=1),
     Row("Affectations", lambda m: m.assignments, -1, scored=True, weight=0),

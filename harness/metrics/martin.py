@@ -71,6 +71,24 @@ def mean_distance(layers: tuple[LayerMetrics, ...]) -> float:
     return round(sum(distance * weight for distance, weight in linked) / modules, 2)
 
 
+def stability_violations(layers: tuple[LayerMetrics, ...]) -> tuple[tuple[str, str], ...]:
+    """Les liens qui vont vers plus instable que soi : X dépend de Y alors que I(Y) > I(X).
+
+    C'est le principe des dépendances stables. Une couche dépend de plus stable qu'elle, sinon un changement dans une
+    couche instable casse une couche dont beaucoup dépendent. Un lien compte une fois par paire de couches. Un lien
+    vers une couche hors du périmètre n'est pas jugé : son I est inconnu.
+    """
+    instability = {layer.name: layer.instability for layer in layers}
+    return tuple(
+        (layer.name, target)
+        for layer in layers
+        for target in layer.depends_on
+        if (source_i := layer.instability) is not None
+        and (target_i := instability.get(target)) is not None
+        and target_i > source_i
+    )
+
+
 def layer_of(module: str) -> str | None:
     """`omni_product.domain.model.product` est dans `domain` ; le paquet racine et le reste du monde n'ont pas de couche."""
     parts = module.split(".")

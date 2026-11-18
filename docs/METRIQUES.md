@@ -144,6 +144,19 @@ de chaque classe sans en voir le sens. Les pires classes (fan-out et CBO max) re
 **Les points.** La métrique Uncle Bob est notée avec un poids de 10 : D varie par dixièmes, et une baisse de 0,1 vaut
 1 point, une hausse de 0,1 en coûte 1. Le plafond commun à toutes les métriques s'applique.
 
+**Ce que la métrique Uncle Bob agrège.** Toutes les mesures du tableau des couches, sauf le sens des liens. D se
+calcule avec I et A : D = |A + I − 1|. I se calcule lui-même avec Ca et Ce. Quand une de ces valeurs bouge, D bouge
+aussi. I et A ne sont pas notés seuls, car aucun des deux n'a de bon sens : `main` doit être instable et le cœur
+stable, et une abstraction de plus ne vaut que dans une couche stable. Le rapport entre les deux a un bon sens, et
+c'est D.
+
+**Le sens des liens.** D juge chaque couche seule. Il ne voit pas où pointe chaque flèche. Le *principe des
+dépendances stables* le fait : une couche dépend de plus stable qu'elle. Si X dépend de Y alors que Y est plus
+instable que X (I(Y) > I(X)), le lien est une **violation**. Une couche dont beaucoup dépendent casse alors à
+chaque changement d'une couche qui bouge souvent. La ligne « Violations du sens des dépendances » les compte, une
+fois par paire de couches. Un lien vers une couche hors du périmètre n'est pas jugé, car son I est inconnu. Chaque
+violation ajoutée coûte 1 point, chaque violation retirée en rapporte 1.
+
 ## Comment l'arbitre note
 
 En résumé, il récompense la **baisse** de ces chiffres d'un baby step à l'autre, avec des **plafonds** pour qu'une seule

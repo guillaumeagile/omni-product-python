@@ -4,7 +4,7 @@ Même barème que l'arbitre de l'atelier Java :
 - +10 par règle passée au vert par la PR ;
 - +1 par constat retiré sur une règle encore rouge, plafonné à +5 au total ;
 - +5 de « baby step » quand une seule règle passe au vert ;
-- la variation de chaque métrique retenue rapporte son chiffre (+ ou -), plafonné à ±10 par métrique.
+- la variation de chaque métrique retenue rapporte son chiffre (+ ou -), plafonné à ±15 par métrique.
 
 Une règle qui repasse du vert au rouge ne fait pas perdre de points, mais la scorecard la signale.
 """
@@ -15,7 +15,7 @@ from dataclasses import dataclass
 TURNED_GREEN_POINTS = 10
 REMOVED_ON_RED_CAP = 5
 BABY_STEP_POINTS = 5
-METRIC_CAP = 10  # plafond appliqué à chaque métrique, dans les deux sens
+METRIC_CAP = 15  # plafond appliqué à chaque métrique, dans les deux sens
 
 
 @dataclass(frozen=True)

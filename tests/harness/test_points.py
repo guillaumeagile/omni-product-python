@@ -89,8 +89,8 @@ def test_a_higher_is_better_metric_going_up_gains_points():
 
 
 def test_each_metric_is_capped_at_ten_in_both_directions():
-    assert metric_points(-25, -1) == METRIC_CAP == 10
-    assert metric_points(25, -1) == -10
+    assert metric_points(-25, -1) == METRIC_CAP == 15
+    assert metric_points(25, -1) == -15
 
 
 def test_a_weight_of_zero_neutralises_the_metric():
@@ -100,7 +100,8 @@ def test_a_weight_of_zero_neutralises_the_metric():
 
 def test_a_weight_multiplies_the_points_before_the_cap():
     assert metric_points(4, -1, weight=2) == -8
-    assert metric_points(4, -1, weight=3) == -10  # 12 points, plafonnés à -10
+    assert metric_points(4, -1, weight=3) == -12
+    assert metric_points(4, -1, weight=5) == -15  # 20 points, plafonnés à -15
     assert metric_points(4, -1, weight=0.5) == -2
 
 
@@ -119,9 +120,9 @@ def test_metric_points_add_to_the_total_next_to_the_rules():
 
 def test_the_table_shows_the_points_of_each_metric():
     text = section(
-        (rule(1, 2, 0),), metric_lines=(("Complexité", -4), ("Lambdas", metric_points(15, +1)))
+        (rule(1, 2, 0),), metric_lines=(("Complexité", -4), ("Lambdas", metric_points(20, +1)))
     )
 
-    assert "| Métrique : Complexité (plafond ±10) | -4 |" in text
-    assert "| Métrique : Lambdas (plafond ±10) | +10 |" in text
-    assert "| **Total** | **+21** |" in text
+    assert "| Métrique : Complexité (plafond ±15) | -4 |" in text
+    assert "| Métrique : Lambdas (plafond ±15) | +15 |" in text
+    assert "| **Total** | **+26** |" in text

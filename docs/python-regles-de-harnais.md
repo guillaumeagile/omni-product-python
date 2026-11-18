@@ -5,15 +5,17 @@
 On se base sur **CUPID** (Composable, Unix, Predictable, Idiomatic, Domain-based) : *comment le code est construit*.
 Voir [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md).
 
-On a ajouté une colonne **CUTE**
-  ([`cute-ddd.md`](../../Cute-KanDDDinsky-2026/slides/markdown/cute-ddd.md)) qui les complète, en emojis pour ne pas
-  confondre ses C et U avec ceux de CUPID : 
-  - 🗺️ Contextual, 
-  - 🗣️ Ubiquitous, 
-  - 🧪 Testable, 
-  - 📖 Expressive. 
- 
-CUTE dit *ce que   le code apporte à l'équipe*. 
+On a ajouté une colonne **CUTE** ([`cute-ddd.md`](../slides/markdown/cute-ddd.md)) qui les complète. Elle s'écrit
+en emojis pour ne pas confondre ses C et U avec ceux de CUPID :
+
+- 🗺️ Contextual,
+- 🗣️ Ubiquitous,
+- 🧪 Testable,
+- 📖 Expressive.
+
+CUTE dit *ce que le code apporte à l'équipe*. Les jauges CUTE, calculées à partir des règles et des métriques, sont
+décrites dans [`CUTE.md`](CUTE.md).
+
 - **Les métriques sont le thermomètre, les règles sont les portes.** La scorecard montre le mouvement, la règle dit
   quand une étape est franchie.
 - **Chaque règle dit le refactoring attendu** et comment vérifier qu'il a eu lieu.
@@ -27,12 +29,12 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 | 1 | Chaque classe parle-t-elle d'**un seul contexte borné** ? | **U** | D, C | 🗺️ | Éclater `Product` en classes par contexte (Catalog, Pricing, Storage, Supplier, Transport). Les liens passent par des identifiants. | `ast` + [`ubiquitous-language.json`](ubiquitous-language.json). En appui : LCOM*, WMC et CBO. |
 | 2 | Tout type du domaine est-il **une entité (identifiant obligatoire) ou un Value Object** ? | **D** | P, U | 🗣️ | Classer chaque classe du modèle dans l'une des deux familles.<br>**Entité :** un champ `id` d'un type dédié (`ProductId`, pas `str`).<br>**Value Object :** `dataclass(frozen=True)`, sans identité.<br>Les primitives du domaine (`price`, `slug`, `quantity`) deviennent des Value Objects. Une entité en référence une autre par son identifiant. | `ast` : chaque classe du modèle est un Value Object (frozen, sans `id`) ou une entité (`id` typé dédié), et rien d'autre. Un membre dont le nom relève de l'ubiquitous language, typé par une primitive brute, est signalé. |
 | 3 | Le modèle **ignore-t-il le stockage** ? | **D** | P, C | 🧪 | Sortir SQLAlchemy du modèle. Le mapping vit dans `dal/` et se branche de l'extérieur. Le choix de base devient un détail remplaçable. | `ast` : aucun import `sqlalchemy` ni `omni_product.database` sous `anemic_model/`. Test : instancier une entité sans session. |
-| 4 | Les variantes sont-elles **composées** et non héritées ? | **C** | P, D | · | `PerishableProduct(Product)` et `NonExpiringProduct(Product)` deviennent `ShelfLife = Perishable \| NonExpiring`. `Product` porte un `shelf_life`. | `ast` : aucune classe du modèle n'hérite d'une autre (Enum, Protocol, Exception et TypedDict exceptés), pas d'`isinstance` sur les variantes. |
+| 4 | Les variantes sont-elles **composées** et non héritées ? | **C** | P, D | 📖 | `PerishableProduct(Product)` et `NonExpiringProduct(Product)` deviennent `ShelfLife = Perishable \| NonExpiring`. `Product` porte un `shelf_life`. | `ast` : aucune classe du modèle n'hérite d'une autre (Enum, Protocol, Exception et TypedDict exceptés), pas d'`isinstance` sur les variantes. |
 | 5 | Un échec métier est-il **une valeur** ? | **P** | C, D | 📖 | Un `raise` métier devient un résultat. Exemple : `withdraw` rend `Withdrawn \| InsufficientStock`. | `ast` : aucun `raise` dans `domain/model/` et `anemic_model/` (`service/` est hors périmètre). Pyright : `match` exhaustif sur le résultat. |
 | 6 | Les **effets impurs** sont-ils expulsés du cœur ? | **P** | C, D | 🧪 | Heure, aléatoire, UUID, fichiers, réseau et base sortent du cœur du domaine. Le cœur les reçoit en paramètre, ou par un port nommé dans le métier (`Clock`, `IdGenerator`) qu'on injecte. Le cœur devient pur et ses tests se font avec de simples faux, sans `patch`. | `ast` : `anemic_model/` n'appelle pas `date.today`, `datetime.now`, `time.time`, `uuid4`, `random.*`, `open`, `print`, ni `requests` ou `httpx`. Les tests n'utilisent ni `patch` ni `freezegun`. |
 | 7 | **Un état illégal est-il impossible à construire ?** | **P** | D, C | 📖 | Remplacer les combinaisons incohérentes (drapeaux, `None` qui vont par paires) par un ADT : une union fermée de dataclasses frozen. Exemple : `Perishable(sell_by, use_by)` ou `NonExpiring(best_before)`. L'invariant (`sell_by <= use_by`) est validé par une fabrique qui rend un résultat. | `ast` : pas de champ booléen `is_*` ou `has_*` stocké, pas de plusieurs champs `X \| None` qui vont ensemble. Pyright : `match` exhaustif sur l'ADT. |
-| 8 | Le code s'écrit-il avec **les idiomes courants de Python** ? | **I** | P, U | · | Remplacer les formes héritées d'autres langages par les formes que Python recommande : les boucles qui remplissent une liste deviennent des compréhensions, les chaînes de `if` un `match` ou une table, les retours anticipés remplacent l'imbrication. Chaque branche en moins fait baisser la complexité cyclomatique. | ruff durci (`PERF`, `C4`, `SIM`, `UP`, `C90`), sans code maison : `PERF401` repère la boucle qui remplit une liste. En appui, sur la scorecard : `boucles`, complexités cyclomatique et cognitive. |
-| 9 | Le code va-t-il **plus loin vers le fonctionnel, jusqu'au ROP** (II) ? | **II** | P, U | · | Écrire en Railway Oriented Programming, du service au controller : chaque étape rend un `Result`, les étapes s'enchaînent avec `.map`, `.and_then` et `.map_err`, sans `if` ni `try` entre elles, et un `match` exhaustif termine le chemin à la frontière. Une petite `lambda` sert d'étape sur les rails. Les accumulateurs deviennent `sum`, `any`, `all` ou `reduce`. Le style rejoint celui de Rust, Java, C# et Kotlin. | `ast` maison sur tout `omni_product/`, controllers et services compris : bascule à la main sur un `Result` (`SF001`), `unwrap` (`SF002`), `try` (`SF003`), accumulateur dans une boucle (`SF004`), `raise` hors du modèle (`SF005`). En appui, sur la scorecard : `lambdas sur les rails`. |
+| 8 | Le code s'écrit-il avec **les idiomes courants de Python** ? | **I** | P, U | 📖 | Remplacer les formes héritées d'autres langages par les formes que Python recommande : les boucles qui remplissent une liste deviennent des compréhensions, les chaînes de `if` un `match` ou une table, les retours anticipés remplacent l'imbrication. Chaque branche en moins fait baisser la complexité cyclomatique. | ruff durci (`PERF`, `C4`, `SIM`, `UP`, `C90`), sans code maison : `PERF401` repère la boucle qui remplit une liste. En appui, sur la scorecard : `boucles`, complexités cyclomatique et cognitive. |
+| 9 | Le code va-t-il **plus loin vers le fonctionnel, jusqu'au ROP** (II) ? | **II** | P, U | 📖 | Écrire en Railway Oriented Programming, du service au controller : chaque étape rend un `Result`, les étapes s'enchaînent avec `.map`, `.and_then` et `.map_err`, sans `if` ni `try` entre elles, et un `match` exhaustif termine le chemin à la frontière. Une petite `lambda` sert d'étape sur les rails. Les accumulateurs deviennent `sum`, `any`, `all` ou `reduce`. Le style rejoint celui de Rust, Java, C# et Kotlin. | `ast` maison sur tout `omni_product/`, controllers et services compris : bascule à la main sur un `Result` (`SF001`), `unwrap` (`SF002`), `try` (`SF003`), accumulateur dans une boucle (`SF004`), `raise` hors du modèle (`SF005`). En appui, sur la scorecard : `lambdas sur les rails`. |
 | 10 | Les dépendances **pointent-elles vers le cœur** (architecture en oignon, ports et adaptateurs) ? | **C** | P | 🧪 | Sortir de l'architecture en couches `controller → service → dal → base`. Le cœur (modèle et cas d'usage) ne connaît que des **ports**, des `Protocol` écrits dans le langage du métier (`ProductRepository`, `Clock`). Les **adaptateurs** (FastAPI, SQLAlchemy) sont à l'extérieur, implémentent les ports, et sont branchés à un seul endroit (la composition root). Le `dal/` disparaît au profit d'adaptateurs. | `import-linter` : contrats de couches (le cœur n'importe ni `controller`, ni `dal`, ni `infrastructure`, ni `fastapi`, ni `sqlalchemy`). Test : les cas d'usage se testent avec des faux en mémoire, sans base ni HTTP. |
 
 ## Règles Python

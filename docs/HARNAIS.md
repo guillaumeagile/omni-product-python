@@ -43,6 +43,9 @@ bouger.
 uv run python -m harness.scorecard --base-ref main    # la même scorecard en local
 ```
 
+Pour lire la scorecard d'un coup d'œil, quatre jauges CUTE (🗺️ 🗣️ 🧪 📖) résumeront ces chiffres. Leur calcul est
+décrit dans [CUTE.md](CUTE.md) et sera ajouté au harnais.
+
 ### 3. Les règles : le détecteur de design
 
 Les mesures disent *combien*. Les **règles** disent *quoi* : « cette classe fait telle chose qu'elle ne devrait pas ».

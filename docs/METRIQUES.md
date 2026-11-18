@@ -147,8 +147,8 @@ dans I et A. La pondération donne plus de poids à une grosse couche mal placé
 lien n'entre pas dans la moyenne. Cette ligne remplace les totaux de fan-out et de CBO : ils additionnaient les liens
 de chaque classe sans en voir le sens. Les pires classes (fan-out et CBO max) restent dans le tableau.
 
-**Les points.** La métrique Uncle Bob est notée avec un poids de 10 : D varie par dixièmes, et une baisse de 0,1 vaut
-1 point, une hausse de 0,1 en coûte 1. Le plafond commun à toutes les métriques s'applique.
+**Les points.** La métrique Uncle Bob est notée avec un poids de 20 : D varie par dixièmes, et une baisse de 0,05 vaut
+1 point, une hausse de 0,05 en coûte 1. Le plafond commun à toutes les métriques s'applique.
 
 **Ce que la métrique Uncle Bob agrège.** Toutes les mesures du tableau des couches, sauf le sens des liens. D se
 calcule avec I et A : D = |A + I − 1|. I se calcule lui-même avec Ca et Ce. Quand une de ces valeurs bouge, D bouge

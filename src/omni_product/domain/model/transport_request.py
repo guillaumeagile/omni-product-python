@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 
+from omni_product.domain.model.transport import Distance, Kilos, TransportMode
+
 
 @dataclass(frozen=True)
 class TransportRequest:
-    transport_mode: str
-    distance_km: float
-    weight_kg: float
+    transport_mode: TransportMode
+    distance_km: Distance
+    weight_kg: Kilos
 
     def __post_init__(self) -> None:
-        if not self.transport_mode or not self.transport_mode.strip():
-            raise ValueError("Transport mode is required")
-        if self.distance_km is None or self.distance_km <= 0:  # pyright: ignore[reportUnnecessaryComparison]
+        if self.distance_km.value <= 0:
             raise ValueError("Distance must be positive")
-        if self.weight_kg is None or self.weight_kg <= 0:  # pyright: ignore[reportUnnecessaryComparison]
+        if self.weight_kg.value <= 0:
             raise ValueError("Weight must be positive")

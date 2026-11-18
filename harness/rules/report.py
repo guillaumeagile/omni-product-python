@@ -1,10 +1,21 @@
 """La section « Règles du harnais » de la scorecard : une ligne par règle, puis le score de la PR."""
 
-from harness.rules.points import REMOVED_ON_RED_CAP, TURNED_GREEN_POINTS, RuleResult, score
+from collections.abc import Sequence
+
+from harness.rules.points import (
+    METRIC_CAP,
+    REMOVED_ON_RED_CAP,
+    TURNED_GREEN_POINTS,
+    RuleResult,
+    score,
+)
 
 
-def section(results: tuple[RuleResult, ...]) -> str:
-    result = score(results)
+def section(
+    results: tuple[RuleResult, ...],
+    metric_lines: Sequence[tuple[str, int]] = (),
+) -> str:
+    result = score(results, metric_lines)
     has_base = any(r.before is not None for r in results)
     lines = [
         "### 🧪 Règles du harnais",
@@ -24,7 +35,11 @@ def section(results: tuple[RuleResult, ...]) -> str:
             ),
             f"| Constats retirés sur les règles encore rouges (plafond +{REMOVED_ON_RED_CAP}) | +{result.removed_points} |",
             f"| 🍼 Baby step : une seule règle passée au vert | +{result.baby_step_points} |",
-            f"| **Total** | **+{result.total}** |",
+            *(
+                f"| Métrique : {label} (plafond ±{METRIC_CAP}) | {points:+d} |"
+                for label, points in result.metric_lines
+            ),
+            f"| **Total** | **{result.total:+d}** |",
         ]
         lines += [
             f"\n⚠️ Régression sur la règle {r.number} : {r.before} → {r.after} constat(s)."

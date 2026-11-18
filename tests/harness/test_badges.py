@@ -1,9 +1,11 @@
 """Les badges, sur des PR dont on change une seule mesure à la fois."""
 
+import json
 import textwrap
 from dataclasses import replace
+from pathlib import Path
 
-from harness import badges
+from harness import badges, mutation, scorecard
 from harness.metrics.report import measure
 from harness.metrics.sources import SourceFile
 from harness.rules.points import RuleResult
@@ -31,8 +33,8 @@ def labels(pr: badges.Pr) -> list[str]:
     return [badge.label for badge in badges.earned(pr)]
 
 
-def test_a_neutral_pr_only_earns_the_no_breakage_badge():
-    assert labels(NEUTRAL) == ["🛡️ Sans casse"]
+def test_a_neutral_pr_earns_no_badge():
+    assert labels(NEUTRAL) == []
 
 
 def test_an_empty_pr_earns_no_badge():
@@ -53,20 +55,6 @@ def test_clean_coder_needs_five_metric_points():
 
 def test_losing_tokens_is_less_is_more():
     assert "✂️ Less is more" in labels(replace(NEUTRAL, head=replace(BASE, tokens=BASE.tokens - 1)))
-
-
-def test_a_regression_or_a_lost_metric_point_breaks_something():
-    regressed = RuleResult(number=1, title="r", before=0, after=1)
-
-    assert "🛡️ Sans casse" not in labels(replace(NEUTRAL, results=(regressed,)))
-    assert "🛡️ Sans casse" not in labels(replace(NEUTRAL, metric_lines=(("a", 6), ("b", -1))))
-
-
-def test_a_new_abstract_class_is_a_port():
-    domain = BASE.layers[0]
-    head = replace(BASE, layers=(replace(domain, abstract_classes=domain.abstract_classes + 1),))
-
-    assert "🔌 Port" in labels(replace(NEUTRAL, head=head))
 
 
 def test_uncle_bob_approves_a_drop_of_a_tenth_without_new_violation():
@@ -100,9 +88,32 @@ def test_badges_add_their_points_to_the_total():
     )
 
     assert "| Badge 🤏 Small diff | +2 |" in text
-    assert "| Badge 🛡️ Sans casse | +2 |" in text
-    assert "| **Total** | **+4** |" in text
+    assert "| **Total** | **+2** |" in text
 
 
 def test_no_base_no_badge():
     assert badges.lines(None) == ()
+
+
+def test_a_higher_mutation_score_kills_mutants():
+    assert "🧬 Tueur de mutants" in labels(replace(NEUTRAL, base_mutation=61.5, head_mutation=70.0))
+    assert "🧬 Tueur de mutants" not in labels(
+        replace(NEUTRAL, base_mutation=70.0, head_mutation=70.0)
+    )
+    assert "🧬 Tueur de mutants" not in labels(replace(NEUTRAL, head_mutation=90.0))
+
+
+def test_the_mutation_score_is_read_from_the_ci_stats(tmp_path: Path):
+    stats = tmp_path / "mutmut-cicd-stats.json"
+    stats.write_text(json.dumps({"killed": 8, "total": 13, "survived": 5}))
+
+    assert mutation.score(stats) == 61.5
+    assert mutation.score(tmp_path / "absent.json") is None
+    assert mutation.score(None) is None
+
+
+def test_the_scorecard_shows_the_mutation_score_from_base_to_pr():
+    card = scorecard.render(BASE, BASE, mutation=(61.5, 70.0))
+
+    assert "| Score de mutation (modèle, % de mutants tués) | 61.5 | 70 | +8.5 | ✅ |" in card
+    assert "Score de mutation" not in scorecard.render(BASE, BASE)

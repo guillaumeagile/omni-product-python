@@ -180,8 +180,7 @@ Une PR vide n'en gagne aucun.
 | 🤏 Small diff | Au plus 400 tokens de code modifiés | +2 |
 | 🧹 Clean Coder | Les métriques notées rapportent au moins +5 au total | +3 |
 | ✂️ Less is more | Le code du périmètre perd des tokens | +2 |
-| 🛡️ Sans casse | Aucune règle ne régresse, aucune métrique ne perd de points | +2 |
-| 🔌 Port | Une classe abstraite de plus (`Protocol`, `ABC`) | +2 |
+| 🧬 Tueur de mutants | Le score de mutation du modèle monte par rapport au dernier passage sur `main` | +3 |
 | 🧭 Uncle Bob approuve | La métrique Uncle Bob baisse d'au moins 0,1, sans violation du sens des dépendances en plus | +3 |
 | 🧊 Immuable | Moins d'attributs mutables | +2 |
 

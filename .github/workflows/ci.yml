@@ -34,6 +34,14 @@ jobs:
       - name: Exporter les statistiques de mutation
         if: always()
         run: uv run mutmut export-cicd-stats
+      - name: Publier les statistiques pour la scorecard
+        # Sur main, elles servent de base aux PR suivantes (badge 🧬 Tueur de mutants).
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-stats
+          path: mutants/mutmut-cicd-stats.json
+          if-no-files-found: ignore
       - name: Résumé dans le job
         if: always()
         run: |
@@ -57,11 +65,15 @@ jobs:
   scorecard:
     name: Scorecard (harnais)
     runs-on: ubuntu-latest
+    # Le score de mutation de la PR vient du job de mutation : la scorecard l'attend.
+    needs: mutation
+    if: ${{ !cancelled() }}
     # Informatif : la scorecard guide le refactoring, elle ne bloque jamais une PR.
     continue-on-error: true
     permissions:
       contents: read
       pull-requests: write
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,11 +81,32 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked
+      - name: Récupérer le score de mutation de la PR
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: mutation-stats
+          path: mutation-head
+      - name: Récupérer le score de mutation de la base (dernier passage réussi sur main)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: |
+          run_id=$(gh run list --workflow ci.yml --branch "$BASE_BRANCH" --event push \
+            --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --name mutation-stats --dir mutation-base
+          fi
       - name: Calculer la scorecard
         env:
           BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
         run: |
-          uv run python -m harness.scorecard ${BASE_REF:+--base-ref "$BASE_REF"} --output scorecard.md
+          uv run python -m harness.scorecard ${BASE_REF:+--base-ref "$BASE_REF"} \
+            --mutation-stats mutation-head/mutmut-cicd-stats.json \
+            --base-mutation-stats mutation-base/mutmut-cicd-stats.json \
+            --output scorecard.md
           cat scorecard.md >> "$GITHUB_STEP_SUMMARY"
       - name: Publier la scorecard en commentaire de PR
         # Un commentaire existant est mis à jour pour ne pas polluer la PR à chaque push.

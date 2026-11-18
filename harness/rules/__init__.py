@@ -19,6 +19,7 @@ from harness.rules import (
     entite_valeur,
     etat_illegal,
     heritage,
+    idiomes,
     modele_anemique,
 )
 from harness.rules.points import RuleResult
@@ -81,6 +82,8 @@ RULES: tuple[Rule, ...] = (
         ("omni_product/domain/model", "omni_product/anemic_model"),
         etat_illegal.check,
     ),
+    # Tout le code de `omni_product` (hors périmètre), comme la règle 1 : ruff lit chaque fichier.
+    Rule(8, "Idiomes courants de Python", ("omni_product",), idiomes.check),
     # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même.
     Rule(
         10,

@@ -13,11 +13,12 @@ from harness.metrics.classes import attributes_by_method
 def tcc(cls: ast.ClassDef) -> float | None:
     """Tight Class Cohesion : part des paires de méthodes qui partagent au moins un attribut (de 0 à 1, 1 est le mieux).
 
-    Indéfinie (None) sous deux méthodes : il n'y a pas de paire à regarder.
+    Indéfinie (None) sous deux méthodes, ou quand aucune méthode ne touche d'attribut : un port (`Protocol`) ou une
+    classe sans état n'a pas de données à partager, et 0 la classerait à tort parmi les moins cohésives.
     """
     methods = attributes_by_method(cls)
     pairs = list(combinations(methods, 2))
-    if not pairs:
+    if not pairs or not frozenset[str]().union(*methods):
         return None
     return sum(1 for a, b in pairs if a & b) / len(pairs)
 

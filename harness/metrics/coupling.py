@@ -6,7 +6,8 @@ ou dans l'autre. Une classe peut avoir peu de dépendances et être utilisée pa
 
 Limites assumées : on lit les noms, on ne résout pas les types (pas d'inférence). Un type n'est compté que si son nom
 est en CapWords (la convention PEP 8) : les fonctions et les constantes importées ne comptent pas. La bibliothèque
-standard est exclue (comme java.lang pour PMD). Les annotations écrites en chaîne ("Product") ne sont pas lues.
+standard est exclue (comme java.lang pour PMD), et `result` avec elle : c'est le socle que la règle 10 permet au cœur.
+Les annotations écrites en chaîne ("Product") ne sont pas lues.
 """
 
 import ast
@@ -16,6 +17,7 @@ from dataclasses import dataclass
 
 from harness.metrics.classes import top_level_classes
 from harness.metrics.sources import SourceFile
+from harness.rules.architecture_oignon import ALLOWED_LIBRARIES
 
 type ImportTable = dict[str, str]
 
@@ -60,14 +62,14 @@ def _import_table(source: SourceFile) -> ImportTable:
                     alias.name if alias.asname else alias.name.split(".")[0]
                 )
         elif isinstance(node, ast.ImportFrom):
-            base = _absolute_module(source, node)
+            base = absolute_module(source, node)
             for alias in node.names:
                 if alias.name != "*":
                     table[alias.asname or alias.name] = f"{base}.{alias.name}"
     return table
 
 
-def _absolute_module(source: SourceFile, node: ast.ImportFrom) -> str:
+def absolute_module(source: SourceFile, node: ast.ImportFrom) -> str:
     if node.level == 0:
         return node.module or ""
     package = source.module.split(".")
@@ -82,8 +84,10 @@ def _is_type_name(name: str) -> bool:
     return name[:1].isupper() and not name.isupper()
 
 
-def _is_stdlib(qualified: str) -> bool:
-    return qualified.split(".")[0] in sys.stdlib_module_names
+def _is_foundation(qualified: str) -> bool:
+    """La bibliothèque standard et les bibliothèques permises au cœur : le socle, qui ne compte pas dans le couplage."""
+    root = qualified.split(".")[0]
+    return root in sys.stdlib_module_names or root in ALLOWED_LIBRARIES
 
 
 def _dependencies(source: SourceFile, cls: ast.ClassDef, table: ImportTable) -> set[str]:
@@ -102,7 +106,9 @@ def _dependencies(source: SourceFile, cls: ast.ClassDef, table: ImportTable) -> 
         ):
             found.add(f"{table[node.value.id]}.{node.attr}")
     return {
-        name for name in found if _is_type_name(name.rsplit(".", 1)[-1]) and not _is_stdlib(name)
+        name
+        for name in found
+        if _is_type_name(name.rsplit(".", 1)[-1]) and not _is_foundation(name)
     }
 
 

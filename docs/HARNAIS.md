@@ -35,7 +35,7 @@ uv run python -m harness.metrics --json rapport.json  # détail par classe
 ```
 
 À chaque PR, le job **Scorecard** mesure ton code et celui de sa base, puis commente la PR : un tableau avant / après
-(✅ mieux, ⚠️ moins bien), les tokens modifiés (🤏 Small diff) et les classes à regarder en premier. Le commentaire est
+(✅ mieux, ⚠️ moins bien), les tokens modifiés et les classes à regarder en premier. Le commentaire est
 mis à jour à chaque push. Le job est informatif. Les chiffres sont mauvais au départ, et l'atelier sert à les faire
 bouger.
 
@@ -60,11 +60,12 @@ uv run python -m harness.rules                        # les constats de chaque r
 La scorecard affiche les règles en tête, avec leurs points : +10 par règle passée au vert, +5 pour un vrai baby step.
 Elle ajoute aussi, pour chaque métrique marquée dans la scorecard, son chiffre de variation, compté dans le sens « mieux »
 de la métrique : une hausse de complexité retranche ses points, une baisse les ajoute. Chaque métrique est plafonnée à ±15.
+Une PR vide perd 5 points.
 
 ### 4. L'arbitre : le score (à venir)
 
 Un workflow GitHub comparera trois états du code : la base, ton baby step précédent et la tête de ta PR. Il commentera
-la PR avec un verdict, le score du round, le niveau et les badges. Le barème sera dans son commentaire, ligne par ligne.
+la PR avec un verdict, le score du round et le niveau. Le barème sera dans son commentaire, ligne par ligne.
 
 ## Ce que tu peux et ne peux pas faire
 

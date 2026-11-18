@@ -28,12 +28,33 @@ class FunctionComplexity:
 
 
 def measure(source: SourceFile) -> list[FunctionComplexity]:
-    """Toutes les fonctions et méthodes du fichier, nommées avec leur classe (`Product.is_expired`)."""
+    """Toutes les fonctions et méthodes du fichier, nommées avec leur classe (`Product.is_expired`).
+
+    Une fonction au corps vide (`...`, `pass`, une docstring seule) compte 0 : c'est une signature, sans chemin à
+    tester. C'est le cas des méthodes d'un port (`Protocol`).
+    """
     cyclomatic = _cyclomatic_by_name(source.text)
     return [
-        FunctionComplexity(name, cyclomatic.get(name, 1), _cognitive(function))
+        FunctionComplexity(
+            name,
+            0 if _is_empty(function) else cyclomatic.get(name, 1),
+            _cognitive(function),
+        )
         for name, function in _named_functions(source.tree)
     ]
+
+
+def _is_empty(function: Function) -> bool:
+    return all(_is_placeholder(statement) for statement in function.body)
+
+
+def _is_placeholder(statement: ast.stmt) -> bool:
+    """`pass`, `...` ou une chaîne seule (la docstring)."""
+    return isinstance(statement, ast.Pass) or (
+        isinstance(statement, ast.Expr)
+        and isinstance(statement.value, ast.Constant)
+        and (statement.value.value is Ellipsis or isinstance(statement.value.value, str))
+    )
 
 
 def _cyclomatic_by_name(text: str) -> dict[str, int]:

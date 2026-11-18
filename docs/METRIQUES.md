@@ -10,8 +10,9 @@ ce que le tableau dit de ton code.
 
 ## Ce qui est mesuré
 
-Seul le code que tu fais évoluer est mesuré : le **modèle** et les **services**. Les tests, le controller et le
-harnais ne comptent pas. L'arbitre compare ton code à celui de ton baby step précédent : c'est la **variation** qui
+Seul le code que tu fais évoluer est mesuré : le **modèle**, l'**infrastructure** et la **persistance** (`dal/`). Les
+tests, le controller, les services et le harnais ne comptent pas. `dal/` est mesuré pour que la persistance qui
+passe dans `infrastructure/` (règle 10) ne compte pas comme du code ajouté. L'arbitre compare ton code à celui de ton baby step précédent : c'est la **variation** qui
 compte, pas la valeur absolue.
 
 Les mesures sont déterministes : le même code donne toujours les mêmes chiffres.
@@ -35,7 +36,9 @@ mais l'ordre de grandeur est juste, et surtout les **variations** d'une PR à l'
 **Le piège.** Raccourcir les noms (`price` devient `p`) fait baisser les tokens et dégrade le code. Lisible avant court.
 
 **Le petit diff.** L'arbitre compte aussi les tokens de **ta modification** (les lignes de code ajoutées et retirées, commentaires exclus). Une PR
-qui change peu est facile à relire et facile à annuler : c'est l'esprit du *baby step*.
+qui change peu est facile à relire et facile à annuler : c'est l'esprit du *baby step*. Une PR qui ne modifie aucun
+token de code du périmètre est une **PR vide** : elle coûte 5 points. Un changement de commentaires seuls, de tests
+seuls ou de documentation seule en fait partie.
 
 ## 2. Le nombre de chemins : la complexité cyclomatique
 
@@ -54,7 +57,8 @@ def frais(poids, express):          # 1 chemin de base
 **Pourquoi on le regarde.** C'est le nombre de tests minimum pour couvrir la fonction. À 4, il faut 4 cas de test. À
 15, plus personne n'ose y toucher.
 
-**Ce que l'arbitre additionne.** La somme sur toutes les méthodes du modèle et des services. Retirer des branches
+**Ce que l'arbitre additionne.** La somme sur toutes les fonctions et méthodes du périmètre. Une méthode au corps vide
+(`...`, `pass`, une docstring seule) compte 0 : c'est une signature, comme celles d'un port (`Protocol`). Retirer des branches
 (remplacer un `if/elif` par du polymorphisme, supprimer un cas mort) la fait baisser.
 
 ## 3. La complexité d'une classe : WMC
@@ -74,6 +78,9 @@ le nombre de chemins. Elle punit l'imbrication : un `if` dans un `for` dans un `
 La cognitive attrape les pyramides d'indentation que la cyclomatique laisse passer. Une garde et un retour anticipé
 (*early return*) la font baisser.
 
+**Ce que l'arbitre en fait.** Il affiche le total, sans points. La cognitive suit de près la cyclomatique : noter
+les deux compterait deux fois les mêmes branches. Seule la cyclomatique rapporte des points.
+
 ## 5. Le couplage : fan-out (et CBO)
 
 **Ce que c'est.** Le nombre d'autres types dont une classe dépend. Le **fan-out** est PMD, le **CBO** (*Coupling
@@ -81,6 +88,8 @@ Between Objects*) est CK : deux outils, la même idée.
 
 **Pourquoi on le regarde.** Plus une classe connaît de monde, plus elle casse quand l'un d'eux change. C'est le
 « C » de Composable dans CUPID : un bon module se branche sur peu de choses.
+
+**Ce qui ne compte pas.** La bibliothèque standard et `result` : c'est le socle que la règle 10 permet au cœur.
 
 ## 6. La cohésion : TCC (et LCOM)
 
@@ -91,7 +100,8 @@ de 0 à 1 : à 1, toutes les méthodes travaillent sur les mêmes données.
 collées ensemble : un groupe de méthodes sur un groupe d'attributs, un autre groupe sur un autre. C'est le signal
 « tu peux la couper en deux ». **LCOM** est la mesure inverse (le manque de cohésion) : plus haut, c'est pire.
 
-L'arbitre regarde la **pire** classe (TCC minimum).
+L'arbitre regarde la **pire** classe (TCC minimum). Une classe dont aucune méthode ne touche d'attribut, comme un port
+(`Protocol`), n'a pas de cohésion mesurable : elle n'entre pas dans ce minimum.
 
 ## 7. Les signaux de style : états, boucles, lambdas
 
@@ -106,15 +116,58 @@ Ces compteurs ne jugent pas le code bon ou mauvais. Ils indiquent **vers quel st
 
 C'est un parti pris de l'atelier (le style fonctionnel facilite la lecture et le test), pas une vérité universelle.
 
+## 8. Les couches : les métriques de Robert Martin
+
+**Ce que c'est.** Les mesures précédentes regardent une classe. Celles-ci regardent une **couche** (`domain`,
+`infrastructure`, `dal`…) et le **sens** de ses liens avec les autres.
+
+| Mesure | Ce que c'est |
+|---|---|
+| **Ca** (couplage afférent) | Les modules d'autres couches qui importent celle-ci. Ils cassent quand elle change. |
+| **Ce** (couplage efférent) | Les modules de la couche qui importent une autre couche. Elle casse quand l'autre change. |
+| **I** (instabilité) | Ce / (Ca + Ce). À 0, tout le monde dépend d'elle et elle ne dépend de rien : elle est stable. À 1, l'inverse. |
+| **A** (abstraction) | La part de ses classes qui sont abstraites : `Protocol`, `ABC`, une `@abstractmethod`. |
+| **D** (distance) | \|A + I − 1\|. À 0, la couche est sur la *séquence principale*. |
+
+**Pourquoi on le regarde.** Une couche stable doit être abstraite, une couche instable peut être concrète. Le cœur
+d'une architecture en oignon est stable (on dépend de lui) et porte les ports (abstraits) : D proche de 0. Une couche
+stable et concrète est dure à changer, car tout le monde en dépend. Une couche instable et abstraite déclare des
+abstractions que personne n'utilise. Les deux s'éloignent de la séquence principale : D monte vers 1.
+
+La colonne **Dépend de** montre le sens des liens. Dans une architecture en oignon, aucune flèche ne part du cœur vers
+l'extérieur.
+
+**Comment c'est compté.** L'unité est le module, là où Martin compte les classes : `dal/` n'a que des fonctions. Ca ne
+voit que les modules mesurés. Le détail par couche est affiché, base → PR, et ne rapporte pas de points.
+
+**Le chiffre du tableau.** Les couches se résument en une ligne : la **métrique Uncle Bob**, le D moyen pondéré par
+le nombre de modules de chaque couche. Elle va de 0 à 1, et 0 est le mieux. D résume déjà Ca, Ce et A, qui entrent
+dans I et A. La pondération donne plus de poids à une grosse couche mal placée qu'à un module isolé. Une couche sans
+lien n'entre pas dans la moyenne. Cette ligne remplace les totaux de fan-out et de CBO : ils additionnaient les liens
+de chaque classe sans en voir le sens. Les pires classes (fan-out et CBO max) restent dans le tableau.
+
+**Les points.** La métrique Uncle Bob est notée avec un poids de 10 : D varie par dixièmes, et une baisse de 0,1 vaut
+1 point, une hausse de 0,1 en coûte 1. Le plafond commun à toutes les métriques s'applique.
+
+**Ce que la métrique Uncle Bob agrège.** Toutes les mesures du tableau des couches, sauf le sens des liens. D se
+calcule avec I et A : D = |A + I − 1|. I se calcule lui-même avec Ca et Ce. Quand une de ces valeurs bouge, D bouge
+aussi. I et A ne sont pas notés seuls, car aucun des deux n'a de bon sens : `main` doit être instable et le cœur
+stable, et une abstraction de plus ne vaut que dans une couche stable. Le rapport entre les deux a un bon sens, et
+c'est D.
+
+**Le sens des liens.** D juge chaque couche seule. Il ne voit pas où pointe chaque flèche. Le *principe des
+dépendances stables* le fait : une couche dépend de plus stable qu'elle. Si X dépend de Y alors que Y est plus
+instable que X (I(Y) > I(X)), le lien est une **violation**. Une couche dont beaucoup dépendent casse alors à
+chaque changement d'une couche qui bouge souvent. La ligne « Violations du sens des dépendances » les compte, une
+fois par paire de couches. Un lien vers une couche hors du périmètre n'est pas jugé, car son I est inconnu. Chaque
+violation ajoutée coûte 1 point, chaque violation retirée en rapporte 1.
+
 ## Comment l'arbitre note
 
 En résumé, il récompense la **baisse** de ces chiffres d'un baby step à l'autre, avec des **plafonds** pour qu'une seule
 métrique ne fasse pas tout le score. La complexité cyclomatique pèse plus que les tokens. Une dégradation du couplage
 (CK) fait perdre quelques points. Le barème exact apparaît dans le commentaire de l'arbitre sur ta PR, ligne par
 ligne : c'est lui la référence, pas ce document.
-
-Quelques badges viennent de ces mesures : **🤏 Small diff** (peu de tokens modifiés) et **🧹 Clean Coder** (les
-métriques de qualité s'améliorent d'un seuil minimum).
 
 ## Ce que les métriques ne voient pas
 
@@ -131,5 +184,6 @@ Les chiffres t'aident à trouver où regarder. Ils ne disent pas quoi faire.
 - Complexité cyclomatique : Thomas McCabe, *A Complexity Measure* (1976)
 - Complexité cognitive : G. Ann Campbell, *Cognitive Complexity* (SonarSource)
 - WMC, CBO, LCOM : Chidamber & Kemerer, *A Metrics Suite for Object Oriented Design* (1994)
+- Ca, Ce, I, A, D : Robert C. Martin, *OO Design Quality Metrics: An Analysis of Dependencies* (1994)
 - Outils du harnais Java : [PMD](https://pmd.github.io/), [CK](https://github.com/mauricioaniche/ck),
   [JTokkit](https://github.com/knuddelsgmbh/jtokkit)

@@ -351,3 +351,89 @@ def test_changed_tokens_ignore_comment_only_changes(tmp_path: Path):
         (tmp_path / name / "pkg" / "a.py").write_text(text)
 
     assert scorecard.changed_tokens(tmp_path / "base", tmp_path / "head", ["pkg"]) == 0
+
+
+def test_an_empty_body_has_no_path_to_test():
+    measured = complexity.measure(
+        source(
+            '''
+            class Port:
+                def a(self) -> int: ...
+                def b(self) -> None:
+                    pass
+                def c(self) -> None:
+                    """Une signature documentée."""
+                def d(self) -> int:
+                    """Un vrai corps."""
+                    return 1
+            '''
+        )
+    )
+
+    assert {fn.name: fn.cyclomatic for fn in measured} == {
+        "Port.a": 0,
+        "Port.b": 0,
+        "Port.c": 0,
+        "Port.d": 1,
+    }
+
+
+def test_a_port_has_no_cohesion_to_measure():
+    cls = only_class(
+        """
+        from typing import Protocol
+
+        class Repository(Protocol):
+            def save(self, item) -> None: ...
+            def find(self, key) -> object: ...
+        """
+    )
+
+    assert cohesion.tcc(cls) is None
+    assert cohesion.lcom(cls) is None
+
+
+def test_the_result_library_counts_as_the_foundation_like_the_stdlib():
+    sources = [
+        source(
+            """
+            from result import Err, Ok, Result
+            from other import Gadget
+
+            class A:
+                def f(self) -> Result[Gadget, str]:
+                    return Ok(Gadget()) if self else Err("non")
+            """
+        )
+    ]
+
+    assert coupling.measure(sources)["pkg.mod.A"].dependencies == {"other.Gadget"}
+
+
+def test_the_cognitive_complexity_is_shown_but_not_scored():
+    metrics = measure([source("def f(x):\n    return 1 if x else 2\n")])
+    card = scorecard.render(metrics, metrics)
+    scored = dict(scorecard.metric_lines(metrics, metrics))
+
+    assert "Complexité cognitive (total)" in card
+    assert "Complexité cognitive (max par fonction)" not in card
+    assert not [label for label in scored if "cognitive" in label]
+
+
+def test_rows_weighing_zero_leave_the_points_table_but_stay_measured():
+    metrics = measure([source("class A:\n    def f(self):\n        return self.x\n")])
+    scored = dict(scorecard.metric_lines(metrics, metrics))
+
+    assert "WMC (pire classe)" not in scored
+    assert "Boucles" not in scored
+    assert "Fan-out (pire classe)" in scored
+    assert "| WMC (pire classe) |" in scorecard.render(metrics, metrics)
+
+
+def test_an_empty_diff_is_an_empty_pr_and_no_small_diff():
+    metrics = measure([source("x = 1\n")])
+
+    assert "| Tokens modifiés par la PR | | 0 | | 🫥 PR vide |" in scorecard.render(
+        metrics, metrics, changed_tokens=0
+    )
+    assert "🤏 Small diff" in scorecard.render(metrics, metrics, changed_tokens=1)

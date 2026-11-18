@@ -19,20 +19,38 @@ def render(metrics: Metrics) -> str:
             f"{metrics.cyclomatic} / {metrics.max_cyclomatic}",
         ),
         ("WMC max", metrics.max_wmc),
-        (
-            "Complexité cognitive (total / max par fonction)",
-            f"{metrics.cognitive} / {metrics.max_cognitive}",
-        ),
+        ("Complexité cognitive (total)", metrics.cognitive),
         ("TCC min", metrics.min_tcc),
         ("LCOM* max", metrics.max_lcom),
-        ("Fan-out (total / max)", f"{metrics.fan_out} / {metrics.max_fan_out}"),
-        ("CBO (total / max)", f"{metrics.cbo} / {metrics.max_cbo}"),
+        ("Fan-out max", metrics.max_fan_out),
+        ("CBO max", metrics.max_cbo),
+        ("Métrique Uncle Bob (D moyen des couches)", metrics.uncle_bob),
+        ("Violations du sens des dépendances", metrics.stability_violations),
         ("Attributs mutables", metrics.mutable_attributes),
         ("Affectations", metrics.assignments),
         ("Boucles", metrics.loops),
         ("Lambdas", metrics.lambdas),
     ]
-    return "\n".join(f"{label:<52} {value}" for label, value in rows)
+    return "\n".join(
+        [f"{label:<52} {value}" for label, value in rows] + ["", *render_layers(metrics)]
+    )
+
+
+def render_layers(metrics: Metrics) -> list[str]:
+    """Les métriques de Martin, une ligne par couche."""
+    header = f"{'Couche':<16} {'Ca':>3} {'Ce':>3} {'I':>5} {'A':>5} {'D':>5}  Dépend de"
+    return [
+        header,
+        *(
+            f"{layer.name:<16} {layer.afferent:>3} {layer.efferent:>3} {_opt(layer.instability):>5} "
+            f"{layer.abstractness:>5g} {_opt(layer.distance):>5}  {', '.join(layer.depends_on) or '—'}"
+            for layer in metrics.layers
+        ),
+    ]
+
+
+def _opt(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:g}"
 
 
 def main() -> None:

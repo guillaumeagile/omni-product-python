@@ -4,7 +4,7 @@ import ast
 import json
 from dataclasses import asdict, dataclass
 
-from harness.metrics import cohesion, complexity, coupling, style, tokens
+from harness.metrics import cohesion, complexity, coupling, martin, style, tokens
 from harness.metrics.classes import top_level_classes
 from harness.metrics.sources import SourceFile
 
@@ -23,26 +23,30 @@ class ClassMetrics:
 
 @dataclass(frozen=True)
 class Metrics:
-    """Les agrégats. Le `min_tcc` vaut 1 et le `max_lcom` 0 quand aucune classe n'a de cohésion mesurable."""
+    """Les agrégats. Le `min_tcc` vaut 1 et le `max_lcom` 0 quand aucune classe n'a de cohésion mesurable.
+
+    `uncle_bob` résume le couplage entre couches : le D de Robert Martin, moyen et pondéré (voir `martin.mean_distance`).
+    `stability_violations` compte les liens entre couches qui vont vers plus instable (voir `martin.stability_violations`).
+    """
 
     classes: int
     cyclomatic: int
     max_cyclomatic: int
     max_wmc: int
     cognitive: int
-    max_cognitive: int
     min_tcc: float
     max_lcom: float
-    fan_out: int
     max_fan_out: int
-    cbo: int
     max_cbo: int
+    uncle_bob: float
+    stability_violations: int
     tokens: int
     mutable_attributes: int
     assignments: int
     loops: int
     lambdas: int
     per_class: tuple[ClassMetrics, ...]
+    layers: tuple[martin.LayerMetrics, ...] = ()
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, ensure_ascii=False)
@@ -60,25 +64,26 @@ def measure(sources: list[SourceFile]) -> Metrics:
     tccs = [m.tcc for m in per_class if m.tcc is not None]
     lcoms = [m.lcom for m in per_class if m.lcom is not None]
     styled = style.measure(sources)
+    layers = martin.measure(sources)
     return Metrics(
         classes=len(per_class),
         cyclomatic=sum(fn.cyclomatic for fn in every_function),
         max_cyclomatic=max((fn.cyclomatic for fn in every_function), default=0),
         max_wmc=max((m.wmc for m in per_class), default=0),
         cognitive=sum(fn.cognitive for fn in every_function),
-        max_cognitive=max((fn.cognitive for fn in every_function), default=0),
         min_tcc=min(tccs, default=1.0),
         max_lcom=max(lcoms, default=0.0),
-        fan_out=sum(m.fan_out for m in per_class),
         max_fan_out=max((m.fan_out for m in per_class), default=0),
-        cbo=sum(m.cbo for m in per_class),
         max_cbo=max((m.cbo for m in per_class), default=0),
+        uncle_bob=martin.mean_distance(layers),
+        stability_violations=len(martin.stability_violations(layers)),
         tokens=sum(tokens.count(tokens.effective_code(source.tree)) for source in sources),
         mutable_attributes=styled.mutable_attributes,
         assignments=styled.assignments,
         loops=styled.loops,
         lambdas=styled.lambdas,
         per_class=per_class,
+        layers=layers,
     )
 
 

@@ -133,6 +133,29 @@ def test_abstract_classes_are_ports_abcs_and_abstract_methods():
     assert flags == [True, True, True, True, False]
 
 
+def test_mean_distance_weights_layers_by_their_modules_and_skips_unlinked_ones():
+    # domain : D 0.5 sur 2 modules ; infrastructure : D 0.5 sur 1 ; main : D 0 sur 1.
+    assert martin.mean_distance(martin.measure(PROJECT)) == round((0.5 * 2 + 0.5 + 0) / 4, 2)
+
+
+def test_mean_distance_is_zero_without_any_link():
+    assert (
+        martin.mean_distance(martin.measure([source("omni_product.domain.a", "class A: ...\n")]))
+        == 0.0
+    )
+
+
+def test_the_report_and_the_scorecard_carry_the_mean_distance():
+    metrics = measure(PROJECT)
+
+    assert metrics.distance == 0.38
+    assert "| Distance des couches (D moyen, 0 = le mieux) | | 0.38 | | |" in scorecard.render(
+        metrics, None
+    )
+    assert "Fan-out (total)" not in scorecard.render(metrics, None)
+    assert "CBO (total)" not in scorecard.render(metrics, None)
+
+
 def test_outside_the_project_has_no_layer():
     assert martin.layer_of("omni_product") is None
     assert martin.layer_of("sqlalchemy.orm") is None

@@ -135,6 +135,12 @@ l'extérieur.
 **Comment c'est compté.** L'unité est le module, là où Martin compte les classes : `dal/` n'a que des fonctions. Ca ne
 voit que les modules mesurés. Ces mesures sont affichées, base → PR, et ne rapportent pas de points.
 
+**Le chiffre du tableau.** Les couches se résument en une ligne : la **distance des couches**, le D moyen pondéré par
+le nombre de modules de chaque couche. Elle va de 0 à 1, et 0 est le mieux. D résume déjà Ca, Ce et A, qui entrent
+dans I et A. La pondération donne plus de poids à une grosse couche mal placée qu'à un module isolé. Une couche sans
+lien n'entre pas dans la moyenne. Cette ligne remplace les totaux de fan-out et de CBO : ils additionnaient les liens
+de chaque classe sans en voir le sens. Les pires classes (fan-out et CBO max) restent dans le tableau.
+
 ## Comment l'arbitre note
 
 En résumé, il récompense la **baisse** de ces chiffres d'un baby step à l'autre, avec des **plafonds** pour qu'une seule

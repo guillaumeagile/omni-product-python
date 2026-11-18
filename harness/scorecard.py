@@ -68,9 +68,9 @@ ROWS = (
     ),
     Row("TCC (pire classe, 1 = cohésive)", lambda m: m.min_tcc, +1, scored=True, weight=0),
     Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1, scored=True, weight=0),
-    Row("Fan-out (total)", lambda m: m.fan_out, -1),
     Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1, scored=True, weight=1),
-    Row("CBO (total)", lambda m: m.cbo, -1),
+    # Remplace les totaux de fan-out et de CBO : le couplage entre couches, dans le sens des liens (0 = le mieux).
+    Row("Distance des couches (D moyen, 0 = le mieux)", lambda m: m.distance, -1),
     Row("CBO (pire classe)", lambda m: m.max_cbo, -1, scored=True, weight=1),
     Row("Attributs mutables", lambda m: m.mutable_attributes, -1, scored=True, weight=1),
     Row("Affectations", lambda m: m.assignments, -1, scored=True, weight=0),

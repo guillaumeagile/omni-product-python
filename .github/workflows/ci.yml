@@ -156,7 +156,9 @@ jobs:
           gh pr list --state open --limit 1000 --json number,title,headRefName,comments > prs.json
           python3 scripts/classement.py prs.json > classement.md
           cat classement.md >> "$GITHUB_STEP_SUMMARY"
-          numero=$(gh issue list --state open --search "in:title Classement CUPID" --limit 100 \
+          # Liste filtrée sur le titre exact : l'index de recherche de GitHub retarde de plusieurs minutes sur une
+          # issue neuve, et un --search raté créerait un doublon.
+          numero=$(gh issue list --state open --limit 1000 \
             --json number,title --jq 'map(select(.title == env.TITRE)) | .[0].number // empty')
           if [ -z "$numero" ]; then
             url=$(gh issue create --title "$TITRE" --body-file classement.md)

@@ -23,3 +23,7 @@ class ErreurStock(InvalidValueError):
 
 class ErreurTarification(InvalidValueError):
     """Contexte Prix : montant, taux, remise."""
+
+
+class ErreurIntrouvable(ValueError):
+    """Un identifiant bien formé, qui ne correspond à aucun élément."""

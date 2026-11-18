@@ -1,9 +1,9 @@
 from functools import partial
 
-from result import Result
+from result import Err, Ok, Result
 
 from omni_product.domain.model import Product, ProductId, ProductSupply, Supplier, SupplierId
-from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.errors import ErreurIntrouvable, InvalidValueError
 from omni_product.domain.port.context_repository import ContextRepository
 from omni_product.domain.port.supplier_repository import SupplierRepository
 
@@ -35,22 +35,32 @@ class SupplierService:
 
     def get_suppliers_by_product(
         self, product_id: str
-    ) -> Result[list[Supplier], InvalidValueError]:
-        return ProductId.of(product_id).map(self._suppliers_of_existing_product)
+    ) -> Result[list[Supplier], InvalidValueError | ErreurIntrouvable]:
+        return ProductId.of(product_id).and_then(self._fournisseurs_du_produit)
 
-    def update_supplier(self, id: str, name: str | None) -> Result[Supplier, InvalidValueError]:
-        return SupplierId.of(id).map(partial(self._update, name=name))
+    def update_supplier(
+        self, id: str, name: str | None
+    ) -> Result[Supplier, InvalidValueError | ErreurIntrouvable]:
+        return SupplierId.of(id).and_then(partial(self._update, name=name))
 
-    def _update(self, supplier_id: SupplierId, *, name: str | None) -> Supplier:
-        supplier = self._get_or_raise(supplier_id)
+    def _update(
+        self, supplier_id: SupplierId, *, name: str | None
+    ) -> Result[Supplier, ErreurIntrouvable]:
+        return self._trouver(supplier_id).map(partial(self._renommer, name=name))
+
+    def _renommer(self, supplier: Supplier, *, name: str | None) -> Supplier:
         supplier.name = name or supplier.name
         return self._suppliers.save(supplier)
 
-    def delete_supplier(self, supplier_id: str) -> Result[None, InvalidValueError]:
-        return SupplierId.of(supplier_id).map(self._delete)
+    def delete_supplier(
+        self, supplier_id: str
+    ) -> Result[None, InvalidValueError | ErreurIntrouvable]:
+        return SupplierId.of(supplier_id).and_then(self._delete)
 
-    def _delete(self, supplier_id: SupplierId) -> None:
-        supplier = self._get_or_raise(supplier_id)
+    def _delete(self, supplier_id: SupplierId) -> Result[None, ErreurIntrouvable]:
+        return self._trouver(supplier_id).map(self._supprimer)
+
+    def _supprimer(self, supplier: Supplier) -> None:
         # Comportement conservé : supprimer un fournisseur supprime les produits qu'il fournit.
         for supply in self._supplies.find_all():
             if supply.supplier_id == supplier.id:
@@ -58,16 +68,18 @@ class SupplierService:
                 self._supplies.delete_by_id(supply.id)
         self._suppliers.delete(supplier)
 
-    def _suppliers_of_existing_product(self, product: ProductId) -> list[Supplier]:
+    def _fournisseurs_du_produit(
+        self, product: ProductId
+    ) -> Result[list[Supplier], ErreurIntrouvable]:
         if self._products.find_by_id(product) is None:
-            raise ValueError(f"Product not found: {product.value}")
+            return Err(ErreurIntrouvable(f"Product not found: {product.value}"))
         supply = self._supplies.find_by_id(product)
         supplier_id = None if supply is None else supply.supplier_id
         supplier = None if supplier_id is None else self._suppliers.find_by_id(supplier_id)
-        return [] if supplier is None else [supplier]
+        return Ok([] if supplier is None else [supplier])
 
-    def _get_or_raise(self, supplier_id: SupplierId) -> Supplier:
+    def _trouver(self, supplier_id: SupplierId) -> Result[Supplier, ErreurIntrouvable]:
         supplier = self._suppliers.find_by_id(supplier_id)
         if supplier is None:
-            raise ValueError(f"Supplier not found: {supplier_id.value}")
-        return supplier
+            return Err(ErreurIntrouvable(f"Supplier not found: {supplier_id.value}"))
+        return Ok(supplier)

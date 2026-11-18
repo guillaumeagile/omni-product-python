@@ -7,6 +7,7 @@ from omni_product.domain.model import (
     Slug,
     SupplierId,
 )
+from omni_product.domain.model.errors import ErreurIntrouvable
 from omni_product.infrastructure.persistence.in_memory import (
     InMemoryRepository,
     InMemorySupplierRepository,
@@ -73,11 +74,12 @@ def test_should_keep_name_when_update_gives_none(supplier_service: SupplierServi
     assert updated.name == "Supplier A"
 
 
-def test_should_raise_when_updating_non_existent_supplier(
+def test_should_return_err_when_updating_non_existent_supplier(
     supplier_service: SupplierService,
 ) -> None:
-    with pytest.raises(ValueError, match="Supplier not found"):
-        supplier_service.update_supplier("nonexistent", "Name")
+    resultat = supplier_service.update_supplier("nonexistent", "Name")
+
+    assert isinstance(resultat.unwrap_err(), ErreurIntrouvable)
 
 
 def test_should_delete_supplier(supplier_service: SupplierService) -> None:
@@ -88,11 +90,12 @@ def test_should_delete_supplier(supplier_service: SupplierService) -> None:
     assert supplier_service.get_supplier("sup1").unwrap() is None
 
 
-def test_should_raise_when_deleting_non_existent_supplier(
+def test_should_return_err_when_deleting_non_existent_supplier(
     supplier_service: SupplierService,
 ) -> None:
-    with pytest.raises(ValueError, match="Supplier not found"):
-        supplier_service.delete_supplier("nonexistent")
+    resultat = supplier_service.delete_supplier("nonexistent")
+
+    assert isinstance(resultat.unwrap_err(), ErreurIntrouvable)
 
 
 def test_should_cascade_delete_products_when_supplier_deleted(
@@ -126,8 +129,9 @@ def test_should_get_suppliers_by_product(
     assert [s.id for s in suppliers] == [SupplierId("sup1")]
 
 
-def test_should_raise_when_getting_suppliers_of_unknown_product(
+def test_should_return_err_when_getting_suppliers_of_unknown_product(
     supplier_service: SupplierService,
 ) -> None:
-    with pytest.raises(ValueError, match="Product not found"):
-        supplier_service.get_suppliers_by_product("ghost")
+    resultat = supplier_service.get_suppliers_by_product("ghost")
+
+    assert isinstance(resultat.unwrap_err(), ErreurIntrouvable)

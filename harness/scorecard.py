@@ -157,6 +157,8 @@ def _verdict(change: float, better: int) -> str:
 
 
 def _small_diff(changed_tokens: int) -> str:
+    if changed_tokens == 0:
+        return "🫥 PR vide"
     return "🤏 Small diff" if changed_tokens <= 400 else ""
 
 
@@ -294,7 +296,7 @@ def main() -> None:
     else:
         base, changed = None, None
     rules_md = rules_report.section(
-        rule_results(head_findings, base_findings), metric_lines(head, base)
+        rule_results(head_findings, base_findings), metric_lines(head, base), changed
     )
     card = render(head, base, changed, rules_md)
     if args.output:

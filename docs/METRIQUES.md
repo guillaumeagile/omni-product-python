@@ -36,7 +36,9 @@ mais l'ordre de grandeur est juste, et surtout les **variations** d'une PR à l'
 **Le piège.** Raccourcir les noms (`price` devient `p`) fait baisser les tokens et dégrade le code. Lisible avant court.
 
 **Le petit diff.** L'arbitre compte aussi les tokens de **ta modification** (les lignes de code ajoutées et retirées, commentaires exclus). Une PR
-qui change peu est facile à relire et facile à annuler : c'est l'esprit du *baby step*.
+qui change peu est facile à relire et facile à annuler : c'est l'esprit du *baby step*. Une PR qui ne modifie aucun
+token de code du périmètre est une **PR vide** : elle coûte 5 points. Un changement de commentaires seuls, de tests
+seuls ou de documentation seule en fait partie.
 
 ## 2. Le nombre de chemins : la complexité cyclomatique
 

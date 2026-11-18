@@ -152,8 +152,9 @@ def test_evaluate_reads_the_core_and_ignores_the_outside(tmp_path: Path):
     ]
 
 
-def test_the_legacy_core_is_red():
-    legacy = [str(finding) for finding in evaluate(Path("src"))[10]]
+def test_the_core_of_the_split_model_still_reaches_outside():
+    """Modèle découpé (règles 2 à 5) : plus de SQLAlchemy dans le cœur, l'exception métier reste."""
+    findings = [str(finding) for finding in evaluate(Path("src"))[10]]
 
-    assert any("`sqlalchemy" in text for text in legacy)
-    assert any("`omni_product.database`" in text for text in legacy)
+    assert not any("`sqlalchemy" in text for text in findings)
+    assert any("`omni_product.exception.business_exception`" in text for text in findings)

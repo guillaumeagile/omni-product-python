@@ -93,6 +93,17 @@ def test_each_metric_is_capped_at_ten_in_both_directions():
     assert metric_points(25, -1) == -10
 
 
+def test_a_weight_of_zero_neutralises_the_metric():
+    assert metric_points(-25, -1, weight=0) == 0
+    assert metric_points(25, +1, weight=0) == 0
+
+
+def test_a_weight_multiplies_the_points_before_the_cap():
+    assert metric_points(4, -1, weight=2) == -8
+    assert metric_points(4, -1, weight=3) == -10  # 12 points, plafonnés à -10
+    assert metric_points(4, -1, weight=0.5) == -2
+
+
 def test_a_fractional_variation_is_rounded_to_whole_points():
     assert metric_points(0.4, -1) == 0
     assert metric_points(2.6, -1) == -3

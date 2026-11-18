@@ -36,12 +36,14 @@ class Row:
     """Une ligne du tableau. `better` dit dans quel sens aller : -1 pour « moins c'est mieux », +1 pour l'inverse.
 
     `scored` : la variation de cette ligne rapporte ou retire des points (voir `metric_lines`).
+    `weight` : l'importance de la ligne dans le score. 1 par défaut, 0 pour neutraliser la mesure.
     """
 
     label: str
     read: Callable[[Metrics], float]
     better: int
     scored: bool = False
+    weight: float = 1.0
 
 
 ROWS = (
@@ -110,7 +112,7 @@ def metric_lines(head: Metrics, base: Metrics | None) -> tuple[tuple[str, int], 
     if base is None:
         return ()
     return tuple(
-        (row.label, metric_points(row.read(head) - row.read(base), row.better))
+        (row.label, metric_points(row.read(head) - row.read(base), row.better, row.weight))
         for row in ROWS
         if row.scored
     )

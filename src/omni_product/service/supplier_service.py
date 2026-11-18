@@ -64,7 +64,7 @@ class SupplierService:
 
     def delete_supplier(self, supplier_id: str) -> None:
         supplier = self._get_or_raise(supplier_id)
-        # Les produits d'un fournisseur disparaissent avec lui : c'est le service qui fait ce lien entre contextes.
+        # Les produits du fournisseur partent avec lui : le service fait ce lien entre contextes.
         product_service = ProductService(self._session)
         for product_id in supplier_dal.find_product_ids_by_supplier_id(self._session, supplier_id):
             product_service.delete_by_id(product_id)

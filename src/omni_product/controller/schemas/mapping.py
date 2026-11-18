@@ -30,6 +30,10 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
+def _regions_of(supply: ProductSupply | None) -> dict[str, RegionSupplier]:
+    return supply.suppliers_regions if supply is not None else {}
+
+
 def product_to_schema(view: ProductView) -> ProductSchema:
     product = view.product
     perishable = product if isinstance(product, PerishableProduct) else None
@@ -49,7 +53,7 @@ def product_to_schema(view: ProductView) -> ProductSchema:
         images=dict(product.images),
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
-            for region, supplier in (supply.suppliers_regions.items() if supply else [])
+            for region, supplier in _regions_of(supply).items()
         },
         kilos=shipment.kilos if shipment else None,
         volume=shipment.volume if shipment else None,
@@ -61,7 +65,7 @@ def product_to_schema(view: ProductView) -> ProductSchema:
 
 
 def schema_to_view(schema: ProductSchema, product_id: str) -> ProductView:
-    """Construit des agrégats neufs ; `save` les fusionne avec les existants (comme `PUT` en Java)."""
+    """Construit des agrégats neufs : `save` les fusionne avec les existants, comme un `PUT`."""
     match schema.kind:
         case "perishable":
             product = PerishableProduct(
@@ -89,7 +93,9 @@ def schema_to_view(schema: ProductSchema, product_id: str) -> ProductView:
             quantity=schema.quantity if schema.quantity is not None else schema.stock,
             stock=schema.stock or 0,
             warehouse=(
-                Warehouse(**schema.warehouse.model_dump()) if schema.warehouse is not None else Warehouse()
+                Warehouse(**schema.warehouse.model_dump())
+                if schema.warehouse is not None
+                else Warehouse()
             ),
         ),
         supply=ProductSupply(

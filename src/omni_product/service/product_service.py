@@ -9,7 +9,7 @@ from omni_product.anemic_model import (
     ProductSupply,
 )
 from omni_product.dal import product_dal, product_part_dal
-from omni_product.dal.product_part_dal import PartT
+from omni_product.database import Base
 from omni_product.domain.model.freshness import is_expired
 from omni_product.service.product_view import ProductView
 
@@ -68,5 +68,5 @@ class ProductService:
         )
 
 
-def _save_part(session: Session, part: PartT | None) -> PartT | None:
+def _save_part[PartT: Base](session: Session, part: PartT | None) -> PartT | None:
     return None if part is None else product_part_dal.save(session, part)

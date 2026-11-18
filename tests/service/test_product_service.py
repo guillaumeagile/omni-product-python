@@ -32,7 +32,9 @@ def test_find_expired_returns_only_perishable_products_past_their_date(
             )
         )
     )
-    product_service.save(ProductView(product=PerishableProduct(id="p3", name="Beurre", slug="beurre")))
+    product_service.save(
+        ProductView(product=PerishableProduct(id="p3", name="Beurre", slug="beurre"))
+    )
     product_service.save(ProductView(product=NonExpiringProduct(id="p4", name="Sel", slug="sel")))
 
     # Legacy : l'horloge se fige avec `patch`.

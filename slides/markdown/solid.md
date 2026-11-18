@@ -4,7 +4,7 @@
 
 <img src="img/exported_qrcode_image_600 (3).png" alt="Alt text" style="width: 40%; height: auto;">
 
-https://github.com/guillaumeagile/omni-product
+https://github.com/guillaumeagile/omni-product-python
 
 
 --

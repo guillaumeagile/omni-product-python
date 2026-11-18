@@ -36,10 +36,5 @@ def test_the_registry_has_rules_1_to_10_on_the_expected_scopes():
         7: ("omni_product/domain/model", "omni_product/anemic_model"),
         8: ("omni_product",),
         9: ("omni_product",),
-        10: (
-            "omni_product/domain",
-            "omni_product/anemic_model",
-            "omni_product/kernel",
-            "omni_product/ports",
-        ),
+        10: ("omni_product",),
     }

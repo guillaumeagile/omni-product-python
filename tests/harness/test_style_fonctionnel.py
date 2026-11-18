@@ -245,5 +245,5 @@ def test_rule_9_reads_controllers_and_services(tmp_path: Path):
         (src / "omni_product" / name).as_posix()
         for name in ("controller/api.py", "domain/model/m.py", "service/svc.py")
     ]
-    # Les autres règles gardent le périmètre du cœur.
-    assert all(rule.hors != () for rule in RULES if rule.number != 9)
+    # Les autres règles gardent le périmètre du cœur, sauf la 10 : elle suit tout le paquet.
+    assert all(rule.hors != () for rule in RULES if rule.number not in (9, 10))

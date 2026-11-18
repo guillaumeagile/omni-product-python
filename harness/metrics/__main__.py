@@ -28,6 +28,7 @@ def render(metrics: Metrics) -> str:
         ("Fan-out max", metrics.max_fan_out),
         ("CBO max", metrics.max_cbo),
         ("Métrique Uncle Bob (D moyen des couches)", metrics.uncle_bob),
+        ("Violations du sens des dépendances", metrics.stability_violations),
         ("Attributs mutables", metrics.mutable_attributes),
         ("Affectations", metrics.assignments),
         ("Boucles", metrics.loops),

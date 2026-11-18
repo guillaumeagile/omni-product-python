@@ -179,3 +179,40 @@ def test_the_uncle_bob_metric_scores_ten_times_its_variation():
     # 0 → 0.38 : une hausse de 0,38 coûte 4 points, la baisse inverse en rapporte 4.
     assert worse[label] == -4
     assert better[label] == 4
+
+
+# domain importe un utilitaire que seul domain utilise, et qui dépend lui-même de main :
+# I(tools) = 0.5 > I(domain).
+UPSIDE_DOWN = [
+    *PROJECT,
+    source("omni_product.domain.uses_tools", "from omni_product.tools import helper\n"),
+    source("omni_product.tools", "from omni_product.main import app\n", is_package=True),
+]
+
+
+def test_links_toward_more_stable_layers_are_no_violation():
+    assert martin.stability_violations(martin.measure(PROJECT)) == ()
+
+
+def test_a_link_toward_a_more_unstable_layer_is_a_violation():
+    layers = by_name(UPSIDE_DOWN)
+
+    assert (layers["domain"].instability, layers["tools"].instability) == (0.33, 0.5)
+    assert martin.stability_violations(martin.measure(UPSIDE_DOWN)) == (("domain", "tools"),)
+
+
+def test_a_link_out_of_the_perimeter_is_not_judged():
+    layers = martin.measure(
+        [source("omni_product.dal.rows", "from omni_product.service import s\n")]
+    )
+
+    assert martin.stability_violations(layers) == ()
+
+
+def test_each_added_violation_costs_one_point():
+    label = "Violations du sens des dépendances (vers plus instable)"
+    head, base = measure(UPSIDE_DOWN), measure(PROJECT)
+
+    assert (base.stability_violations, head.stability_violations) == (0, 1)
+    assert dict(scorecard.metric_lines(head, base))[label] == -1
+    assert dict(scorecard.metric_lines(base, head))[label] == 1

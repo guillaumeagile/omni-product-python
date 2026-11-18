@@ -32,7 +32,26 @@ def render(metrics: Metrics) -> str:
         ("Boucles", metrics.loops),
         ("Lambdas", metrics.lambdas),
     ]
-    return "\n".join(f"{label:<52} {value}" for label, value in rows)
+    return "\n".join(
+        [f"{label:<52} {value}" for label, value in rows] + ["", *render_layers(metrics)]
+    )
+
+
+def render_layers(metrics: Metrics) -> list[str]:
+    """Les métriques de Martin, une ligne par couche."""
+    header = f"{'Couche':<16} {'Ca':>3} {'Ce':>3} {'I':>5} {'A':>5} {'D':>5}  Dépend de"
+    return [
+        header,
+        *(
+            f"{layer.name:<16} {layer.afferent:>3} {layer.efferent:>3} {_opt(layer.instability):>5} "
+            f"{layer.abstractness:>5g} {_opt(layer.distance):>5}  {', '.join(layer.depends_on) or '—'}"
+            for layer in metrics.layers
+        ),
+    ]
+
+
+def _opt(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:g}"
 
 
 def main() -> None:

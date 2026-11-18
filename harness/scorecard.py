@@ -19,6 +19,7 @@ from pathlib import Path
 
 from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
+from harness.metrics.martin import LayerMetrics
 from harness.metrics.report import ClassMetrics, Metrics, measure
 from harness.metrics.sources import collect
 from harness.perimetre import description, dossiers_exclus
@@ -102,7 +103,7 @@ def render(
         lines.append(
             f"| Tokens modifiés par la PR | | {changed_tokens} | | {_small_diff(changed_tokens)} |"
         )
-    lines += ["", *_worst_classes(head), ""]
+    lines += ["", *_worst_classes(head), "", *_layers(head, base), ""]
     lines.append(
         f"<sub>Périmètre : {description()}. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
         if base
@@ -166,6 +167,43 @@ def _class_row(c: ClassMetrics) -> str:
     tcc = "n/a" if c.tcc is None else _fmt(c.tcc)
     lcom = "n/a" if c.lcom is None else _fmt(c.lcom)
     return f"| `{c.name}` | {c.cbo} | {c.fan_out} | {c.wmc} | {c.cognitive} | {tcc} | {lcom} |"
+
+
+def _layers(head: Metrics, base: Metrics | None) -> list[str]:
+    """Les métriques de Martin par couche, base → PR. Elles guident : elles ne rapportent pas de points."""
+    if not head.layers:
+        return []
+    before = {layer.name: layer for layer in base.layers} if base else {}
+    return [
+        "**Les couches** (Robert Martin : I instabilité, A abstraction, D distance à la séquence principale, "
+        "0 est le mieux) :",
+        "",
+        "| Couche | Ca | Ce | I | A | D | Dépend de |",
+        "|---|---:|---:|---:|---:|---:|---|",
+        *(_layer_row(layer, before.get(layer.name)) for layer in head.layers),
+    ]
+
+
+_LAYER_COLUMNS = ("afferent", "efferent", "instability", "abstractness", "distance")
+
+
+def _layer_row(now: LayerMetrics, then: LayerMetrics | None) -> str:
+    cells = [_change(then, now, column) for column in _LAYER_COLUMNS]
+    depends = ", ".join(f"`{name}`" for name in now.depends_on) or "—"
+    return f"| `{now.name}` | {' | '.join(cells)} | {depends} |"
+
+
+def _change(then: LayerMetrics | None, now: LayerMetrics, column: str) -> str:
+    """La valeur de la PR, précédée de celle de la base quand la couche y existait et que la valeur a changé."""
+    after: float | None = getattr(now, column)
+    if then is None:
+        return _shown(after)
+    before: float | None = getattr(then, column)
+    return _shown(after) if before == after else f"{_shown(before)} → {_shown(after)}"
+
+
+def _shown(value: float | None) -> str:
+    return "n/a" if value is None else _fmt(value)
 
 
 def measure_tree(src_root: Path, roots: list[str]) -> Metrics:

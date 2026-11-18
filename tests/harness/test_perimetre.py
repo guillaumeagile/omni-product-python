@@ -1,4 +1,4 @@
-"""Le périmètre du harnais : `omni_product/`, sauf les couches externes et la plomberie."""
+"""Le périmètre du harnais : `omni_product/`, sauf `controller/`, `service/` et la plomberie."""
 
 from pathlib import Path
 
@@ -11,7 +11,7 @@ def _write(path: Path) -> None:
     path.write_text("class A: ...\n", encoding="utf-8")
 
 
-def test_controller_service_and_dal_are_out_of_the_perimeter(tmp_path: Path):
+def test_controller_and_service_are_out_of_the_perimeter_dal_is_in(tmp_path: Path):
     src = tmp_path / "src"
     for name in ("domain/model/product.py", "infrastructure/x.py", "main.py", "dal/rows.py"):
         _write(src / "omni_product" / name)
@@ -21,6 +21,7 @@ def test_controller_service_and_dal_are_out_of_the_perimeter(tmp_path: Path):
     modules = [s.module for s in collect([src / "omni_product"], src, dossiers_exclus(src))]
 
     assert modules == [
+        "omni_product.dal.rows",
         "omni_product.domain.model.product",
         "omni_product.infrastructure.x",
         "omni_product.main",

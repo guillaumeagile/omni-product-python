@@ -2,7 +2,8 @@
 
 `uv run python -m harness.scorecard --base-ref origin/main [--output scorecard.md]`
 
-La CI la publie en commentaire de PR. Elle guide, elle ne note pas : l'arbitre viendra plus tard.
+La CI la publie en commentaire de PR. Elle guide et chiffre : les points des règles, et un bonus ou un malus
+pour chaque variation des métriques marquées `scored`. L'arbitre viendra plus tard.
 """
 
 import argparse
@@ -24,6 +25,7 @@ from harness.perimetre import description, dossiers_exclus
 from harness.rules import evaluate as evaluate_rules
 from harness.rules import report as rules_report
 from harness.rules import results as rule_results
+from harness.rules.points import metric_points
 
 MARKER = "<!-- harness-scorecard -->"
 TOP_CLASSES = 3
@@ -31,30 +33,34 @@ TOP_CLASSES = 3
 
 @dataclass(frozen=True)
 class Row:
-    """Une ligne du tableau. `better` dit dans quel sens aller : -1 pour « moins c'est mieux », +1 pour l'inverse."""
+    """Une ligne du tableau. `better` dit dans quel sens aller : -1 pour « moins c'est mieux », +1 pour l'inverse.
+
+    `scored` : la variation de cette ligne rapporte ou retire des points (voir `metric_lines`).
+    """
 
     label: str
     read: Callable[[Metrics], float]
     better: int
+    scored: bool = False
 
 
 ROWS = (
     Row("Tokens", lambda m: m.tokens, -1),
     Row("Complexité cyclomatique (total)", lambda m: m.cyclomatic, -1),
     Row("Complexité cyclomatique (max par fonction)", lambda m: m.max_cyclomatic, -1),
-    Row("WMC (pire classe)", lambda m: m.max_wmc, -1),
+    Row("WMC (pire classe)", lambda m: m.max_wmc, -1, scored=True),
     Row("Complexité cognitive (total)", lambda m: m.cognitive, -1),
-    Row("Complexité cognitive (max par fonction)", lambda m: m.max_cognitive, -1),
-    Row("TCC (pire classe, 1 = cohésive)", lambda m: m.min_tcc, +1),
-    Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1),
+    Row("Complexité cognitive (max par fonction)", lambda m: m.max_cognitive, -1, scored=True),
+    Row("TCC (pire classe, 1 = cohésive)", lambda m: m.min_tcc, +1, scored=True),
+    Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1, scored=True),
     Row("Fan-out (total)", lambda m: m.fan_out, -1),
-    Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1),
+    Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1, scored=True),
     Row("CBO (total)", lambda m: m.cbo, -1),
-    Row("CBO (pire classe)", lambda m: m.max_cbo, -1),
-    Row("Attributs mutables", lambda m: m.mutable_attributes, -1),
-    Row("Affectations", lambda m: m.assignments, -1),
-    Row("Boucles", lambda m: m.loops, -1),
-    Row("Lambdas", lambda m: m.lambdas, +1),
+    Row("CBO (pire classe)", lambda m: m.max_cbo, -1, scored=True),
+    Row("Attributs mutables", lambda m: m.mutable_attributes, -1, scored=True),
+    Row("Affectations", lambda m: m.assignments, -1, scored=True),
+    Row("Boucles", lambda m: m.loops, -1, scored=True),
+    Row("Lambdas", lambda m: m.lambdas, +1, scored=True),
 )
 
 
@@ -97,6 +103,17 @@ def _row(row: Row, head: Metrics, base: Metrics | None) -> str:
         return f"| {row.label} | | {_fmt(now)} | | |"
     before = row.read(base)
     return f"| {row.label} | {_fmt(before)} | {_fmt(now)} | {_delta(now - before)} | {_verdict(now - before, row.better)} |"
+
+
+def metric_lines(head: Metrics, base: Metrics | None) -> tuple[tuple[str, int], ...]:
+    """Les points des métriques : (libellé, points) pour chaque ligne `scored` qui a une base à comparer."""
+    if base is None:
+        return ()
+    return tuple(
+        (row.label, metric_points(row.read(head) - row.read(base), row.better))
+        for row in ROWS
+        if row.scored
+    )
 
 
 def _fmt(value: float) -> str:
@@ -205,7 +222,9 @@ def main() -> None:
             base_findings = None if base_src is None else evaluate_rules(base_src)
     else:
         base, changed = None, None
-    rules_md = rules_report.section(rule_results(head_findings, base_findings))
+    rules_md = rules_report.section(
+        rule_results(head_findings, base_findings), metric_lines(head, base)
+    )
     card = render(head, base, changed, rules_md)
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")

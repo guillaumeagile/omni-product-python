@@ -87,18 +87,23 @@ jobs:
         with:
           name: mutation-stats
           path: mutation-head
-      - name: Récupérer le score de mutation de la base (dernier passage réussi sur main)
+      - name: Récupérer le score de mutation de la base (dernier passage réussi sur la branche de base, sinon sur main)
+        # Une PR empilée sur une branche qui n'a pas de passage `push` (le workflow ne tourne en push que sur main)
+        # retombe sur main : sans cela le badge 🧬 Tueur de mutants ne pourrait jamais être gagné.
         if: github.event_name == 'pull_request'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           BASE_BRANCH: ${{ github.base_ref }}
         run: |
-          run_id=$(gh run list --workflow ci.yml --branch "$BASE_BRANCH" --event push \
-            --status success --limit 1 --json databaseId --jq '.[0].databaseId')
-          if [ -n "$run_id" ]; then
-            gh run download "$run_id" --name mutation-stats --dir mutation-base
-          fi
+          for branch in "$BASE_BRANCH" main; do
+            run_id=$(gh run list --workflow ci.yml --branch "$branch" --event push \
+              --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+            if [ -n "$run_id" ]; then
+              gh run download "$run_id" --name mutation-stats --dir mutation-base
+              break
+            fi
+          done
       - name: Calculer la scorecard
         env:
           BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}

@@ -1,17 +1,5 @@
 # omni-product (port Python)
 
-Port de `omni-product-spring-boot-java-bdxio-phase1` : FastAPI + SQLAlchemy 2 + SQLite en mémoire.
-
-| Java | Python |
-|---|---|
-| Spring Boot / MVC | FastAPI |
-| JPA / Hibernate | SQLAlchemy 2.0 (`@Embeddable` → `composite`, `@ElementCollection` → tables enfants + `association_proxy`) |
-| Spring Data `JpaRepository` | couche DAL à l'ancienne : fonctions `*_dal.py` prenant la Session SQLAlchemy |
-| H2 | SQLite en mémoire |
-| RestTemplate | httpx |
-| Jackson | Pydantic (JSON en camelCase) |
-| JUnit / AssertJ / MockMvc | pytest / `TestClient` |
-
 ## Le jeu : l'atelier CUPID
 
 Les équipes refactorent ce code règle après règle, guidées par le harnais. Chaque PR gagne ou perd des points.

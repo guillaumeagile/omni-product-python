@@ -95,11 +95,17 @@ RULES: tuple[Rule, ...] = (
         style_fonctionnel.check,
         hors=TOUT_LE_PAQUET,
     ),
-    # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même.
+    # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même, le noyau
+    # et les ports. Le noyau et les ports sont inspectés aussi : le noyau n'importe que lui-même, les ports que le noyau.
     Rule(
         10,
         "Architecture en oignon",
-        ("omni_product/domain", "omni_product/anemic_model"),
+        (
+            "omni_product/domain",
+            "omni_product/anemic_model",
+            "omni_product/kernel",
+            "omni_product/ports",
+        ),
         architecture_oignon.check,
     ),
 )

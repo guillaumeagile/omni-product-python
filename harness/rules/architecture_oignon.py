@@ -1,7 +1,7 @@
 """Règle 10 : le cœur ne dépend-il que de lui-même ?
 
-Tout `import` du cœur (`domain`, et `anemic_model` tant que la règle 3 n'est pas faite) vers autre chose que le cœur
-lui-même, la bibliothèque `result` ou les outils de programmation de la bibliothèque standard (`STDLIB_ALLOWED` :
+Tout `import` du cœur (`domain`, et `anemic_model` tant que la règle 3 n'est pas faite) vers autre chose que le cœur,
+le noyau (`kernel`) et les ports (`ports`), la bibliothèque `result` ou les outils de programmation de la bibliothèque standard (`STDLIB_ALLOWED` :
 `dataclasses`, `typing`, `enum`, `decimal`…) est un constat (AO001). SQLAlchemy, FastAPI, `requests`, mais aussi
 `controller`, `service`, `dal`, `infrastructure`, `config`, `database`, et les modules de la bibliothèque standard qui
 touchent le monde (`os`, `sys`, `time`, `random`, `json`, `pathlib`, `logging`…) restent à l'extérieur. Le cœur décrit
@@ -23,8 +23,20 @@ from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 CODE = "AO001"
 
-# Ce que le cœur peut importer de ce projet : lui-même. `anemic_model` y est tant que la règle 3 n'a pas rangé le modèle.
-CORE = (f"{PACKAGE}.domain", f"{PACKAGE}.anemic_model")
+KERNEL = f"{PACKAGE}.kernel"
+PORTS = f"{PACKAGE}.ports"
+DOMAIN = f"{PACKAGE}.domain"
+ANEMIC = f"{PACKAGE}.anemic_model"
+# Les anneaux de l'oignon, et ce que chacun peut importer de ce projet. Le noyau (`kernel`) est l'anneau le plus
+# intérieur : il n'importe que lui-même. Les ports (`ports`) ne décrivent que des `Protocol` et n'importent que le
+# noyau. Le cœur (`domain`, et `anemic_model` tant que la règle 3 n'a pas rangé le modèle) peut importer le noyau et
+# les ports, mais rien de plus extérieur. Un module hors de ces anneaux n'est pas inspecté.
+PEUT_IMPORTER = {
+    KERNEL: (KERNEL,),
+    PORTS: (KERNEL, PORTS),
+    DOMAIN: (DOMAIN, ANEMIC, KERNEL, PORTS),
+    ANEMIC: (DOMAIN, ANEMIC, KERNEL, PORTS),
+}
 # Les seules bibliothèques extérieures permises : celle des résultats `Ok` / `Err` (règle 5).
 ALLOWED_LIBRARIES = frozenset({"result"})
 # La bibliothèque standard permise : des outils de programmation purs, sans accès au système, au disque ni au réseau.
@@ -70,13 +82,16 @@ class Finding:
 
 
 def check(source: Source, language: UbiquitousLanguage) -> list[Finding]:
-    """Un constat par import qui sort du cœur, dans l'ordre des lignes."""
+    """Un constat par import qui sort de l'anneau du module, dans l'ordre des lignes."""
+    anneau = _anneau(source.module)
+    if anneau is None:
+        return []
     findings = [
         _finding(source, node, target)
         for node in ast.walk(source.tree)
         if isinstance(node, ast.Import | ast.ImportFrom)
         for target in _targets(source, node)
-        if not _is_allowed(target)
+        if not _is_allowed(target, anneau)
     ]
     return sorted(findings, key=lambda finding: (finding.line, finding.col))
 
@@ -113,8 +128,18 @@ def _absolute(source: Source, node: ast.ImportFrom) -> str:
     return ".".join([*parts, *([node.module] if node.module else [])])
 
 
-def _is_allowed(target: str) -> bool:
+def _anneau(module: str) -> str | None:
+    """L'anneau auquel appartient le module, ou `None` s'il n'est pas inspecté."""
+    for anneau in PEUT_IMPORTER:
+        if module == anneau or module.startswith(f"{anneau}."):
+            return anneau
+    return None
+
+
+def _is_allowed(target: str, anneau: str) -> bool:
     root = target.split(".")[0]
     if root == PACKAGE:
-        return any(target == core or target.startswith(f"{core}.") for core in CORE)
+        return any(
+            target == permis or target.startswith(f"{permis}.") for permis in PEUT_IMPORTER[anneau]
+        )
     return root in STDLIB_ALLOWED or root in ALLOWED_LIBRARIES

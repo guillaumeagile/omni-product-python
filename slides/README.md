@@ -4,11 +4,11 @@ The talk is written in Markdown (`markdown/*.md`) and rendered with [reveal.js](
 
 ## Start the slideshow
 
-From this `slides/` folder, install the dev dependencies once, then start the dev server:
+From this `slides/` folder, install the dev dependencies once, then start the dev server. The folder uses [pnpm](https://pnpm.io) (`pnpm-lock.yaml`); install it with `corepack enable` or `brew install pnpm`.
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 This opens <http://localhost:8080> and reloads the browser whenever a Markdown or HTML file in `slides/` changes.

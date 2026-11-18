@@ -1,9 +1,9 @@
 from sqlalchemy import ColumnElement, select
 from sqlalchemy.orm import Session
 
-from omni_product.dal import product_dal
-from omni_product.dal.rows import ProductSupplyRow, SupplierRow
 from omni_product.domain.model import ProductId, Supplier, SupplierId
+from omni_product.infrastructure.persistence import product_dal
+from omni_product.infrastructure.persistence.rows import ProductSupplyRow, SupplierRow
 
 
 class SqlSupplierRepository:

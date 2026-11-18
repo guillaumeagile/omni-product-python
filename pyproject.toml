@@ -92,7 +92,6 @@ type = "forbidden"
 source_modules = ["omni_product.domain"]
 forbidden_modules = [
     "omni_product.controller",
-    "omni_product.dal",
     "omni_product.infrastructure",
     "omni_product.service",
     "omni_product.config",

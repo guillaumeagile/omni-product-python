@@ -6,17 +6,6 @@ from result import Err, Ok, Result
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from omni_product.dal.records import raw
-from omni_product.dal.rows import (
-    ProductDiscountRow,
-    ProductImageRow,
-    ProductPriceRow,
-    ProductRow,
-    ProductStockRow,
-    ProductSupplierRegionRow,
-    ProductSupplyRow,
-    ProductTransportRow,
-)
 from omni_product.domain.model import (
     Amount,
     NonExpiring,
@@ -48,6 +37,17 @@ from omni_product.domain.model import (
 )
 from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.product_sheet import ProductSheet
+from omni_product.infrastructure.persistence.records import raw
+from omni_product.infrastructure.persistence.rows import (
+    ProductDiscountRow,
+    ProductImageRow,
+    ProductPriceRow,
+    ProductRow,
+    ProductStockRow,
+    ProductSupplierRegionRow,
+    ProductSupplyRow,
+    ProductTransportRow,
+)
 
 
 class SqlProductRepository:

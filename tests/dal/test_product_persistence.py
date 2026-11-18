@@ -6,8 +6,6 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from omni_product.dal import product_dal
-from omni_product.dal.product_dal import ProductSheet
 from omni_product.domain.model import (
     NonExpiring,
     ParDateEtDuree,
@@ -18,6 +16,8 @@ from omni_product.domain.model import (
     ShelfLifeDays,
     Slug,
 )
+from omni_product.infrastructure.persistence import product_dal
+from omni_product.infrastructure.persistence.product_dal import ProductSheet
 
 
 def test_kind_is_written_from_the_shelf_life(session: Session) -> None:

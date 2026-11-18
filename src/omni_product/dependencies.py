@@ -6,13 +6,13 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session, sessionmaker
 
 from omni_product.config import Settings
-from omni_product.dal.product_dal import SqlProductRepository
-from omni_product.dal.supplier_dal import SqlSupplierRepository
 from omni_product.domain.port.transport_carbon_port import TransportCarbonPort
 from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2ApiClient
 from omni_product.infrastructure.adapter.impact_co2_transport_adapter import (
     ImpactCo2TransportAdapter,
 )
+from omni_product.infrastructure.persistence.product_dal import SqlProductRepository
+from omni_product.infrastructure.persistence.supplier_dal import SqlSupplierRepository
 from omni_product.service.product_service import ProductService
 from omni_product.service.product_transport_service import ProductTransportService
 from omni_product.service.supplier_service import SupplierService

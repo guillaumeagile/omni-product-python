@@ -1,9 +1,6 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.dal import product_dal
-from omni_product.dal.product_dal import ProductSheet, SqlProductRepository
-from omni_product.dal.supplier_dal import SqlSupplierRepository
 from omni_product.domain.model import (
     Product,
     ProductId,
@@ -11,6 +8,9 @@ from omni_product.domain.model import (
     Slug,
     SupplierId,
 )
+from omni_product.infrastructure.persistence import product_dal
+from omni_product.infrastructure.persistence.product_dal import ProductSheet, SqlProductRepository
+from omni_product.infrastructure.persistence.supplier_dal import SqlSupplierRepository
 from omni_product.service.supplier_service import SupplierService
 
 

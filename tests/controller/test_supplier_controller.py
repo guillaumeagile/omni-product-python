@@ -1,8 +1,6 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from omni_product.dal import product_dal, supplier_dal
-from omni_product.dal.product_dal import ProductSheet
 from omni_product.domain.model import (
     Product,
     ProductId,
@@ -11,6 +9,8 @@ from omni_product.domain.model import (
     Supplier,
     SupplierId,
 )
+from omni_product.infrastructure.persistence import product_dal, supplier_dal
+from omni_product.infrastructure.persistence.product_dal import ProductSheet
 
 
 def _supplier(supplier_id: str, name: str) -> Supplier:

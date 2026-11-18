@@ -11,8 +11,6 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
-from omni_product.dal.product_dal import ProductSheet
-from omni_product.dal.records import optional, raw
 from omni_product.domain.model import (
     Amount,
     Discount,
@@ -55,6 +53,8 @@ from omni_product.domain.model import (
 )
 from omni_product.domain.model.errors import ErreurProduit, InvalidValueError
 from omni_product.domain.model.invariants import optionnel, premiere_erreur
+from omni_product.infrastructure.persistence.product_dal import ProductSheet
+from omni_product.infrastructure.persistence.records import optional, raw
 
 
 def _kind_of(product: Product) -> ProductKind:

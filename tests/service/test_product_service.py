@@ -3,7 +3,6 @@ from datetime import date
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.dal.product_dal import ProductSheet, SqlProductRepository
 from omni_product.domain.model import (
     NonExpiring,
     ParDateLimite,
@@ -14,6 +13,7 @@ from omni_product.domain.model import (
     ShelfLifeDays,
     Slug,
 )
+from omni_product.infrastructure.persistence.product_dal import ProductSheet, SqlProductRepository
 from omni_product.service.product_service import ProductService
 
 

@@ -14,9 +14,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from omni_product.database import Base, record_column
 from omni_product.domain.model import (
     Amount,
-    ContactEmail,
-    ContactPhone,
-    Country,
     Discount,
     ImageDetail,
     ImageKey,
@@ -126,8 +123,4 @@ class SupplierRow(Base):
     __tablename__ = "suppliers"
 
     id: Mapped[SupplierId] = mapped_column(record_column(SupplierId), primary_key=True)
-    name: Mapped[str | None] = mapped_column(String)
-    contact_email: Mapped[ContactEmail | None] = mapped_column(record_column(ContactEmail))
-    contact_phone: Mapped[ContactPhone | None] = mapped_column(record_column(ContactPhone))
-    country: Mapped[Country | None] = mapped_column(record_column(Country))
-    region: Mapped[Region | None] = mapped_column(record_column(Region))
+    name: Mapped[str] = mapped_column(String)

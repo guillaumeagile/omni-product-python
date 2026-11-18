@@ -4,11 +4,9 @@ from sqlalchemy.orm import Session
 from omni_product.dal import product_dal
 from omni_product.dal.product_dal import ProductSheet
 from omni_product.domain.model import (
-    Country,
     Product,
     ProductId,
     ProductSupply,
-    Region,
     Slug,
     SupplierId,
 )
@@ -20,26 +18,15 @@ def supplier_service(session: Session) -> SupplierService:
     return SupplierService(session)
 
 
-def _create(
-    service: SupplierService,
-    supplier_id: str,
-    name: str,
-    country: str = "France",
-    region: str = "Île-de-France",
-) -> None:
-    service.create_supplier(
-        supplier_id, name, "contact@test.com", "+33123456789", country, region
-    ).unwrap()
+def _create(service: SupplierService, supplier_id: str, name: str) -> None:
+    service.create_supplier(supplier_id, name).unwrap()
 
 
 def test_should_create_supplier(supplier_service: SupplierService) -> None:
-    supplier = supplier_service.create_supplier(
-        "sup1", "Supplier A", "contact@suppliera.com", "+33123456789", "France", "Île-de-France"
-    ).unwrap()
+    supplier = supplier_service.create_supplier("sup1", "Supplier A").unwrap()
 
     assert supplier.id == SupplierId("sup1")
     assert supplier.name == "Supplier A"
-    assert supplier.country == Country("France")
 
 
 def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
@@ -58,50 +45,34 @@ def test_should_return_none_for_non_existent_supplier(supplier_service: Supplier
 
 def test_should_get_all_suppliers(supplier_service: SupplierService) -> None:
     _create(supplier_service, "sup1", "Supplier A")
-    _create(supplier_service, "sup2", "Supplier B", "Spain", "Madrid")
+    _create(supplier_service, "sup2", "Supplier B")
 
     names = [s.name for s in supplier_service.get_all_suppliers()]
 
     assert names == ["Supplier A", "Supplier B"]
 
 
-def test_should_get_suppliers_by_country(supplier_service: SupplierService) -> None:
-    _create(supplier_service, "sup1", "Supplier A")
-    _create(supplier_service, "sup2", "Supplier B", "Spain", "Madrid")
-
-    french = supplier_service.get_suppliers_by_country("France").unwrap()
-
-    assert [s.name for s in french] == ["Supplier A"]
-
-
-def test_should_get_suppliers_by_region(supplier_service: SupplierService) -> None:
-    _create(supplier_service, "sup1", "Supplier A")
-    _create(supplier_service, "sup2", "Supplier B", region="Provence")
-
-    idf = supplier_service.get_suppliers_by_region("Île-de-France").unwrap()
-
-    assert [s.name for s in idf] == ["Supplier A"]
-
-
 def test_should_update_supplier(supplier_service: SupplierService) -> None:
     _create(supplier_service, "sup1", "Supplier A")
 
-    updated = supplier_service.update_supplier(
-        "sup1", "Updated Supplier A", "newemail@suppliera.com", "+33111111111", "Germany", "Berlin"
-    ).unwrap()
+    updated = supplier_service.update_supplier("sup1", "Updated Supplier A").unwrap()
 
     assert updated.name == "Updated Supplier A"
-    assert updated.country == Country("Germany")
-    assert updated.region == Region("Berlin")
+
+
+def test_should_keep_name_when_update_gives_none(supplier_service: SupplierService) -> None:
+    _create(supplier_service, "sup1", "Supplier A")
+
+    updated = supplier_service.update_supplier("sup1", None).unwrap()
+
+    assert updated.name == "Supplier A"
 
 
 def test_should_raise_when_updating_non_existent_supplier(
     supplier_service: SupplierService,
 ) -> None:
     with pytest.raises(ValueError, match="Supplier not found"):
-        supplier_service.update_supplier(
-            "nonexistent", "Name", "e@test.com", "+33", "France", "IDF"
-        )
+        supplier_service.update_supplier("nonexistent", "Name")
 
 
 def test_should_delete_supplier(supplier_service: SupplierService) -> None:

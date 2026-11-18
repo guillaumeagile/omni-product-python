@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from omni_product.dal import product_dal
 from omni_product.dal.rows import ProductSupplyRow, SupplierRow
-from omni_product.domain.model import Country, ProductId, Region, Supplier, SupplierId
+from omni_product.domain.model import ProductId, Supplier, SupplierId
 
 
 def find_all(session: Session) -> list[Supplier]:
@@ -14,14 +14,6 @@ def find_all(session: Session) -> list[Supplier]:
 def find_by_id(session: Session, supplier_id: SupplierId) -> Supplier | None:
     row = session.get(SupplierRow, supplier_id)
     return None if row is None else _supplier(row)
-
-
-def find_by_country(session: Session, country: Country) -> list[Supplier]:
-    return _find_all_where(session, SupplierRow.country == country)
-
-
-def find_by_region(session: Session, region: Region) -> list[Supplier]:
-    return _find_all_where(session, SupplierRow.region == region)
 
 
 def find_by_name(session: Session, name: str) -> Supplier | None:
@@ -68,22 +60,8 @@ def _find_all_where(session: Session, criterion: ColumnElement[bool]) -> list[Su
 
 
 def _supplier(row: SupplierRow) -> Supplier:
-    return Supplier(
-        id=row.id,
-        name=row.name,
-        contact_email=row.contact_email,
-        contact_phone=row.contact_phone,
-        country=row.country,
-        region=row.region,
-    )
+    return Supplier(id=row.id, name=row.name)
 
 
 def _supplier_row(supplier: Supplier) -> SupplierRow:
-    return SupplierRow(
-        id=supplier.id,
-        name=supplier.name,
-        contact_email=supplier.contact_email,
-        contact_phone=supplier.contact_phone,
-        country=supplier.country,
-        region=supplier.region,
-    )
+    return SupplierRow(id=supplier.id, name=supplier.name)

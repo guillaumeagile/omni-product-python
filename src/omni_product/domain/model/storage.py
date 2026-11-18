@@ -44,9 +44,12 @@ class Warehouse:
 
 @dataclass
 class ProductStock:
-    """Le stock d'un produit, identifié par le produit lui-même."""
+    """Le stock d'un produit, identifié par le produit lui-même.
+
+    La quantité est toujours connue : sans quantité saisie, l'appelant prend le stock.
+    """
 
     id: ProductId
-    quantity: Quantity | None = None
-    stock: Stock | None = None
+    quantity: Quantity
+    stock: Stock
     warehouse: Warehouse | None = None

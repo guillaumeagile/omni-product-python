@@ -10,7 +10,9 @@ from omni_product.dal import product_dal
 from omni_product.dal.product_dal import ProductSheet
 from omni_product.domain.model import (
     NonExpiring,
-    Perishable,
+    ParDateEtDuree,
+    ParDateLimite,
+    ParDureeDeConservation,
     Product,
     ProductId,
     ShelfLifeDays,
@@ -21,7 +23,12 @@ from omni_product.domain.model import (
 def test_kind_is_written_from_the_shelf_life(session: Session) -> None:
     for product in (
         Product(id=ProductId("p1"), name="Stylo", slug=Slug("stylo")),
-        Product(id=ProductId("p2"), name="Lait", slug=Slug("lait"), shelf_life=Perishable()),
+        Product(
+            id=ProductId("p2"),
+            name="Lait",
+            slug=Slug("lait"),
+            shelf_life=ParDateLimite(date(2026, 12, 1)),
+        ),
         Product(id=ProductId("p3"), name="Sel", slug=Slug("sel"), shelf_life=NonExpiring()),
     ):
         product_dal.save(session, ProductSheet(product=product))
@@ -39,9 +46,7 @@ def test_row_is_loaded_back_with_its_shelf_life(app: FastAPI) -> None:
                     id=ProductId("p1"),
                     name="Lait",
                     slug=Slug("lait"),
-                    shelf_life=Perishable(
-                        expiration_date=date(2026, 12, 1), shelf_life_days=ShelfLifeDays(7)
-                    ),
+                    shelf_life=ParDateEtDuree(date(2026, 12, 1), ShelfLifeDays(7)),
                 )
             ),
         )
@@ -52,10 +57,27 @@ def test_row_is_loaded_back_with_its_shelf_life(app: FastAPI) -> None:
 
         assert loaded is not None
         product = loaded.product
-        assert product.shelf_life == Perishable(
-            expiration_date=date(2026, 12, 1), shelf_life_days=ShelfLifeDays(7)
-        )
+        assert product.shelf_life == ParDateEtDuree(date(2026, 12, 1), ShelfLifeDays(7))
         assert product.is_perishable()
+
+
+def test_row_with_only_a_shelf_life_is_loaded_as_such(session: Session) -> None:
+    product_dal.save(
+        session,
+        ProductSheet(
+            product=Product(
+                id=ProductId("p1"),
+                name="Yaourt",
+                slug=Slug("yaourt"),
+                shelf_life=ParDureeDeConservation(ShelfLifeDays(7)),
+            )
+        ),
+    )
+
+    loaded = product_dal.find_by_id(session, ProductId("p1"))
+
+    assert loaded is not None
+    assert loaded.product.shelf_life == ParDureeDeConservation(ShelfLifeDays(7))
 
 
 def test_single_table_leaves_perishable_columns_null_for_other_kinds(session: Session) -> None:

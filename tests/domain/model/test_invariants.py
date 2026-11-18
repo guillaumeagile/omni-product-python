@@ -4,9 +4,6 @@ import pytest
 
 from omni_product.domain.model import (
     Amount,
-    ContactEmail,
-    ContactPhone,
-    Country,
     Discount,
     ImageDetail,
     ImageKey,
@@ -37,9 +34,6 @@ TEXT_VALUES = [
     SupplierId,
     Siren,
     TvaId,
-    Country,
-    ContactEmail,
-    ContactPhone,
 ]
 
 

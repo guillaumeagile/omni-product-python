@@ -74,10 +74,36 @@ class Volume:
 
 
 # Contexte Transport (livraison) : le poids et l'encombrement qui pèsent sur l'expédition.
+@dataclass(frozen=True)
+class Charge:
+    """Le poids et le volume d'un produit : tous deux, ou aucun."""
+
+    kilos: Kilos
+    volume: Volume
+
+
 @dataclass
 class ProductTransport:
     """Le transport d'un produit, identifié par le produit lui-même."""
 
     id: ProductId
-    kilos: Kilos | None = None
-    volume: Volume | None = None
+    kilos_volume: Charge | None = None
+
+
+def charge_of(kilos: float | None, volume: str | None) -> Result[Charge | None, ErreurTransport]:
+    """La charge que décrivent le poids et le volume : tous deux, ou aucun."""
+    if kilos is None and volume is None:
+        return Ok(None)
+    if kilos is None or volume is None:
+        return Err(ErreurTransport("Le poids et le volume vont ensemble"))
+    return _charge(kilos, volume)
+
+
+def _charge(kilos: float, volume: str) -> Result[Charge, ErreurTransport]:
+    match (Kilos.of(kilos), Volume.of(volume)):
+        case (Ok(poids), Ok(encombrement)):
+            return Ok(Charge(poids, encombrement))
+        case (Err(erreur), _):
+            return Err(erreur)
+        case (_, Err(erreur)):
+            return Err(erreur)

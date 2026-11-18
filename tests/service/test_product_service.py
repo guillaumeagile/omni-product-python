@@ -4,7 +4,16 @@ import pytest
 from sqlalchemy.orm import Session
 
 from omni_product.dal.product_dal import ProductSheet
-from omni_product.domain.model import NonExpiring, Perishable, Product, ProductId, Slug
+from omni_product.domain.model import (
+    NonExpiring,
+    ParDateLimite,
+    ParDureeDeConservation,
+    Perishable,
+    Product,
+    ProductId,
+    ShelfLifeDays,
+    Slug,
+)
 from omni_product.service.product_service import ProductService
 
 
@@ -32,9 +41,9 @@ def _sheet(product_id: str, shelf_life: Perishable | NonExpiring | None) -> Prod
 def test_find_expired_returns_only_perishable_products_past_their_date(
     product_service: ProductService,
 ) -> None:
-    product_service.save(_sheet("p1", Perishable(expiration_date=date(2026, 11, 1))))
-    product_service.save(_sheet("p2", Perishable(expiration_date=date(2026, 12, 1))))
-    product_service.save(_sheet("p3", Perishable()))
+    product_service.save(_sheet("p1", ParDateLimite(date(2026, 11, 1))))
+    product_service.save(_sheet("p2", ParDateLimite(date(2026, 12, 1))))
+    product_service.save(_sheet("p3", ParDureeDeConservation(ShelfLifeDays(3))))
     product_service.save(_sheet("p4", NonExpiring()))
 
     expired = product_service.find_expired(FakeClock(date(2026, 11, 10)))

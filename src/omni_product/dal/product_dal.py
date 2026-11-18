@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
+from result import Err, Ok, Result
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from omni_product.dal.records import optional, raw
+from omni_product.dal.records import raw
 from omni_product.dal.rows import (
     ProductDiscountRow,
     ProductImageRow,
@@ -17,9 +19,15 @@ from omni_product.dal.rows import (
     ProductTransportRow,
 )
 from omni_product.domain.model import (
+    Amount,
     NonExpiring,
+    ParDateEtDuree,
+    ParDateLimite,
+    ParDureeDeConservation,
     Perishable,
     Price,
+    PrixAvecTaxe,
+    PrixHorsTaxe,
     Product,
     ProductId,
     ProductImage,
@@ -27,13 +35,19 @@ from omni_product.domain.model import (
     ProductStock,
     ProductSupply,
     ProductTransport,
-    RegionSupplier,
+    Quantity,
+    Rate,
     ShelfLife,
-    ShelfLifeDays,
     Slug,
+    Stock,
     SupplierByRegion,
     Warehouse,
+    charge_of,
+    perissable_of,
+    prix_of,
+    region_supplier_of,
 )
+from omni_product.domain.model.errors import InvalidValueError
 
 
 @dataclass
@@ -102,9 +116,8 @@ def _product(row: ProductRow) -> Product:
     )
     match row.kind:
         case "perishable":
-            shelf_life: ShelfLife | None = Perishable(
-                expiration_date=row.expiration_date,
-                shelf_life_days=optional(ShelfLifeDays, row.shelf_life_days),
+            shelf_life: ShelfLife | None = _valeur(
+                perissable_of(row.expiration_date, row.shelf_life_days)
             )
         case "non_expiring":
             shelf_life = NonExpiring()
@@ -113,15 +126,29 @@ def _product(row: ProductRow) -> Product:
     return Product(id=row.id, name=row.name, slug=row.slug, images=images, shelf_life=shelf_life)
 
 
+def _colonnes_de_la_durée(perishable: Perishable | None) -> tuple[date | None, int | None]:
+    """La date limite et la durée de conservation, telles qu'elles se stockent."""
+    match perishable:
+        case ParDateLimite(expiration_date=date_limite):
+            return date_limite, None
+        case ParDureeDeConservation(shelf_life_days=duree):
+            return None, duree.value
+        case ParDateEtDuree(expiration_date=date_limite, shelf_life_days=duree):
+            return date_limite, duree.value
+        case None:
+            return None, None
+
+
 def _product_row(product: Product) -> ProductRow:
     perishable = product.shelf_life if isinstance(product.shelf_life, Perishable) else None
+    expiration_date, shelf_life_days = _colonnes_de_la_durée(perishable)
     return ProductRow(
         id=product.id,
         kind=_kind_of(product),
         name=product.name,
         slug=product.slug,
-        expiration_date=perishable.expiration_date if perishable else None,
-        shelf_life_days=raw(perishable.shelf_life_days) if perishable else None,
+        expiration_date=expiration_date,
+        shelf_life_days=shelf_life_days,
         image_rows=[
             ProductImageRow(product_id=product.id, image_key=image.key, image_detail=image.detail)
             for image in product.images
@@ -131,12 +158,21 @@ def _product_row(product: Product) -> ProductRow:
 
 def _kind_of(product: Product) -> str:
     match product.shelf_life:
-        case Perishable():
+        case ParDateLimite() | ParDureeDeConservation() | ParDateEtDuree():
             return "perishable"
         case NonExpiring():
             return "non_expiring"
         case None:
             return "standard"
+
+
+def _valeur[T](resultat: Result[T, InvalidValueError]) -> T:
+    """La valeur d'un résultat lu en base : une ligne incohérente lève une erreur."""
+    match resultat:
+        case Ok(valeur):
+            return valeur
+        case Err(erreur):
+            raise ValueError(f"Donnée incohérente en base : {erreur}")
 
 
 def _load(session: Session, row: ProductRow) -> ProductSheet:
@@ -157,36 +193,61 @@ def _load(session: Session, row: ProductRow) -> ProductSheet:
         product=_product(row),
         pricing=ProductPrice(
             id=product_id,
-            price=(Price(price.base, price.tax, price.tax_rate) if price is not None else None),
+            price=(
+                _valeur(prix_of(raw(price.base), raw(price.tax), raw(price.tax_rate)))
+                if price is not None
+                else None
+            ),
             discounts=tuple(line.discount for line in discounts),
         ),
         transport=ProductTransport(
             id=product_id,
-            kilos=transport.kilos if transport is not None else None,
-            volume=transport.volume if transport is not None else None,
-        ),
-        stock=ProductStock(
-            id=product_id,
-            quantity=stock.quantity if stock is not None else None,
-            stock=stock.stock if stock is not None else None,
-            warehouse=(
-                Warehouse(stock.warehouse_location)
-                if stock is not None and stock.warehouse_location is not None
+            kilos_volume=(
+                _valeur(charge_of(raw(transport.kilos), raw(transport.volume)))
+                if transport is not None
                 else None
             ),
         ),
+        stock=_stock(product_id, stock),
         supply=ProductSupply(
             id=product_id,
             supplier_id=supply.supplier_id if supply is not None else None,
             regions=tuple(
                 SupplierByRegion(
                     region=line.region,
-                    supplier=RegionSupplier(name=line.name, siren=line.siren, tva_id=line.tva_id),
+                    supplier=_valeur(
+                        region_supplier_of(line.name, raw(line.siren), raw(line.tva_id))
+                    ),
                 )
                 for line in regions
             ),
         ),
     )
+
+
+def _stock(product_id: ProductId, stock: ProductStockRow | None) -> ProductStock | None:
+    """Le stock du produit, ou `None` sans ligne. Sans quantité saisie, elle vaut le stock."""
+    if stock is None:
+        return None
+    valeur_stock = stock.stock if stock.stock is not None else Stock(0)
+    quantite = stock.quantity if stock.quantity is not None else Quantity(valeur_stock.value)
+    return ProductStock(
+        id=product_id,
+        quantity=quantite,
+        stock=valeur_stock,
+        warehouse=(
+            Warehouse(stock.warehouse_location) if stock.warehouse_location is not None else None
+        ),
+    )
+
+
+def _colonnes_du_prix(price: Price) -> tuple[Amount, Amount | None, Rate | None]:
+    """Le prix de base, puis la taxe et son taux, tels qu'ils se stockent."""
+    match price:
+        case PrixHorsTaxe(base=base):
+            return base, None, None
+        case PrixAvecTaxe(base=base, tax=tax, tax_rate=tax_rate):
+            return base, tax, tax_rate
 
 
 def _replace_context_rows(session: Session, sheet: ProductSheet) -> None:
@@ -195,22 +256,21 @@ def _replace_context_rows(session: Session, sheet: ProductSheet) -> None:
     _delete_context_rows(session, product_id)
     if sheet.pricing is not None:
         if sheet.pricing.price is not None:
+            base, tax, tax_rate = _colonnes_du_prix(sheet.pricing.price)
             session.merge(
-                ProductPriceRow(
-                    product_id=product_id,
-                    base=sheet.pricing.price.base,
-                    tax=sheet.pricing.price.tax,
-                    tax_rate=sheet.pricing.price.tax_rate,
-                )
+                ProductPriceRow(product_id=product_id, base=base, tax=tax, tax_rate=tax_rate)
             )
         session.add_all(
             ProductDiscountRow(product_id=product_id, discount=discount)
             for discount in sheet.pricing.discounts
         )
     if sheet.transport is not None:
+        charge = sheet.transport.kilos_volume
         session.merge(
             ProductTransportRow(
-                product_id=product_id, kilos=sheet.transport.kilos, volume=sheet.transport.volume
+                product_id=product_id,
+                kilos=charge.kilos if charge else None,
+                volume=charge.volume if charge else None,
             )
         )
     if sheet.stock is not None:
@@ -231,8 +291,8 @@ def _replace_context_rows(session: Session, sheet: ProductSheet) -> None:
                 product_id=product_id,
                 region=line.region,
                 name=line.supplier.name,
-                siren=line.supplier.siren,
-                tva_id=line.supplier.tva_id,
+                siren=line.supplier.siren_tva.siren if line.supplier.siren_tva else None,
+                tva_id=line.supplier.siren_tva.tva_id if line.supplier.siren_tva else None,
             )
             for line in sheet.supply.regions
         )

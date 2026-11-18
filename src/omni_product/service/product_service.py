@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from omni_product.dal import product_dal
 from omni_product.dal.product_dal import ProductSheet
-from omni_product.domain.model import Perishable, ProductId
+from omni_product.domain.model import ProductId, date_limite
 from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.freshness import is_expired
 from omni_product.domain.port.clock import Clock
@@ -24,9 +24,8 @@ class ProductService:
         return [
             sheet
             for sheet in self.find_all()
-            if isinstance(sheet.product.shelf_life, Perishable)
-            and sheet.product.shelf_life.expiration_date is not None
-            and is_expired(sheet.product.shelf_life.expiration_date, clock)
+            if (limite := date_limite(sheet.product.shelf_life)) is not None
+            and is_expired(limite, clock)
         ]
 
     def save(self, sheet: ProductSheet) -> ProductSheet:

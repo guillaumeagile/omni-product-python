@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from result import Result
+from result import Err, Ok, Result
 
 from omni_product.domain.model.errors import ErreurProduit
 from omni_product.domain.model.invariants import require_at_least_zero, require_text
@@ -64,11 +64,29 @@ class ShelfLifeDays:
 
 
 @dataclass(frozen=True)
-class Perishable:
-    """Produit périssable : une date limite, et une durée de conservation."""
+class ParDateLimite:
+    """Produit périssable daté : une date limite, sans durée de conservation."""
 
-    expiration_date: date | None = None
-    shelf_life_days: ShelfLifeDays | None = None
+    expiration_date: date
+
+
+@dataclass(frozen=True)
+class ParDureeDeConservation:
+    """Produit périssable : une durée de conservation, sans date limite."""
+
+    shelf_life_days: ShelfLifeDays
+
+
+@dataclass(frozen=True)
+class ParDateEtDuree:
+    """Produit périssable avec sa date limite et sa durée de conservation."""
+
+    expiration_date: date
+    shelf_life_days: ShelfLifeDays
+
+
+# Une variante par combinaison légale des deux informations : au moins l'une des deux.
+Perishable = ParDateLimite | ParDureeDeConservation | ParDateEtDuree
 
 
 @dataclass(frozen=True)
@@ -77,6 +95,32 @@ class NonExpiring:
 
 
 ShelfLife = Perishable | NonExpiring
+
+
+def date_limite(shelf_life: ShelfLife | None) -> date | None:
+    """La date limite du produit, si sa durée de vie en porte une."""
+    match shelf_life:
+        case ParDateLimite(expiration_date=limite) | ParDateEtDuree(expiration_date=limite):
+            return limite
+        case _:
+            return None
+
+
+def perissable_of(
+    expiration_date: date | None, shelf_life_days: int | None
+) -> Result[Perishable, ErreurProduit]:
+    """Le produit périssable que décrivent la date limite et la durée : au moins l'une des deux."""
+    if shelf_life_days is None:
+        if expiration_date is None:
+            return Err(ErreurProduit("Un produit périssable a une date limite ou une durée"))
+        return Ok(ParDateLimite(expiration_date))
+    match ShelfLifeDays.of(shelf_life_days):
+        case Err(erreur):
+            return Err(erreur)
+        case Ok(duree):
+            if expiration_date is None:
+                return Ok(ParDureeDeConservation(duree))
+            return Ok(ParDateEtDuree(expiration_date, duree))
 
 
 @dataclass

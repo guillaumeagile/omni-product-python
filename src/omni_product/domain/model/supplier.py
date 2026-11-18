@@ -21,15 +21,6 @@ class SupplierId:
 
 
 @dataclass(frozen=True)
-class Country:
-    value: str
-
-    @classmethod
-    def of(cls, value: str) -> Result[Country, ErreurFournisseur]:
-        return require_text(cls, value, ErreurFournisseur).map(cls)
-
-
-@dataclass(frozen=True)
 class Region:
     value: str
 
@@ -38,29 +29,7 @@ class Region:
         return require_text(cls, value, ErreurFournisseur).map(cls)
 
 
-@dataclass(frozen=True)
-class ContactEmail:
-    value: str
-
-    @classmethod
-    def of(cls, value: str) -> Result[ContactEmail, ErreurFournisseur]:
-        return require_text(cls, value, ErreurFournisseur).map(cls)
-
-
-@dataclass(frozen=True)
-class ContactPhone:
-    value: str
-
-    @classmethod
-    def of(cls, value: str) -> Result[ContactPhone, ErreurFournisseur]:
-        return require_text(cls, value, ErreurFournisseur).map(cls)
-
-
 @dataclass
 class Supplier:
     id: SupplierId
-    name: str | None = None
-    contact_email: ContactEmail | None = None
-    contact_phone: ContactPhone | None = None
-    country: Country | None = None
-    region: Region | None = None
+    name: str

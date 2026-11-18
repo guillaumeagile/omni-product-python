@@ -2,6 +2,7 @@
 
 from harness.rules.points import (
     BABY_STEP_POINTS,
+    EMPTY_PR_POINTS,
     METRIC_CAP,
     REMOVED_ON_RED_CAP,
     TURNED_GREEN_POINTS,
@@ -133,3 +134,18 @@ def test_a_negative_total_shows_a_single_sign():
 
     assert "| **Total** | **-5** |" in text
     assert "+-" not in text
+
+
+def test_an_empty_pr_loses_points():
+    assert score((rule(1, 2, 2),), changed_tokens=0).total == EMPTY_PR_POINTS == -5
+    assert score((rule(1, 2, 2),), changed_tokens=3).empty_pr_points == 0
+    assert score((rule(1, 2, 2),)).empty_pr_points == 0  # tokens modifiés inconnus
+
+
+def test_the_table_shows_the_empty_pr_line_only_when_the_pr_is_empty():
+    empty = section((rule(1, 2, 2),), changed_tokens=0)
+    changed = section((rule(1, 2, 2),), changed_tokens=3)
+
+    assert "| 🫥 PR vide : aucun token de code modifié | -5 |" in empty
+    assert "| **Total** | **-5** |" in empty
+    assert "PR vide" not in changed

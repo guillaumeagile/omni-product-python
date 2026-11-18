@@ -4,7 +4,8 @@ Même barème que l'arbitre de l'atelier Java :
 - +10 par règle passée au vert par la PR ;
 - +1 par constat retiré sur une règle encore rouge, plafonné à +5 au total ;
 - +5 de « baby step » quand une seule règle passe au vert ;
-- la variation de chaque métrique retenue rapporte son chiffre (+ ou -), plafonné à ±15 par métrique.
+- la variation de chaque métrique retenue rapporte son chiffre (+ ou -), plafonné à ±15 par métrique ;
+- -5 pour une PR vide : aucun token de code modifié dans le périmètre.
 
 Une règle qui repasse du vert au rouge ne fait pas perdre de points, mais la scorecard la signale.
 """
@@ -16,6 +17,7 @@ TURNED_GREEN_POINTS = 10
 REMOVED_ON_RED_CAP = 5
 BABY_STEP_POINTS = 5
 METRIC_CAP = 15  # plafond appliqué à chaque métrique, dans les deux sens
+EMPTY_PR_POINTS = -5
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,7 @@ class Score:
     baby_step_points: int
     # (libellé de la métrique, points) pour chaque métrique retenue ayant une base.
     metric_lines: tuple[tuple[str, int], ...] = ()
+    empty_pr_points: int = 0
 
     @property
     def metric_points(self) -> int:
@@ -61,7 +64,13 @@ class Score:
 
     @property
     def total(self) -> int:
-        return self.green_points + self.removed_points + self.baby_step_points + self.metric_points
+        return (
+            self.green_points
+            + self.removed_points
+            + self.baby_step_points
+            + self.metric_points
+            + self.empty_pr_points
+        )
 
     @property
     def turned_green(self) -> tuple[RuleResult, ...]:
@@ -84,7 +93,9 @@ def metric_points(change: float, better: int, weight: float = 1.0) -> int:
 def score(
     results: tuple[RuleResult, ...],
     metric_lines: Sequence[tuple[str, int]] = (),
+    changed_tokens: int | None = None,
 ) -> Score:
+    """`changed_tokens` : les tokens de code modifiés par la PR, `None` quand on ne les connaît pas."""
     green = [r for r in results if r.turned_green]
     removed = sum(r.removed for r in results)
     return Score(
@@ -93,4 +104,5 @@ def score(
         removed_points=min(REMOVED_ON_RED_CAP, removed),
         baby_step_points=BABY_STEP_POINTS if len(green) == 1 else 0,
         metric_lines=tuple(metric_lines),
+        empty_pr_points=EMPTY_PR_POINTS if changed_tokens == 0 else 0,
     )

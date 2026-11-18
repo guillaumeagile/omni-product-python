@@ -428,3 +428,12 @@ def test_rows_weighing_zero_leave_the_points_table_but_stay_measured():
     assert "Boucles" not in scored
     assert "Fan-out (pire classe)" in scored
     assert "| WMC (pire classe) |" in scorecard.render(metrics, metrics)
+
+
+def test_an_empty_diff_is_an_empty_pr_and_no_small_diff():
+    metrics = measure([source("x = 1\n")])
+
+    assert "| Tokens modifiés par la PR | | 0 | | 🫥 PR vide |" in scorecard.render(
+        metrics, metrics, changed_tokens=0
+    )
+    assert "🤏 Small diff" in scorecard.render(metrics, metrics, changed_tokens=1)

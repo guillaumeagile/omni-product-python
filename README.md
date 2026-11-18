@@ -45,6 +45,59 @@ uv run python -m harness.scorecard --base-ref origin/<base>     # la scorecard d
 
 Les consignes pour un agent qui joue avec l'équipe sont dans `AGENTS.md`.
 
+## Première installation (macOS ou Windows)
+
+Le projet demande Python 3.13 ou plus récent. `uv` installe Python à votre place : c'est le chemin recommandé.
+
+### 1. Installer uv
+
+- **macOS avec Homebrew** : `brew install uv`
+- **macOS ou Linux sans Homebrew** : `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **Windows (PowerShell)** : `winget install astral-sh.uv`
+
+Ouvrez ensuite un nouveau terminal et vérifiez : `uv --version`.
+
+### 2. Installer Python 3.13
+
+```bash
+uv python install 3.13
+```
+
+uv télécharge Python 3.13 dans son propre dossier. Votre Python système n'est pas modifié.
+
+Vous préférez installer Python vous-même ? Installez Python 3.13 ou plus avant l'étape 3 :
+
+- **macOS** : `brew install python@3.13`, ou l'installeur sur python.org.
+- **Windows** : `winget install Python.Python.3.13`, ou l'installeur sur python.org. Cochez « Add python.exe to PATH ».
+
+uv utilise alors ce Python installé.
+
+### 3. Cloner le projet et installer les dépendances
+
+```bash
+git clone <url-du-depot>
+cd python-omni-product
+uv sync
+```
+
+`uv sync` crée le dossier `.venv` et y installe les dépendances. Vous n'avez pas besoin d'activer `.venv` : `uv run` s'en charge.
+
+### 4. Vérifier l'installation
+
+```bash
+uv run pytest                                    # les tests doivent passer
+uv run uvicorn omni_product.main:app --reload    # lance l'API
+```
+
+Ouvrez ensuite http://localhost:8000/docs dans le navigateur.
+
+### En cas de problème
+
+- **`uv: command not found`** : fermez le terminal, ouvrez-en un nouveau, puis relancez la commande. Sous Windows, relancez PowerShell.
+- **PowerShell refuse d'exécuter le script d'installation de uv** : lancez d'abord
+  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, puis recommencez l'étape 1.
+- **Python 3.13 introuvable** : relancez `uv python install 3.13`, ou vérifiez l'installation manuelle de l'étape 2.
+
 ## Commandes
 
 ```bash

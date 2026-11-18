@@ -59,12 +59,23 @@ le lui demandes avant de créer la première branche.
 Le score d'une PR est le total de sa scorecard. Le score de l'équipe est la somme de ses PR ouvertes. Le classement
 de toutes les équipes est dans l'issue épinglée « Classement de l'atelier CUPID ».
 
+## La chaîne de branches : chaque branche part de la précédente
+
+- La première branche de l'équipe part de `main`.
+- Chaque branche suivante part de la branche précédente de l'équipe. Les branches s'enchaînent : chacune contient
+  le travail de la précédente.
+- La base de la PR d'une branche est la branche précédente de l'équipe.
+- Les constats et la scorecard se calculent contre la branche précédente : `--base-ref origin/<branche-précédente>`.
+  À partir de la deuxième branche, la référence de comparaison est toujours la branche précédente.
+- Le diff d'une PR ne montre donc que la règle qu'elle traite.
+
 ## La boucle : une PR par règle
 
 1. Une PR par règle, sur une branche qui suit la convention ci-dessus. Son titre nomme la règle : « Team T >> Règle N :  … ». T est le nom de ton équipe car le jeu se joue en groupe. Le score est celui de l'équipe (et l'agent en fait partie)
-2.  la base de la PR : `main` pour la première PR, puis la branche de l'étape précédente de l'équipe.
+2. La base de la PR : `main` pour la première PR de l'équipe, la branche précédente de l'équipe pour toutes les suivantes (voir la section ci-dessus).
 3. Une itération :
-   a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<base>`, puis lis les constats.
+   a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<branche-précédente>`
+   (`origin/main` pour la première PR), puis lis les constats.
    b. Lis la fiche de la règle dans `docs/python-regles-de-harnais.md`.
    c. Propose à l'humain deux ou trois options. Pour chacune : la lettre CUPID visée, les fichiers touchés, les tests à adapter.
    d. Attends sa réponse. Tu ne codes rien avant.

@@ -152,18 +152,31 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 - **Règle 10 ✅** : elle généralise la règle 3. La règle 3 sort le stockage du modèle, la règle 10 organise tout le
   projet autour du cœur. Le port `domain/port` et l'adaptateur `infrastructure/adapter`, déjà présents pour le
   transport carbone, sont le modèle à reproduire pour le reste. La règle 3 devient donc la première marche de la 10.
-  - **Ce que le harnais lit (`AO001`)** : tout `import` du cœur (`domain/`, et `anemic_model/` tant que la règle 3 n'est
-    pas faite) vers autre chose que le cœur, `result` ou une liste blanche de la bibliothèque standard (`dataclasses`, `typing`,
-    `enum`, `decimal`, `datetime`, `uuid`, `collections`, `functools`, `itertools`, `math`, `re`…) est un constat.
-    SQLAlchemy, FastAPI, `requests`, `controller`, `service`, `dal`, `infrastructure`, `config`, `database`,
-    `exception`, et les modules standard qui touchent le monde (`os`, `sys`, `time`, `random`, `json`, `pathlib`,
-    `logging`) restent à l'extérieur. Les imports relatifs sont résolus, et un import sous `if TYPE_CHECKING:` compte : une annotation est
-    déjà une dépendance. `datetime` et `uuid` servent à typer : `date.today()` et `uuid4()` restent des constats de la règle 6.
+  - **Ce que le harnais lit (`AO001`, `AO002`)** : la règle ne connaît aucun nom de répertoire. Une équipe peut créer
+    `kernel/`, `ports/`, renommer `infrastructure/` en `adapters/` : la règle suit.
+    - Le **cœur** est le paquet d'une **ancre** : un module qui déclare une classe nommée uniquement avec des mots de
+      l'ubiquitous language (`Product`, `ProductId`, `RegionSupplier` ; pas `ProductService` ni `ProductSchema`), sans
+      base prise à une bibliothèque (`BaseModel`, `DeclarativeBase`), et que des modules d'au moins deux autres
+      sous-paquets importent.
+    - Dans le cœur, un import vers une bibliothèque hors `result` et hors liste blanche de la bibliothèque standard
+      (`dataclasses`, `typing`, `enum`, `decimal`, `datetime`, `uuid`, `collections`, `functools`, `itertools`, `math`,
+      `re`…) est un constat `AO001`. SQLAlchemy, FastAPI, `requests`, et les modules standard qui touchent le monde
+      (`os`, `sys`, `time`, `random`, `json`, `pathlib`, `logging`) restent à l'extérieur.
+    - Un import du cœur vers un autre paquet du projet est jugé sur ce qu'il atteint : un module qui touche une
+      bibliothèque interdite, même de loin, est `AO001` ; un module qui dépend en retour du cœur (un service, un
+      adaptateur) forme un cycle, `AO002`. Un module pur et sans cycle (un noyau d'identifiants, des ports) est un
+      anneau intérieur, permis. Un module du projet introuvable est refusé.
+    - Les imports relatifs sont résolus, et un import sous `if TYPE_CHECKING:` compte : une annotation est déjà une
+      dépendance. `datetime` et `uuid` servent à typer : `date.today()` et `uuid4()` restent des constats de la règle 6.
+    - Limite connue : un module pur de l'extérieur, importé par le cœur sans cycle, passe. La règle juge la pureté et
+      le sens des dépendances ; elle ne devine pas l'intention. Un modèle dont aucune classe ne porte un nom du métier
+      n'est pas reconnu comme cœur : l'ubiquitous language est l'ancrage.
   - **Refactoring attendu** : le cœur déclare ce dont il a besoin par un `Protocol` dans `domain/port/`, et
     l'adaptateur de `infrastructure/` l'implémente. Le mapping SQLAlchemy sort du modèle, le `dal/` devient un adaptateur.
-  - **Sur le legacy de l'atelier** : la règle est rouge. `anemic_model/` importe SQLAlchemy, `database`, `service`, et
-    `domain/exception` importe `omni_product.exception`. C'est le plus gros refactoring des sources : la règle passe au
-    vert quand le cœur n'importe plus que lui-même.
+  - **Sur le legacy de l'atelier** : la règle est rouge. `anemic_model/` importe SQLAlchemy et `database` (`AO001`), et
+    les services qui dépendent de lui (`AO002`). C'est le plus gros refactoring des sources : la règle passe au vert
+    quand le cœur n'importe plus que lui-même et des anneaux intérieurs purs. L'import de `omni_product.exception` par
+    `domain/exception` relève de la règle 5 (un échec métier est une valeur).
 - **La testabilité n'est pas une lettre de CUPID ✅** : c'est pourquoi la colonne CUTE a le 🧪. Les règles 3, 6 et 10
   rendent le cœur testable sans base, sans horloge et sans réseau. La règle 10 est **C** côté CUPID (on branche et on
   débranche les adaptateurs) et 🧪 côté CUTE.
@@ -188,7 +201,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 7 | État illégal impossible à construire | `EL001`, `EL002` | **P** | 2, tactique | ✅ en place (`etat_illegal.py`) |
 | 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ✅ en place (`idiomes.py`, ruff, sans code maison) |
 | 9 | Style fonctionnel et ROP (II) | `SF001` à `SF005` | **II** | 2, tactique | ✅ en place (`style_fonctionnel.py`), rouge sur le legacy |
-| 10 | Architecture en oignon | `AO001` | **C** | 3, aboutissement | ✅ en place (`architecture_oignon.py`), rouge sur le legacy |
+| 10 | Architecture en oignon | `AO001`, `AO002` | **C** | 3, aboutissement | ✅ en place (`architecture_oignon.py`), rouge sur le legacy |
 
 Le numéro de la règle est celui du tableau « Les 10 règles » plus haut, qui donne la question, le refactoring attendu et
 la vérification. Les préfixes des codes viennent du nom de la règle : **C**ontexte **B**orné, **E**ntité **V**aleur,

@@ -42,6 +42,9 @@ class Rule:
     tests: Callable[[Source, UbiquitousLanguage], Sequence[object]] | None = None
     # Entrées de `omni_product/` écartées (voir `harness.perimetre`) : le cœur par défaut.
     hors: tuple[str, ...] = HORS_PERIMETRE
+    # Rend les constats en lisant tous les fichiers d'un coup, quand la règle suit le graphe des imports. Il remplace
+    # alors `check` pour l'évaluation ; `check` reste la lecture d'un fichier seul.
+    paquet: Callable[[Sequence[Source], UbiquitousLanguage], Sequence[object]] | None = None
 
 
 RULES: tuple[Rule, ...] = (
@@ -95,12 +98,14 @@ RULES: tuple[Rule, ...] = (
         style_fonctionnel.check,
         hors=TOUT_LE_PAQUET,
     ),
-    # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même.
+    # Tout le paquet, sans nom de répertoire : la règle reconnaît le cœur à son contenu et au graphe des imports.
     Rule(
         10,
         "Architecture en oignon",
-        ("omni_product/domain", "omni_product/anemic_model"),
+        ("omni_product",),
         architecture_oignon.check,
+        hors=TOUT_LE_PAQUET,
+        paquet=architecture_oignon.check_paquet,
     ),
 )
 
@@ -132,7 +137,12 @@ def _run(
         sources = collect(
             [src_root / root for root in rule.roots], src_root, dossiers_exclus(src_root, rule.hors)
         )
-        output[rule.number] = [finding for source in sources for finding in check(source, language)]
+        if rule.paquet is not None and check is rule.check:
+            output[rule.number] = list(rule.paquet(sources, language))
+        else:
+            output[rule.number] = [
+                finding for source in sources for finding in check(source, language)
+            ]
         if rule.tests is not None and pick(rule) is rule.check:
             output[rule.number] += _run_tests(src_root, rule.tests, language)
     return output

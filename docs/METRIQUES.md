@@ -133,13 +133,16 @@ La colonne **Dépend de** montre le sens des liens. Dans une architecture en oig
 l'extérieur.
 
 **Comment c'est compté.** L'unité est le module, là où Martin compte les classes : `dal/` n'a que des fonctions. Ca ne
-voit que les modules mesurés. Ces mesures sont affichées, base → PR, et ne rapportent pas de points.
+voit que les modules mesurés. Le détail par couche est affiché, base → PR, et ne rapporte pas de points.
 
-**Le chiffre du tableau.** Les couches se résument en une ligne : la **distance des couches**, le D moyen pondéré par
+**Le chiffre du tableau.** Les couches se résument en une ligne : la **métrique Uncle Bob**, le D moyen pondéré par
 le nombre de modules de chaque couche. Elle va de 0 à 1, et 0 est le mieux. D résume déjà Ca, Ce et A, qui entrent
 dans I et A. La pondération donne plus de poids à une grosse couche mal placée qu'à un module isolé. Une couche sans
 lien n'entre pas dans la moyenne. Cette ligne remplace les totaux de fan-out et de CBO : ils additionnaient les liens
 de chaque classe sans en voir le sens. Les pires classes (fan-out et CBO max) restent dans le tableau.
+
+**Les points.** La métrique Uncle Bob est notée avec un poids de 10 : D varie par dixièmes, et une baisse de 0,1 vaut
+1 point, une hausse de 0,1 en coûte 1. Le plafond commun à toutes les métriques s'applique.
 
 ## Comment l'arbitre note
 

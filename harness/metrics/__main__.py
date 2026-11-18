@@ -27,7 +27,7 @@ def render(metrics: Metrics) -> str:
         ("LCOM* max", metrics.max_lcom),
         ("Fan-out max", metrics.max_fan_out),
         ("CBO max", metrics.max_cbo),
-        ("Distance à la séquence principale (D moyen)", metrics.distance),
+        ("Métrique Uncle Bob (D moyen des couches)", metrics.uncle_bob),
         ("Attributs mutables", metrics.mutable_attributes),
         ("Affectations", metrics.assignments),
         ("Boucles", metrics.loops),

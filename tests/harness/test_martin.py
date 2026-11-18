@@ -148,9 +148,10 @@ def test_mean_distance_is_zero_without_any_link():
 def test_the_report_and_the_scorecard_carry_the_mean_distance():
     metrics = measure(PROJECT)
 
-    assert metrics.distance == 0.38
-    assert "| Distance des couches (D moyen, 0 = le mieux) | | 0.38 | | |" in scorecard.render(
-        metrics, None
+    assert metrics.uncle_bob == 0.38
+    assert (
+        "| Métrique Uncle Bob (D moyen des couches, 0 = le mieux) | | 0.38 | | |"
+        in scorecard.render(metrics, None)
     )
     assert "Fan-out (total)" not in scorecard.render(metrics, None)
     assert "CBO (total)" not in scorecard.render(metrics, None)
@@ -168,3 +169,13 @@ def test_scorecard_shows_layers_from_base_to_pr():
     assert "| Couche | Ca | Ce | I | A | D | Dépend de |" in card
     assert "| `domain` | 0 → 2 | 0 | n/a → 0 | 0.5 | n/a → 0.5 | — |" in card
     assert "| `infrastructure` | 1 | 1 | 0.5 | 0 | 0.5 | `domain` |" in card
+
+
+def test_the_uncle_bob_metric_scores_ten_times_its_variation():
+    label = "Métrique Uncle Bob (D moyen des couches, 0 = le mieux)"
+    worse = dict(scorecard.metric_lines(measure(PROJECT), measure(PROJECT[:2])))
+    better = dict(scorecard.metric_lines(measure(PROJECT[:2]), measure(PROJECT)))
+
+    # 0 → 0.38 : une hausse de 0,38 coûte 4 points, la baisse inverse en rapporte 4.
+    assert worse[label] == -4
+    assert better[label] == 4

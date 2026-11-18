@@ -25,7 +25,7 @@ class ClassMetrics:
 class Metrics:
     """Les agrégats. Le `min_tcc` vaut 1 et le `max_lcom` 0 quand aucune classe n'a de cohésion mesurable.
 
-    `distance` résume le couplage entre couches : le D de Robert Martin, moyen et pondéré (voir `martin.mean_distance`).
+    `uncle_bob` résume le couplage entre couches : le D de Robert Martin, moyen et pondéré (voir `martin.mean_distance`).
     """
 
     classes: int
@@ -38,7 +38,7 @@ class Metrics:
     max_lcom: float
     max_fan_out: int
     max_cbo: int
-    distance: float
+    uncle_bob: float
     tokens: int
     mutable_attributes: int
     assignments: int
@@ -75,7 +75,7 @@ def measure(sources: list[SourceFile]) -> Metrics:
         max_lcom=max(lcoms, default=0.0),
         max_fan_out=max((m.fan_out for m in per_class), default=0),
         max_cbo=max((m.cbo for m in per_class), default=0),
-        distance=martin.mean_distance(layers),
+        uncle_bob=martin.mean_distance(layers),
         tokens=sum(tokens.count(tokens.effective_code(source.tree)) for source in sources),
         mutable_attributes=styled.mutable_attributes,
         assignments=styled.assignments,

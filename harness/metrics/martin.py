@@ -58,7 +58,7 @@ def measure(sources: list[SourceFile]) -> tuple[LayerMetrics, ...]:
 
 
 def mean_distance(layers: tuple[LayerMetrics, ...]) -> float:
-    """D moyen des couches, pondéré par leur nombre de modules : la distance du code à la séquence principale.
+    """La métrique Uncle Bob : le D moyen des couches, pondéré par leur nombre de modules.
 
     De 0 (chaque couche est stable et abstraite, ou instable et concrète) à 1. La pondération donne plus de poids à
     une grosse couche mal placée qu'à un module isolé. Une couche sans lien (D indéfini) n'entre pas dans la moyenne,

@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from harness.rules.points import (
     EMPTY_PR_POINTS,
     METRIC_CAP,
+    REGRESSED_POINTS,
     REMOVED_ON_RED_CAP,
     TURNED_GREEN_POINTS,
     RuleResult,
@@ -39,6 +40,10 @@ def section(
             f"| Constats retirés sur les règles encore rouges (plafond +{REMOVED_ON_RED_CAP}) | +{result.removed_points} |",
             f"| 🍼 Baby step : une seule règle passée au vert | +{result.baby_step_points} |",
             *(
+                f"| Règle {r.number} repassée au rouge ⚠️ | {REGRESSED_POINTS:+d} |"
+                for r in result.regressed
+            ),
+            *(
                 f"| Métrique : {label} (plafond ±{METRIC_CAP}) | {points:+d} |"
                 for label, points in result.metric_lines
             ),
@@ -65,7 +70,13 @@ def section(
 
 def _row(r: RuleResult) -> str:
     base = "—" if r.before is None else _status(r.before)
-    points = f"+{TURNED_GREEN_POINTS}" if r.turned_green else ""
+    points = (
+        f"+{TURNED_GREEN_POINTS}"
+        if r.turned_green
+        else f"{REGRESSED_POINTS:+d}"
+        if r.regressed
+        else ""
+    )
     return f"| {r.number} · {r.title} | {base} | {_status(r.after)} | {points} |"
 
 

@@ -4,6 +4,7 @@ from harness.rules.points import (
     BABY_STEP_POINTS,
     EMPTY_PR_POINTS,
     METRIC_CAP,
+    REGRESSED_POINTS,
     REMOVED_ON_RED_CAP,
     TURNED_GREEN_POINTS,
     RuleResult,
@@ -55,11 +56,12 @@ def test_a_rule_missing_from_the_base_is_not_scored():
     assert result.total == 0
 
 
-def test_a_rule_going_back_to_red_is_a_regression_without_points_lost():
+def test_a_rule_going_back_to_red_costs_points():
     result = score((rule(1, 0, 3),))
 
     assert [r.number for r in result.regressed] == [1]
-    assert result.total == 0
+    assert result.regression_points == REGRESSED_POINTS
+    assert result.total == REGRESSED_POINTS
 
 
 def test_the_table_shows_each_rule_and_the_score():

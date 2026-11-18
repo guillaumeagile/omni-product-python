@@ -25,6 +25,7 @@ from harness.perimetre import description, dossiers_exclus
 from harness.rules import evaluate as evaluate_rules
 from harness.rules import report as rules_report
 from harness.rules import results as rule_results
+from harness.rules.points import metric_points
 
 MARKER = "<!-- harness-scorecard -->"
 TOP_CLASSES = 3
@@ -34,7 +35,7 @@ TOP_CLASSES = 3
 class Row:
     """Une ligne du tableau. `better` dit dans quel sens aller : -1 pour « moins c'est mieux », +1 pour l'inverse.
 
-    `scored` : la variation de cette ligne rapporte ou retire des points (voir `metric_steps`).
+    `scored` : la variation de cette ligne rapporte ou retire des points (voir `metric_lines`).
     """
 
     label: str
@@ -104,19 +105,14 @@ def _row(row: Row, head: Metrics, base: Metrics | None) -> str:
     return f"| {row.label} | {_fmt(before)} | {_fmt(now)} | {_delta(now - before)} | {_verdict(now - before, row.better)} |"
 
 
-def variation_step(change: float, better: int) -> int:
-    """+1 si la variation va dans le bon sens, -1 si elle va dans le mauvais, 0 en dessous d'une unité (bruit)."""
-    if abs(change) < 1:
-        return 0
-    return 1 if change * better > 0 else -1
-
-
-def metric_steps(head: Metrics, base: Metrics | None) -> tuple[int, ...]:
-    """Les pas du bonus métriques : une valeur par ligne `scored` qui a une base à comparer."""
+def metric_lines(head: Metrics, base: Metrics | None) -> tuple[tuple[str, int], ...]:
+    """Les points des métriques : (libellé, points) pour chaque ligne `scored` qui a une base à comparer."""
     if base is None:
         return ()
     return tuple(
-        variation_step(row.read(head) - row.read(base), row.better) for row in ROWS if row.scored
+        (row.label, metric_points(row.read(head) - row.read(base), row.better))
+        for row in ROWS
+        if row.scored
     )
 
 
@@ -227,7 +223,7 @@ def main() -> None:
     else:
         base, changed = None, None
     rules_md = rules_report.section(
-        rule_results(head_findings, base_findings), metric_steps(head, base)
+        rule_results(head_findings, base_findings), metric_lines(head, base)
     )
     card = render(head, base, changed, rules_md)
     if args.output:

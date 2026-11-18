@@ -176,7 +176,7 @@ def test_the_uncle_bob_metric_scores_twenty_times_its_variation():
     worse = dict(scorecard.metric_lines(measure(PROJECT), measure(PROJECT[:2])))
     better = dict(scorecard.metric_lines(measure(PROJECT[:2]), measure(PROJECT)))
 
-    # 0 → 0.38 : 0,38 × 20 = 7,6, arrondi à 8 points, dans les deux sens.
+    # 0 → 0.38 : 0,38 fois 20 = 7,6, arrondi à 8 points, dans les deux sens.
     assert worse[label] == -8
     assert better[label] == 8
 

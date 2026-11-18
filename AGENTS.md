@@ -41,6 +41,14 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
 - masquer un constat avec un commentaire, un `# noqa`, un `# type: ignore` ou un `pragma` ;
 - renommer une classe ou une fonction pour échapper à une règle.
 
+## Conventions de code
+
+- Un échec métier se rend comme valeur : une fabrique `of()` renvoie `Result[X, InvalidValueError]`, avec la bibliothèque `result`.
+- Dans le nouveau code, le constructeur ne valide pas. La validation passe par `of()`.
+- Le `Result` remonte jusqu'au contrôleur, qui le traduit en réponse HTTP. `service/` et `controller/` ne relancent pas d'exception à sa place.
+- Un `match` sur un `Result` couvre `Ok` et `Err`.
+- Les `raise` encore présents dans `domain/model/` sont la dette que la règle 5 retire.
+
 ## La boucle : une PR par règle
 
 1. Une PR par règle. Son titre nomme la règle : « Team T >> Règle N :  … ». T est le nom de ton équipe car le jeu se joue en groupe. Le score est celui de l'équipe (et l'agent en fait partie)

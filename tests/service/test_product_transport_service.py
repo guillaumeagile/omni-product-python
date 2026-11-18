@@ -24,7 +24,7 @@ class FakePort:
 def test_delegates_to_the_port() -> None:
     port = FakePort()
 
-    metrics = ProductTransportService(port).calculate_shipment_carbon("truck", 100.0, 5.0)
+    metrics = ProductTransportService(port).calculate_shipment_carbon("truck", 100.0, 5.0).unwrap()
 
     assert port.received == TransportRequest(TransportMode("truck"), Distance(100.0), Kilos(5.0))
     assert metrics.co2_equivalent_kg == CarbonKilos(2.5)
@@ -42,7 +42,8 @@ def test_rejects_an_unknown_mode_before_calling_the_port() -> None:
 def test_rejects_invalid_request_before_calling_the_port() -> None:
     port = FakePort()
 
-    with pytest.raises(ValueError, match="Distance must be positive"):
-        ProductTransportService(port).calculate_shipment_carbon("truck", 0.0, 5.0)
+    result = ProductTransportService(port).calculate_shipment_carbon("truck", 0.0, 5.0)
 
+    assert result.is_err()
+    assert str(result.unwrap_err()) == "Distance must be positive"
     assert port.received is None

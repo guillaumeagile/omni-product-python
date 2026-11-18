@@ -74,7 +74,7 @@ RULES: tuple[Rule, ...] = (
         effet_impur.check,
         tests=effet_impur.check_tests,
     ),
-    # Le modèle, comme les règles 4 à 6 : drapeaux, `None` par paires et `raise` à la construction.
+    # Le modèle, comme les règles 4 à 6 : drapeaux et `None` par paires.
     Rule(
         7,
         "État illégal impossible à construire",

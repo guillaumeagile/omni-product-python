@@ -1,4 +1,4 @@
-"""La règle 7 : drapeau stocké, `None` par paires et `raise` à la construction sont des constats."""
+"""La règle 7 : drapeau stocké et `None` par paires sont des constats."""
 
 import textwrap
 
@@ -111,32 +111,6 @@ def test_sqlalchemy_mapped_annotations_are_unwrapped():
     assert codes_of(text) == [etat_illegal.CODE_OPTIONALS]
 
 
-def test_a_raise_in_post_init_is_a_finding():
-    text = """
-        class TransportRequest:
-            def __post_init__(self) -> None:
-                if self.distance_km <= 0:
-                    raise ValueError("Distance must be positive")
-        """
-
-    [finding] = findings_of(text)
-
-    assert (finding.line, finding.col, finding.code) == (5, 13, etat_illegal.CODE_CONSTRUCTOR)
-
-
-def test_a_raise_in_init_is_a_finding_but_not_in_another_method():
-    text = """
-        class A:
-            def __init__(self) -> None:
-                raise ValueError("x")
-
-            def other(self) -> None:
-                raise ValueError("y")
-        """
-
-    assert [f.line for f in findings_of(text)] == [4]
-
-
 def test_a_closed_union_of_frozen_dataclasses_is_clean():
     text = """
         from dataclasses import dataclass
@@ -179,14 +153,14 @@ def test_enums_protocols_and_exceptions_are_exempt():
 def test_findings_come_in_line_order():
     text = """
         class A:
-            def __post_init__(self) -> None:
-                raise ValueError("x")
+            a: int | None
+            b: int | None
 
         class B:
             is_ok: bool
         """
 
-    assert [f.line for f in findings_of(text)] == [4, 7]
+    assert [f.line for f in findings_of(text)] == [2, 7]
 
 
 def test_the_diagnostic_follows_the_ruff_format():

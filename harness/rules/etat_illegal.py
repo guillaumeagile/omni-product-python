@@ -1,6 +1,6 @@
 """Règle 7 : un état illégal est-il impossible à construire ?
 
-Trois indices disent qu'une classe du modèle (`domain/model`, et `anemic_model` tant que la règle 3 n'est pas faite)
+Deux indices disent qu'une classe du modèle (`domain/model`, et `anemic_model` tant que la règle 3 n'est pas faite)
 laisse construire un état que le métier interdit :
 
 - `EL001` : un champ booléen stocké, nommé `is_*` ou `has_*`. Le drapeau et les champs qu'il commande peuvent se
@@ -8,9 +8,6 @@ laisse construire un état que le métier interdit :
 - `EL002` : plusieurs champs `X | None` dans la même classe. Ils vont le plus souvent par paires (une date et une
   durée, un nom et un identifiant) : la combinaison « l'un présent, l'autre absent » est illégale. Une variante par
   combinaison légale, et plus aucun `None`.
-- `EL003` : un `raise` dans `__init__` ou `__post_init__`. L'invariant se vérifie à la construction, et l'objet
-  incohérent existe une fraction de seconde. Une fabrique qui rend un résultat (`Ok(Perishable(...))` ou
-  `Err(...)`) le valide avant que l'objet n'existe.
 
 Le refactoring attendu est une union fermée de dataclasses frozen, par exemple `Perishable(sell_by, use_by)` ou
 `NonExpiring(best_before)`, avec un `match` exhaustif vérifié par pyright.
@@ -30,10 +27,8 @@ from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 CODE_FLAG = "EL001"
 CODE_OPTIONALS = "EL002"
-CODE_CONSTRUCTOR = "EL003"
 
 FLAG_PREFIXES = ("is_", "has_")
-CONSTRUCTORS = frozenset({"__init__", "__post_init__"})
 
 
 @dataclass(frozen=True)
@@ -56,7 +51,6 @@ def check(source: Source, language: UbiquitousLanguage) -> list[Finding]:
             continue
         findings += _flags(source, cls)
         findings += _optionals(source, cls)
-        findings += _constructor_raises(source, cls)
     return sorted(findings, key=lambda finding: (finding.line, finding.col, finding.code))
 
 
@@ -142,23 +136,4 @@ def _optionals(source: Source, cls: ast.ClassDef) -> list[Finding]:
                 "une variante par combinaison légale, sans `None`"
             ),
         )
-    ]
-
-
-def _constructor_raises(source: Source, cls: ast.ClassDef) -> list[Finding]:
-    return [
-        Finding(
-            path=source.path,
-            line=node.lineno,
-            col=node.col_offset + 1,
-            code=CODE_CONSTRUCTOR,
-            message=(
-                f"`raise` dans `{method.name}` de `{cls.name}` : "
-                "valider dans une fabrique qui rend un résultat"
-            ),
-        )
-        for method in cls.body
-        if isinstance(method, ast.FunctionDef) and method.name in CONSTRUCTORS
-        for node in ast.walk(method)
-        if isinstance(node, ast.Raise)
     ]

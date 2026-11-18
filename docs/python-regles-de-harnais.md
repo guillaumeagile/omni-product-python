@@ -100,10 +100,12 @@ CUTE dit *ce que   le code apporte à l'équipe*.
   projet autour du cœur. Le port `domain/port` et l'adaptateur `infrastructure/adapter`, déjà présents pour le
   transport carbone, sont le modèle à reproduire pour le reste. La règle 3 devient donc la première marche de la 10.
   - **Ce que le harnais lit (`AO001`)** : tout `import` du cœur (`domain/`, et `anemic_model/` tant que la règle 3 n'est
-    pas faite) vers autre chose que le cœur, la bibliothèque standard ou `result` est un constat. SQLAlchemy, FastAPI,
-    `requests`, mais aussi `controller`, `service`, `dal`, `infrastructure`, `config`, `database` et `exception` restent
-    à l'extérieur. Les imports relatifs sont résolus, et un import sous `if TYPE_CHECKING:` compte : une annotation est
-    déjà une dépendance. Les effets de la bibliothèque standard restent à la règle 6.
+    pas faite) vers autre chose que le cœur, `result` ou une liste blanche de la bibliothèque standard (`dataclasses`, `typing`,
+    `enum`, `decimal`, `datetime`, `uuid`, `collections`, `functools`, `itertools`, `math`, `re`…) est un constat.
+    SQLAlchemy, FastAPI, `requests`, `controller`, `service`, `dal`, `infrastructure`, `config`, `database`,
+    `exception`, et les modules standard qui touchent le monde (`os`, `sys`, `time`, `random`, `json`, `pathlib`,
+    `logging`) restent à l'extérieur. Les imports relatifs sont résolus, et un import sous `if TYPE_CHECKING:` compte : une annotation est
+    déjà une dépendance. `datetime` et `uuid` servent à typer : `date.today()` et `uuid4()` restent des constats de la règle 6.
   - **Refactoring attendu** : le cœur déclare ce dont il a besoin par un `Protocol` dans `domain/port/`, et
     l'adaptateur de `infrastructure/` l'implémente. Le mapping SQLAlchemy sort du modèle, le `dal/` devient un adaptateur.
   - **Sur le legacy de l'atelier** : la règle est rouge. `anemic_model/` importe SQLAlchemy, `database`, `service`, et

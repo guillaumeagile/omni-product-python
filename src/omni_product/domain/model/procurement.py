@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from result import Result
+
+from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.invariants import require_text
 from omni_product.domain.model.product import ProductId
 from omni_product.domain.model.supplier import Region, SupplierId
@@ -11,16 +14,18 @@ from omni_product.domain.model.supplier import Region, SupplierId
 class Siren:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[Siren, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
 class TvaId:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[TvaId, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 # Contexte Approvisionnement : qui fournit le produit, et les fournisseurs par région.

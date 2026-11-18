@@ -27,13 +27,15 @@ def _create(
     country: str = "France",
     region: str = "Île-de-France",
 ) -> None:
-    service.create_supplier(supplier_id, name, "contact@test.com", "+33123456789", country, region)
+    service.create_supplier(
+        supplier_id, name, "contact@test.com", "+33123456789", country, region
+    ).unwrap()
 
 
 def test_should_create_supplier(supplier_service: SupplierService) -> None:
     supplier = supplier_service.create_supplier(
         "sup1", "Supplier A", "contact@suppliera.com", "+33123456789", "France", "Île-de-France"
-    )
+    ).unwrap()
 
     assert supplier.id == SupplierId("sup1")
     assert supplier.name == "Supplier A"
@@ -43,7 +45,7 @@ def test_should_create_supplier(supplier_service: SupplierService) -> None:
 def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
     _create(supplier_service, "sup1", "Supplier A")
 
-    found = supplier_service.get_supplier("sup1")
+    found = supplier_service.get_supplier("sup1").unwrap()
 
     assert found is not None
     assert found.id == SupplierId("sup1")
@@ -51,7 +53,7 @@ def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
 
 
 def test_should_return_none_for_non_existent_supplier(supplier_service: SupplierService) -> None:
-    assert supplier_service.get_supplier("nonexistent") is None
+    assert supplier_service.get_supplier("nonexistent").unwrap() is None
 
 
 def test_should_get_all_suppliers(supplier_service: SupplierService) -> None:
@@ -67,7 +69,7 @@ def test_should_get_suppliers_by_country(supplier_service: SupplierService) -> N
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B", "Spain", "Madrid")
 
-    french = supplier_service.get_suppliers_by_country("France")
+    french = supplier_service.get_suppliers_by_country("France").unwrap()
 
     assert [s.name for s in french] == ["Supplier A"]
 
@@ -76,7 +78,7 @@ def test_should_get_suppliers_by_region(supplier_service: SupplierService) -> No
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B", region="Provence")
 
-    idf = supplier_service.get_suppliers_by_region("Île-de-France")
+    idf = supplier_service.get_suppliers_by_region("Île-de-France").unwrap()
 
     assert [s.name for s in idf] == ["Supplier A"]
 
@@ -86,7 +88,7 @@ def test_should_update_supplier(supplier_service: SupplierService) -> None:
 
     updated = supplier_service.update_supplier(
         "sup1", "Updated Supplier A", "newemail@suppliera.com", "+33111111111", "Germany", "Berlin"
-    )
+    ).unwrap()
 
     assert updated.name == "Updated Supplier A"
     assert updated.country == Country("Germany")
@@ -105,9 +107,9 @@ def test_should_raise_when_updating_non_existent_supplier(
 def test_should_delete_supplier(supplier_service: SupplierService) -> None:
     _create(supplier_service, "sup1", "Supplier A")
 
-    supplier_service.delete_supplier("sup1")
+    supplier_service.delete_supplier("sup1").unwrap()
 
-    assert supplier_service.get_supplier("sup1") is None
+    assert supplier_service.get_supplier("sup1").unwrap() is None
 
 
 def test_should_raise_when_deleting_non_existent_supplier(
@@ -130,7 +132,7 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     )
     assert product_dal.find_by_id(session, ProductId("prod1")) is not None
 
-    supplier_service.delete_supplier("sup1")
+    supplier_service.delete_supplier("sup1").unwrap()
 
     assert product_dal.find_by_id(session, ProductId("prod1")) is None
 
@@ -149,7 +151,7 @@ def test_should_get_suppliers_by_product(
         ),
     )
 
-    suppliers = supplier_service.get_suppliers_by_product("prod1")
+    suppliers = supplier_service.get_suppliers_by_product("prod1").unwrap()
 
     assert [s.id for s in suppliers] == [SupplierId("sup1")]
 

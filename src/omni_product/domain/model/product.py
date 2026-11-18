@@ -3,6 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from result import Result
+
+from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.invariants import require_at_least_zero, require_text
 
 # Contexte Catalogue : le produit, ses images et ses types. Les autres contextes (prix, transport,
@@ -13,32 +16,36 @@ from omni_product.domain.model.invariants import require_at_least_zero, require_
 class ProductId:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[ProductId, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
 class Slug:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[Slug, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
 class ImageKey:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[ImageKey, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
 class ImageDetail:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[ImageDetail, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
@@ -51,8 +58,9 @@ class ProductImage:
 class ShelfLifeDays:
     value: int
 
-    def __post_init__(self) -> None:
-        require_at_least_zero(self, self.value)
+    @classmethod
+    def of(cls, value: int) -> Result[ShelfLifeDays, InvalidValueError]:
+        return require_at_least_zero(cls, value).map(cls)
 
 
 @dataclass(frozen=True)

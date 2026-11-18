@@ -14,12 +14,18 @@ class ProductTransportService:
     def calculate_shipment_carbon(
         self, transport_mode: str, distance_km: float, weight_kg: float
     ) -> Result[TransportCarbonMetrics, InvalidValueError]:
-        match TransportRequest.of(
-            TransportMode.parse(transport_mode),
-            Distance(round(distance_km)),
-            Kilos(weight_kg),
-        ):
-            case Ok(request):
-                return Ok(self._transport_carbon_port.calculate_emissions(request))
+        match TransportMode.of(transport_mode):
             case Err(erreur):
                 return Err(erreur)
+            case Ok(mode):
+                match Distance.of(round(distance_km)):
+                    case Err(erreur):
+                        return Err(erreur)
+                    case Ok(distance):
+                        match Kilos.of(weight_kg):
+                            case Err(erreur):
+                                return Err(erreur)
+                            case Ok(weight):
+                                return TransportRequest.of(mode, distance, weight).map(
+                                    self._transport_carbon_port.calculate_emissions
+                                )

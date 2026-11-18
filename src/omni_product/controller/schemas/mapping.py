@@ -1,3 +1,7 @@
+from typing import Any
+
+from result import Err, Ok, Result
+
 from omni_product.controller.schemas.product import (
     PriceSchema,
     ProductKind,
@@ -41,6 +45,8 @@ from omni_product.domain.model import (
     Volume,
     Warehouse,
 )
+from omni_product.domain.model.errors import InvalidValueError
+from omni_product.domain.model.invariants import optionnel, premiere_erreur
 from omni_product.exception.product_name_exception import ProductNameException
 
 
@@ -101,16 +107,24 @@ def product_to_schema(sheet: ProductSheet) -> ProductSchema:
     )
 
 
-def schema_to_product(schema: ProductSchema, product_id: str) -> ProductSheet:
-    """Construit une fiche neuve ; `save` la fusionne avec l'existante (comme `PUT` en Java)."""
-    pid = ProductId(product_id)
+def schema_to_product(
+    schema: ProductSchema, product_id: str
+) -> Result[ProductSheet, InvalidValueError]:
+    """Construit une fiche neuve ; `save` la fusionne avec l'existante (comme `PUT` en Java).
+
+    Chaque valeur est d'abord validée avec `of()`. Une fois toutes valides, la fiche se construit.
+    """
     # Un produit doit avoir un nom et un slug : sans eux, la base refusait l'écriture.
     if schema.name is None:
         raise ProductNameException("Product name is missing")
     if schema.slug is None:
         raise ValueError("Product slug is missing")
+    erreur = premiere_erreur(_valeurs_a_valider(schema, product_id, schema.slug))
+    if erreur is not None:
+        return Err(erreur)
     name = schema.name
     slug = Slug(schema.slug)
+    pid = ProductId(product_id)
     images = tuple(
         ProductImage(key=ImageKey(key), detail=optional(ImageDetail, detail))
         for key, detail in (schema.images or {}).items()
@@ -128,52 +142,115 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> ProductSheet:
     product = Product(id=pid, name=name, slug=slug, images=images, shelf_life=shelf_life)
     price = schema.price
     warehouse = schema.warehouse
-    return ProductSheet(
-        product=product,
-        pricing=ProductPrice(
-            id=pid,
-            price=(
-                Price(
-                    base=optional(Amount, price.base),
-                    tax=optional(Amount, price.tax),
-                    tax_rate=optional(Rate, price.tax_rate),
-                )
-                if price is not None
-                else None
+    return Ok(
+        ProductSheet(
+            product=product,
+            pricing=ProductPrice(
+                id=pid,
+                price=(
+                    Price(
+                        base=optional(Amount, price.base),
+                        tax=optional(Amount, price.tax),
+                        tax_rate=optional(Rate, price.tax_rate),
+                    )
+                    if price is not None
+                    else None
+                ),
+                discounts=tuple(Discount(value) for value in schema.discounts or []),
             ),
-            discounts=tuple(Discount(value) for value in schema.discounts or []),
-        ),
-        transport=ProductTransport(
-            id=pid,
-            kilos=optional(Kilos, schema.kilos),
-            volume=optional(Volume, schema.volume),
-        ),
-        stock=ProductStock(
-            id=pid,
-            quantity=optional(
-                Quantity, schema.quantity if schema.quantity is not None else schema.stock
+            transport=ProductTransport(
+                id=pid,
+                kilos=optional(Kilos, schema.kilos),
+                volume=optional(Volume, schema.volume),
             ),
-            stock=Stock(schema.stock or 0),
-            warehouse=(
-                Warehouse(location=optional(Location, warehouse.location)) if warehouse else None
+            stock=ProductStock(
+                id=pid,
+                quantity=optional(
+                    Quantity, schema.quantity if schema.quantity is not None else schema.stock
+                ),
+                stock=Stock(schema.stock or 0),
+                warehouse=(
+                    Warehouse(location=optional(Location, warehouse.location))
+                    if warehouse
+                    else None
+                ),
             ),
-        ),
-        supply=ProductSupply(
-            id=pid,
-            supplier_id=optional(SupplierId, schema.supplier_id),
-            regions=tuple(
-                SupplierByRegion(
-                    region=Region(region),
-                    supplier=RegionSupplier(
-                        name=supplier.name,
-                        siren=optional(Siren, supplier.siren),
-                        tva_id=optional(TvaId, supplier.tva_id),
-                    ),
-                )
-                for region, supplier in (schema.suppliers_regions or {}).items()
+            supply=ProductSupply(
+                id=pid,
+                supplier_id=optional(SupplierId, schema.supplier_id),
+                regions=tuple(
+                    SupplierByRegion(
+                        region=Region(region),
+                        supplier=RegionSupplier(
+                            name=supplier.name,
+                            siren=optional(Siren, supplier.siren),
+                            tva_id=optional(TvaId, supplier.tva_id),
+                        ),
+                    )
+                    for region, supplier in (schema.suppliers_regions or {}).items()
+                ),
             ),
-        ),
+        )
     )
+
+
+def _valeurs_a_valider(
+    schema: ProductSchema, product_id: str, slug: str
+) -> list[Result[Any, InvalidValueError]]:
+    """Toutes les valeurs de la fiche qui passent par une fabrique `of()`."""
+    images = schema.images or {}
+    return [
+        ProductId.of(product_id),
+        Slug.of(slug),
+        *(ImageKey.of(key) for key in images),
+        *(optionnel(ImageDetail.of, detail) for detail in images.values()),
+        *(
+            [optionnel(ShelfLifeDays.of, schema.shelf_life_days)]
+            if schema.kind == "perishable"
+            else []
+        ),
+        *(Discount.of(value) for value in schema.discounts or []),
+        *_valeurs_du_prix(schema.price),
+        optionnel(Kilos.of, schema.kilos),
+        optionnel(Volume.of, schema.volume),
+        optionnel(Quantity.of, schema.quantity if schema.quantity is not None else schema.stock),
+        Stock.of(schema.stock or 0),
+        *_valeurs_de_l_entrepot(schema.warehouse),
+        optionnel(SupplierId.of, schema.supplier_id),
+        *_valeurs_des_fournisseurs(schema.suppliers_regions or {}),
+    ]
+
+
+def _valeurs_du_prix(price: PriceSchema | None) -> list[Result[Any, InvalidValueError]]:
+    if price is None:
+        return []
+    return [
+        optionnel(Amount.of, price.base),
+        optionnel(Amount.of, price.tax),
+        optionnel(Rate.of, price.tax_rate),
+    ]
+
+
+def _valeurs_de_l_entrepot(
+    warehouse: WarehouseSchema | None,
+) -> list[Result[Any, InvalidValueError]]:
+    if warehouse is None:
+        return []
+    return [optionnel(Location.of, warehouse.location)]
+
+
+def _valeurs_des_fournisseurs(
+    regions: dict[str, RegionSupplierSchema],
+) -> list[Result[Any, InvalidValueError]]:
+    return [
+        valeur
+        for region, supplier in regions.items()
+        for valeur in (
+            Region.of(region),
+            optionnel(Siren.of, supplier.siren),
+            optionnel(TvaId.of, supplier.tva_id),
+        )
+    ]
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

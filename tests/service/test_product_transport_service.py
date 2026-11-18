@@ -1,5 +1,3 @@
-import pytest
-
 from omni_product.domain.model.transport import CarbonKilos, Distance, Kilos, TransportMode
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
 from omni_product.domain.model.transport_request import TransportRequest
@@ -33,9 +31,10 @@ def test_delegates_to_the_port() -> None:
 def test_rejects_an_unknown_mode_before_calling_the_port() -> None:
     port = FakePort()
 
-    with pytest.raises(ValueError, match="TransportMode doit être l'un de"):
-        ProductTransportService(port).calculate_shipment_carbon("boat", 100.0, 5.0)
+    result = ProductTransportService(port).calculate_shipment_carbon("boat", 100.0, 5.0)
 
+    assert result.is_err()
+    assert str(result.unwrap_err()).startswith("TransportMode doit être l'un de")
     assert port.received is None
 
 

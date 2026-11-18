@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
+from result import Err, Ok
 
+from omni_product.controller.erreurs import valeur_invalide
 from omni_product.controller.schemas import (
     SupplierRequest,
     SupplierSchema,
@@ -15,44 +17,62 @@ router = APIRouter(prefix="/api/suppliers", tags=["suppliers"])
 def create_supplier(
     request: SupplierRequest, supplier_service: SupplierServiceDep
 ) -> SupplierSchema:
-    supplier = supplier_service.create_supplier(
+    match supplier_service.create_supplier(
         request.id,
         request.name,
         request.contact_email,
         request.contact_phone,
         request.country,
         request.region,
-    )
-    return supplier_to_schema(supplier)
+    ):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(supplier):
+            return supplier_to_schema(supplier)
 
 
 @router.get("/product/{product_id}")
 def get_suppliers_by_product(
     product_id: str, supplier_service: SupplierServiceDep
 ) -> list[SupplierSchema]:
-    return [supplier_to_schema(s) for s in supplier_service.get_suppliers_by_product(product_id)]
+    match supplier_service.get_suppliers_by_product(product_id):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(suppliers):
+            return [supplier_to_schema(s) for s in suppliers]
 
 
 @router.get("/country/{country}")
 def get_suppliers_by_country(
     country: str, supplier_service: SupplierServiceDep
 ) -> list[SupplierSchema]:
-    return [supplier_to_schema(s) for s in supplier_service.get_suppliers_by_country(country)]
+    match supplier_service.get_suppliers_by_country(country):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(suppliers):
+            return [supplier_to_schema(s) for s in suppliers]
 
 
 @router.get("/region/{region}")
 def get_suppliers_by_region(
     region: str, supplier_service: SupplierServiceDep
 ) -> list[SupplierSchema]:
-    return [supplier_to_schema(s) for s in supplier_service.get_suppliers_by_region(region)]
+    match supplier_service.get_suppliers_by_region(region):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(suppliers):
+            return [supplier_to_schema(s) for s in suppliers]
 
 
 @router.get("/{supplier_id}")
 def get_supplier(supplier_id: str, supplier_service: SupplierServiceDep) -> SupplierSchema:
-    supplier = supplier_service.get_supplier(supplier_id)
-    if supplier is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return supplier_to_schema(supplier)
+    match supplier_service.get_supplier(supplier_id):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(supplier) if supplier is not None:
+            return supplier_to_schema(supplier)
+        case Ok(_):
+            raise HTTPException(status.HTTP_404_NOT_FOUND)
 
 
 @router.get("")
@@ -64,18 +84,24 @@ def get_all_suppliers(supplier_service: SupplierServiceDep) -> list[SupplierSche
 def update_supplier(
     supplier_id: str, request: SupplierUpdateRequest, supplier_service: SupplierServiceDep
 ) -> SupplierSchema:
-    supplier = supplier_service.update_supplier(
+    match supplier_service.update_supplier(
         supplier_id,
         request.name,
         request.contact_email,
         request.contact_phone,
         request.country,
         request.region,
-    )
-    return supplier_to_schema(supplier)
+    ):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(supplier):
+            return supplier_to_schema(supplier)
 
 
 @router.delete("/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_supplier(supplier_id: str, supplier_service: SupplierServiceDep) -> Response:
-    supplier_service.delete_supplier(supplier_id)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    match supplier_service.delete_supplier(supplier_id):
+        case Err(erreur):
+            raise valeur_invalide(erreur)
+        case Ok(_):
+            return Response(status_code=status.HTTP_204_NO_CONTENT)

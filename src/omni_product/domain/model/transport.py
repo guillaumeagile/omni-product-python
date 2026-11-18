@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, TypeIs, get_args
 
+from result import Err, Ok, Result
+
 from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.invariants import require_at_least_zero, require_text
 from omni_product.domain.model.product import ProductId
@@ -23,12 +25,12 @@ class TransportMode:
     value: TransportModeName
 
     @classmethod
-    def parse(cls, raw: str) -> TransportMode:
+    def of(cls, raw: str) -> Result[TransportMode, InvalidValueError]:
         if not _is_transport_mode(raw):
-            raise InvalidValueError(
-                f"TransportMode doit être l'un de : {', '.join(TRANSPORT_MODES)}"
+            return Err(
+                InvalidValueError(f"TransportMode doit être l'un de : {', '.join(TRANSPORT_MODES)}")
             )
-        return cls(raw)
+        return Ok(cls(raw))
 
 
 @dataclass(frozen=True)
@@ -37,16 +39,18 @@ class Distance:
 
     value: float
 
-    def __post_init__(self) -> None:
-        require_at_least_zero(self, self.value)
+    @classmethod
+    def of(cls, value: float) -> Result[Distance, InvalidValueError]:
+        return require_at_least_zero(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
 class Kilos:
     value: float
 
-    def __post_init__(self) -> None:
-        require_at_least_zero(self, self.value)
+    @classmethod
+    def of(cls, value: float) -> Result[Kilos, InvalidValueError]:
+        return require_at_least_zero(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
@@ -55,16 +59,18 @@ class CarbonKilos:
 
     value: float
 
-    def __post_init__(self) -> None:
-        require_at_least_zero(self, self.value)
+    @classmethod
+    def of(cls, value: float) -> Result[CarbonKilos, InvalidValueError]:
+        return require_at_least_zero(cls, value).map(cls)
 
 
 @dataclass(frozen=True)
 class Volume:
     value: str
 
-    def __post_init__(self) -> None:
-        require_text(self, self.value)
+    @classmethod
+    def of(cls, value: str) -> Result[Volume, InvalidValueError]:
+        return require_text(cls, value).map(cls)
 
 
 # Contexte Transport (livraison) : le poids et l'encombrement qui pèsent sur l'expédition.

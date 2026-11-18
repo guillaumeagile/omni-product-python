@@ -43,11 +43,12 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
 
 ## Conventions de code
 
-- Un échec métier se rend comme valeur : une fabrique `of()` renvoie `Result[X, InvalidValueError]`, avec la bibliothèque `result`.
-- Dans le nouveau code, le constructeur ne valide pas. La validation passe par `of()`.
-- Le `Result` remonte jusqu'au contrôleur, qui le traduit en réponse HTTP. `service/` et `controller/` ne relancent pas d'exception à sa place.
-- Un `match` sur un `Result` couvre `Ok` et `Err`.
-- Les `raise` encore présents dans `domain/model/` sont la dette que la règle 5 retire.
+- Un échec métier se rend comme valeur : la fabrique `of()` renvoie `Result[X, InvalidValueError]`, avec la bibliothèque `result`. Aucun `raise` dans `domain/model/`.
+- Le constructeur ne valide pas. La validation passe par `of()`.
+- Une fois toutes les valeurs validées, la fiche ou l'entité se construit avec le constructeur, sans revalider. `premiere_erreur` et `optionnel` (dans `domain/model/invariants.py`) rendent ce passage court.
+- Reconstitution depuis la base (`dal/`) : constructeur direct, car les données ont été validées à l'écriture.
+- Le `Result` remonte jusqu'au contrôleur, qui le traduit en `HTTPException` 422 (`controller/erreurs.py`), comme il traduit déjà les 404. `service/` et `controller/` ne relancent pas d'exception métier.
+- Un `match` sur un `Result` couvre `Ok` et `Err`. Après `.map`, préférer une méthode typée à une lambda : pyright perd le type des paramètres d'une lambda passée à `.map` ou `.and_then` sur un `Result`.
 
 ## La boucle : une PR par règle
 

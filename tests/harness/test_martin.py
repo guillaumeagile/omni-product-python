@@ -171,14 +171,14 @@ def test_scorecard_shows_layers_from_base_to_pr():
     assert "| `infrastructure` | 1 | 1 | 0.5 | 0 | 0.5 | `domain` |" in card
 
 
-def test_the_uncle_bob_metric_scores_ten_times_its_variation():
+def test_the_uncle_bob_metric_scores_twenty_times_its_variation():
     label = "Métrique Uncle Bob (D moyen des couches, 0 = le mieux)"
     worse = dict(scorecard.metric_lines(measure(PROJECT), measure(PROJECT[:2])))
     better = dict(scorecard.metric_lines(measure(PROJECT[:2]), measure(PROJECT)))
 
-    # 0 → 0.38 : une hausse de 0,38 coûte 4 points, la baisse inverse en rapporte 4.
-    assert worse[label] == -4
-    assert better[label] == 4
+    # 0 → 0.38 : une hausse de 0,38 coûte 8 points (0,38 × 20 = 7,6, arrondi), la baisse inverse en rapporte 8.
+    assert worse[label] == -8
+    assert better[label] == 8
 
 
 # domain importe un utilitaire que seul domain utilise, et qui dépend lui-même de main :

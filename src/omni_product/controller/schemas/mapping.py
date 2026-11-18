@@ -3,6 +3,10 @@ from omni_product.anemic_model import (
     PerishableProduct,
     Price,
     Product,
+    ProductPrice,
+    ProductShipment,
+    ProductStock,
+    ProductSupply,
     RegionSupplier,
     Supplier,
     Warehouse,
@@ -15,6 +19,7 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
+from omni_product.service.product_view import ProductView
 
 
 def _kind_of(product: Product) -> ProductKind:
@@ -25,8 +30,13 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
-def product_to_schema(product: Product) -> ProductSchema:
+def product_to_schema(view: ProductView) -> ProductSchema:
+    product = view.product
     perishable = product if isinstance(product, PerishableProduct) else None
+    price = view.price
+    shipment = view.shipment
+    stock = view.stock
+    supply = view.supply
     return ProductSchema(
         id=product.id,
         kind=_kind_of(product),
@@ -34,24 +44,24 @@ def product_to_schema(product: Product) -> ProductSchema:
         slug=product.slug,
         expiration_date=perishable.expiration_date if perishable else None,
         shelf_life_days=perishable.shelf_life_days if perishable else None,
-        price=PriceSchema.model_validate(product.price) if product.price else None,
-        discounts=list(product.discounts),
+        price=PriceSchema.model_validate(price.price if price else Price()),
+        discounts=list(price.discounts) if price else [],
         images=dict(product.images),
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
-            for region, supplier in product.suppliers_regions.items()
+            for region, supplier in (supply.suppliers_regions.items() if supply else [])
         },
-        kilos=product.kilos,
-        volume=product.volume,
-        quantity=product.quantity,
-        stock=product.stock,
-        warehouse=WarehouseSchema.model_validate(product.warehouse) if product.warehouse else None,
-        supplier_id=product.supplier_id,
+        kilos=shipment.kilos if shipment else None,
+        volume=shipment.volume if shipment else None,
+        quantity=stock.quantity if stock else None,
+        stock=stock.stock if stock else None,
+        warehouse=WarehouseSchema.model_validate(stock.warehouse if stock else Warehouse()),
+        supplier_id=supply.supplier_id if supply else None,
     )
 
 
-def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
-    """Construit une entité neuve ; `save` la fusionne avec l'existante (comme `PUT` en Java)."""
+def schema_to_view(schema: ProductSchema, product_id: str) -> ProductView:
+    """Construit des agrégats neufs ; `save` les fusionne avec les existants (comme `PUT` en Java)."""
     match schema.kind:
         case "perishable":
             product = PerishableProduct(
@@ -65,22 +75,32 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = NonExpiringProduct(id=product_id, name=schema.name, slug=schema.slug)
         case _:
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
-    product.kilos = schema.kilos
-    product.volume = schema.volume
-    product.quantity = schema.quantity if schema.quantity is not None else schema.stock
-    product.stock = schema.stock or 0
-    product.supplier_id = schema.supplier_id
-    if schema.price is not None:
-        product.price = Price(**schema.price.model_dump())
-    if schema.warehouse is not None:
-        product.warehouse = Warehouse(**schema.warehouse.model_dump())
-    product.discounts = schema.discounts or []
     product.images = schema.images or {}
-    product.suppliers_regions = {
-        region: RegionSupplier(**supplier.model_dump())
-        for region, supplier in (schema.suppliers_regions or {}).items()
-    }
-    return product
+    return ProductView(
+        product=product,
+        price=ProductPrice(
+            product_id=product_id,
+            price=Price(**schema.price.model_dump()) if schema.price is not None else Price(),
+            discounts=schema.discounts or [],
+        ),
+        shipment=ProductShipment(product_id=product_id, kilos=schema.kilos, volume=schema.volume),
+        stock=ProductStock(
+            product_id=product_id,
+            quantity=schema.quantity if schema.quantity is not None else schema.stock,
+            stock=schema.stock or 0,
+            warehouse=(
+                Warehouse(**schema.warehouse.model_dump()) if schema.warehouse is not None else Warehouse()
+            ),
+        ),
+        supply=ProductSupply(
+            product_id=product_id,
+            supplier_id=schema.supplier_id,
+            suppliers_regions={
+                region: RegionSupplier(**supplier.model_dump())
+                for region, supplier in (schema.suppliers_regions or {}).items()
+            },
+        ),
+    )
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

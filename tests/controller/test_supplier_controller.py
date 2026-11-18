@@ -1,8 +1,18 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, Supplier
-from omni_product.dal import product_dal, supplier_dal
+from omni_product.anemic_model import Product, ProductSupply, Supplier
+from omni_product.dal import supplier_dal
+from omni_product.service.product_service import ProductService
+from omni_product.service.product_view import ProductView
+
+
+def _product_of(session: Session, product_id: str, supplier_id: str) -> None:
+    view = ProductView(
+        product=Product(id=product_id, name="Test Product", slug="test-product"),
+        supply=ProductSupply(product_id=product_id, supplier_id=supplier_id),
+    )
+    ProductService(session).save(view)
 
 
 def _supplier(
@@ -85,9 +95,7 @@ def test_should_get_suppliers_by_region(client: TestClient, session: Session) ->
 def test_should_get_suppliers_by_product(client: TestClient, session: Session) -> None:
     supplier_dal.save(session, _supplier("sup1", "Supplier A"))
     supplier_dal.save(session, _supplier("sup2", "Supplier B"))
-    product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
-    )
+    _product_of(session, "prod1", "sup1")
 
     response = client.get("/api/suppliers/product/prod1")
 
@@ -125,9 +133,7 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     client: TestClient, session: Session
 ) -> None:
     supplier_dal.save(session, _supplier("sup1", "Supplier A"))
-    product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
-    )
+    _product_of(session, "prod1", "sup1")
 
     assert client.delete("/api/suppliers/sup1").status_code == 204
 

@@ -2,13 +2,13 @@
 
 - `base` : la sérialisation commune (camelCase JSON).
 - `product` / `supplier` : les DTO, sans logique.
-- `mapping` : la conversion entre DTO et entités, seul endroit qui teste le type d'un produit.
+- `mapping` : la conversion entre DTO et agrégats, seul endroit qui teste le type d'un produit.
 """
 
 from omni_product.controller.schemas.base import CamelModel
 from omni_product.controller.schemas.mapping import (
     product_to_schema,
-    schema_to_product,
+    schema_to_view,
     supplier_to_schema,
 )
 from omni_product.controller.schemas.product import (
@@ -35,6 +35,6 @@ __all__ = [
     "SupplierUpdateRequest",
     "WarehouseSchema",
     "product_to_schema",
-    "schema_to_product",
+    "schema_to_view",
     "supplier_to_schema",
 ]

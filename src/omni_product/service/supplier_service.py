@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from omni_product.anemic_model import Supplier
 from omni_product.dal import product_dal, supplier_dal
+from omni_product.service.product_service import ProductService
 
 
 class SupplierService:
@@ -62,7 +63,12 @@ class SupplierService:
         return supplier_dal.save(self._session, supplier)
 
     def delete_supplier(self, supplier_id: str) -> None:
-        supplier_dal.delete(self._session, self._get_or_raise(supplier_id))
+        supplier = self._get_or_raise(supplier_id)
+        # Les produits d'un fournisseur disparaissent avec lui : c'est le service qui fait ce lien entre contextes.
+        product_service = ProductService(self._session)
+        for product_id in supplier_dal.find_product_ids_by_supplier_id(self._session, supplier_id):
+            product_service.delete_by_id(product_id)
+        supplier_dal.delete(self._session, supplier)
 
     def _get_or_raise(self, supplier_id: str) -> Supplier:
         supplier = supplier_dal.find_by_id(self._session, supplier_id)

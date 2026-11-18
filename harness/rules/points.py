@@ -3,16 +3,19 @@
 Même barème que l'arbitre de l'atelier Java :
 - +10 par règle passée au vert par la PR ;
 - +1 par constat retiré sur une règle encore rouge, plafonné à +5 au total ;
-- +5 de « baby step » quand une seule règle passe au vert.
+- +5 de « baby step » quand une seule règle passe au vert ;
+- ±1 par variation de métrique (dans le bon ou le mauvais sens), net, plafonné à ±10.
 
 Une règle qui repasse du vert au rouge ne fait pas perdre de points, mais la scorecard la signale.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 TURNED_GREEN_POINTS = 10
 REMOVED_ON_RED_CAP = 5
 BABY_STEP_POINTS = 5
+METRIC_CAP = 10
 
 
 @dataclass(frozen=True)
@@ -49,10 +52,11 @@ class Score:
     green_points: int
     removed_points: int
     baby_step_points: int
+    metric_points: int = 0
 
     @property
     def total(self) -> int:
-        return self.green_points + self.removed_points + self.baby_step_points
+        return self.green_points + self.removed_points + self.baby_step_points + self.metric_points
 
     @property
     def turned_green(self) -> tuple[RuleResult, ...]:
@@ -63,7 +67,12 @@ class Score:
         return tuple(r for r in self.results if r.regressed)
 
 
-def score(results: tuple[RuleResult, ...]) -> Score:
+def metric_bonus(steps: Sequence[int]) -> int:
+    """Le bonus des métriques : chaque variation vaut +1 (amélioration) ou -1 (dégradation), net, plafonné à ±METRIC_CAP."""
+    return max(-METRIC_CAP, min(METRIC_CAP, sum(steps)))
+
+
+def score(results: tuple[RuleResult, ...], metric_steps: Sequence[int] = ()) -> Score:
     green = [r for r in results if r.turned_green]
     removed = sum(r.removed for r in results)
     return Score(
@@ -71,4 +80,5 @@ def score(results: tuple[RuleResult, ...]) -> Score:
         green_points=TURNED_GREEN_POINTS * len(green),
         removed_points=min(REMOVED_ON_RED_CAP, removed),
         baby_step_points=BABY_STEP_POINTS if len(green) == 1 else 0,
+        metric_points=metric_bonus(metric_steps),
     )

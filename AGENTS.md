@@ -17,6 +17,7 @@ Ce dépôt sert à l'atelier de refactoring CUPID. Tu travailles avec un humain 
 - `docs/ubiquitous-language.json` : le vocabulaire du domaine. Tu le lis, tu ne le modifies pas.
 - Le code et les tests métier : `src/` et `tests/`, hors `tests/harness/`.
 
+
 ## Ce que tu ne lis pas
 
 - `harness/` et `tests/harness/` : le code du harnais. Pas de `Read`, pas de `grep`, pas de `cat`, et pas le graphe de
@@ -44,21 +45,18 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
 
 ## La boucle : une PR par règle
 
-1. Une PR par règle. Son titre nomme la règle : « Règle N : … ».
-2. L'humain donne la base de la PR : `main` pour la première PR, puis la branche de l'étape précédente. Tu ne choisis pas
-   la base.
+1. Une PR par règle. Son titre nomme la règle : « Team T >> Règle N :  … ». T est le nom de ton équipe car le jeu se joue en groupe. Le score est celui de l'équipe (et l'agent en fait partie)
+2.  la base de la PR : `main` pour la première PR, puis la branche de l'étape précédente.
 3. Une itération :
-   a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<base>`, puis lis
-      les constats.
+   a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<base>`, puis lis les constats.
    b. Lis la fiche de la règle dans `docs/python-regles-de-harnais.md`.
-   c. Propose à l'humain deux ou trois options. Pour chacune : la lettre CUPID visée, les fichiers touchés, les tests à
-      adapter et l'effet attendu sur le nombre de constats.
+   c. Propose à l'humain deux ou trois options. Pour chacune : la lettre CUPID visée, les fichiers touchés, les tests à adapter.
    d. Attends sa réponse. Tu ne codes rien avant.
    e. Code le choix retenu et lance les tests locaux utiles.
    f. Committe. Le message donne le nombre de constats avant et après, et le choix retenu en une ligne.
-   g. Pousse sans force-push. Suis la CI avec `gh pr checks`, puis le commentaire Scorecard.
+   g. Pousse sans force-push. Suis la CI avec `gh pr checks`, puis le commentaire Scorecard. Le score de mutation testing est à surveiller aussi. et bien évidemment que les tests doivent rester au vert.
 4. Recommence l'itération tant que la règle a des constats ou que la CI est rouge.
-5. Fin : la règle n'a plus de constats, la CI est verte et l'humain valide. L'humain fusionne. Tu ne fusionnes pas.
+5. Fin : la règle n'a plus de constats, la CI est verte et l'humain valide. Personne ne fusionne. Tu ne fusionnes pas. les PR restent volontairement ouvertes: c'est pour garder les scores de chaque équipe à chaque étape.
 
 ## Comment poser la question
 
@@ -69,4 +67,7 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
 
 - Fusionner une PR, pousser en force, pousser sur `main`.
 - Regrouper deux règles dans une même PR.
-- Optimiser un chiffre au détriment de la lecture du code.
+- Optimiser un chiffre de métrique au détriment de la lecture du code.
+
+## Ce que tu peux faire
+- Evaluer la perplexité du LLM face au nouveau code écrit (suite au refactoring). C'est la libre appréciation du LLM. 

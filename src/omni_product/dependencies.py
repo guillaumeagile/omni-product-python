@@ -1,9 +1,7 @@
-from collections.abc import Iterator
 from typing import Annotated
 
 import httpx
 from fastapi import Depends, Request
-from sqlalchemy.orm import Session, sessionmaker
 
 from omni_product.config import Settings
 from omni_product.domain.port.transport_carbon_port import TransportCarbonPort
@@ -11,28 +9,40 @@ from omni_product.infrastructure.adapter.impact_co2_api_client import ImpactCo2A
 from omni_product.infrastructure.adapter.impact_co2_transport_adapter import (
     ImpactCo2TransportAdapter,
 )
-from omni_product.infrastructure.persistence.product_dal import SqlProductRepository
-from omni_product.infrastructure.persistence.supplier_dal import SqlSupplierRepository
+from omni_product.infrastructure.persistence.in_memory import (
+    InMemoryProductRepository,
+    InMemorySupplierRepository,
+    ProductTable,
+    SupplierTable,
+)
 from omni_product.service.product_service import ProductService
 from omni_product.service.product_transport_service import ProductTransportService
 from omni_product.service.supplier_service import SupplierService
 
 
-def get_session(request: Request) -> Iterator[Session]:
-    session_factory: sessionmaker[Session] = request.app.state.session_factory
-    with session_factory() as session:
-        yield session
+def get_product_repository(request: Request) -> InMemoryProductRepository:
+    products: ProductTable = request.app.state.products
+    return InMemoryProductRepository(products)
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+def get_supplier_repository(request: Request) -> InMemorySupplierRepository:
+    suppliers: SupplierTable = request.app.state.suppliers
+    products: ProductTable = request.app.state.products
+    return InMemorySupplierRepository(suppliers, products)
 
 
-def get_product_service(session: SessionDep) -> ProductService:
-    return ProductService(SqlProductRepository(session))
+ProductRepositoryDep = Annotated[InMemoryProductRepository, Depends(get_product_repository)]
+SupplierRepositoryDep = Annotated[InMemorySupplierRepository, Depends(get_supplier_repository)]
 
 
-def get_supplier_service(session: SessionDep) -> SupplierService:
-    return SupplierService(SqlSupplierRepository(session), SqlProductRepository(session))
+def get_product_service(products: ProductRepositoryDep) -> ProductService:
+    return ProductService(products)
+
+
+def get_supplier_service(
+    suppliers: SupplierRepositoryDep, products: ProductRepositoryDep
+) -> SupplierService:
+    return SupplierService(suppliers, products)
 
 
 def get_transport_carbon_port(request: Request) -> TransportCarbonPort:

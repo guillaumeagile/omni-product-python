@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.orm import Session
 
 from omni_product.domain.model import (
     Product,
@@ -8,15 +7,19 @@ from omni_product.domain.model import (
     Slug,
     SupplierId,
 )
-from omni_product.infrastructure.persistence import product_dal
-from omni_product.infrastructure.persistence.product_dal import ProductSheet, SqlProductRepository
-from omni_product.infrastructure.persistence.supplier_dal import SqlSupplierRepository
+from omni_product.domain.model.product_sheet import ProductSheet
+from omni_product.infrastructure.persistence.in_memory import (
+    InMemoryProductRepository,
+    InMemorySupplierRepository,
+)
 from omni_product.service.supplier_service import SupplierService
 
 
 @pytest.fixture
-def supplier_service(session: Session) -> SupplierService:
-    return SupplierService(SqlSupplierRepository(session), SqlProductRepository(session))
+def supplier_service(
+    suppliers: InMemorySupplierRepository, products: InMemoryProductRepository
+) -> SupplierService:
+    return SupplierService(suppliers, products)
 
 
 def _create(service: SupplierService, supplier_id: str, name: str) -> None:
@@ -92,31 +95,29 @@ def test_should_raise_when_deleting_non_existent_supplier(
 
 
 def test_should_cascade_delete_products_when_supplier_deleted(
-    supplier_service: SupplierService, session: Session
+    supplier_service: SupplierService, products: InMemoryProductRepository
 ) -> None:
     _create(supplier_service, "sup1", "Supplier A")
-    product_dal.save(
-        session,
+    products.save(
         ProductSheet(
             product=Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
             supply=ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")),
         ),
     )
-    assert product_dal.find_by_id(session, ProductId("prod1")) is not None
+    assert products.find_by_id(ProductId("prod1")) is not None
 
     supplier_service.delete_supplier("sup1").unwrap()
 
-    assert product_dal.find_by_id(session, ProductId("prod1")) is None
+    assert products.find_by_id(ProductId("prod1")) is None
 
 
 def test_should_get_suppliers_by_product(
-    supplier_service: SupplierService, session: Session
+    supplier_service: SupplierService, products: InMemoryProductRepository
 ) -> None:
-    """Désactivé en Java (LAZY_LOADING_ISSUE.md) : une requête SQL évite le lazy loading."""
+    """Désactivé en Java (LAZY_LOADING_ISSUE.md) : le lien passe par la fiche du produit."""
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
-    product_dal.save(
-        session,
+    products.save(
         ProductSheet(
             product=Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
             supply=ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1")),

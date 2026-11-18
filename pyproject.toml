@@ -8,7 +8,6 @@ dependencies = [
     "httpx>=0.28.1",
     "pydantic-settings>=2.16.2",
     "result==0.17.0",
-    "sqlalchemy>=2.1.6",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -95,10 +94,8 @@ forbidden_modules = [
     "omni_product.infrastructure",
     "omni_product.service",
     "omni_product.config",
-    "omni_product.database",
     "omni_product.dependencies",
     "omni_product.main",
     "fastapi",
-    "sqlalchemy",
     "httpx",
 ]

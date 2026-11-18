@@ -56,7 +56,7 @@ ROWS = (
         scored=True,
         weight=2,
     ),
-    Row("WMC (pire classe)", lambda m: m.max_wmc, -1, scored=True, weight=2),
+    Row("WMC (pire classe)", lambda m: m.max_wmc, -1, scored=True, weight=0),
     Row("Complexité cognitive (total)", lambda m: m.cognitive, -1),
     Row(
         "Complexité cognitive (max par fonction)",

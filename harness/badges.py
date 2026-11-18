@@ -6,6 +6,7 @@ regardent les mesures. Un badge ne se gagne qu'avec une base à comparer, et jam
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from urllib.parse import quote
 
 from harness.metrics.report import Metrics
 from harness.rules.points import BABY_STEP_POINTS, RuleResult
@@ -109,5 +110,31 @@ def banner(won: Sequence[tuple[str, int]]) -> str:
     """La section des badges gagnés, en tête du commentaire. Vide quand la PR n'en gagne aucun."""
     if not won:
         return ""
-    badges = " · ".join(f"**{label}** ({points:+d})" for label, points in won)
+    badges = " ".join(shield(label, points) for label, points in won)
     return f"### 🏅 Badges gagnés\n\n{badges}\n"
+
+
+# La couleur de chaque badge sur shields.io.
+COLORS = {
+    "🍼 Baby step": "ff69b4",
+    "🤏 Small diff": "0e8a16",
+    "🧹 Clean Coder": "1f6feb",
+    "✂️ Less is more": "8250df",
+    "🧬 Tueur de mutants": "d1242f",
+    "🧭 Uncle Bob approuve": "bf8700",
+    "🧊 Immuable": "00a3c4",
+}
+
+
+def shield(label: str, points: int) -> str:
+    """Un badge en image shields.io : le libellé à gauche, les points à droite."""
+    url = (
+        f"https://img.shields.io/badge/{_escape(label)}-{_escape(f'{points:+d} pts')}"
+        f"-{COLORS.get(label, '555555')}?style=for-the-badge"
+    )
+    return f"![{label} {points:+d}]({url})"
+
+
+def _escape(text: str) -> str:
+    """Les tirets et soulignés sont doublés pour shields.io, le reste est encodé pour l'URL."""
+    return quote(text.replace("-", "--").replace("_", "__"), safe="")

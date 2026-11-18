@@ -127,7 +127,8 @@ def test_the_badges_won_head_the_comment():
     )
     card = scorecard.render(BASE, BASE, badges_md=badges.banner(badges.won(pr)))
 
-    assert "**🍼 Baby step** (+5) · **🤏 Small diff** (+2)" in card
+    assert "![🍼 Baby step +5](https://img.shields.io/badge/" in card
+    assert "![🤏 Small diff +2](https://img.shields.io/badge/" in card
     assert card.index("🏅 Badges gagnés") < card.index("📏 Métriques")
 
 
@@ -135,3 +136,10 @@ def test_no_badge_no_banner():
     assert badges.banner(badges.won(NEUTRAL)) == ""
     assert badges.won(None) == ()
     assert badges.won(replace(NEUTRAL, changed_tokens=0)) == ()
+
+
+def test_a_badge_is_a_shields_image():
+    assert badges.shield("🧹 Clean Coder", 3) == (
+        "![🧹 Clean Coder +3](https://img.shields.io/badge/"
+        "%F0%9F%A7%B9%20Clean%20Coder-%2B3%20pts-1f6feb?style=for-the-badge)"
+    )

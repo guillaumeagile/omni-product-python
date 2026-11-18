@@ -76,6 +76,9 @@ le nombre de chemins. Elle punit l'imbrication : un `if` dans un `for` dans un `
 La cognitive attrape les pyramides d'indentation que la cyclomatique laisse passer. Une garde et un retour anticipé
 (*early return*) la font baisser.
 
+**Ce que l'arbitre en fait.** Il affiche le total, sans points. La cognitive suit de près la cyclomatique : noter
+les deux compterait deux fois les mêmes branches. Seule la cyclomatique rapporte des points.
+
 ## 5. Le couplage : fan-out (et CBO)
 
 **Ce que c'est.** Le nombre d'autres types dont une classe dépend. Le **fan-out** est PMD, le **CBO** (*Coupling

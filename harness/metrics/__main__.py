@@ -19,10 +19,7 @@ def render(metrics: Metrics) -> str:
             f"{metrics.cyclomatic} / {metrics.max_cyclomatic}",
         ),
         ("WMC max", metrics.max_wmc),
-        (
-            "Complexité cognitive (total / max par fonction)",
-            f"{metrics.cognitive} / {metrics.max_cognitive}",
-        ),
+        ("Complexité cognitive (total)", metrics.cognitive),
         ("TCC min", metrics.min_tcc),
         ("LCOM* max", metrics.max_lcom),
         ("Fan-out max", metrics.max_fan_out),

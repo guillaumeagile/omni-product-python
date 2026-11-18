@@ -43,7 +43,6 @@ from omni_product.domain.model.product import (
 from omni_product.domain.model.storage import Location, ProductStock, Quantity, Stock, Warehouse
 from omni_product.domain.model.supplier import Region, Supplier, SupplierId
 from omni_product.domain.model.transport import (
-    CarbonKilos,
     Charge,
     Kilos,
     ProductTransport,
@@ -53,7 +52,6 @@ from omni_product.domain.model.transport import (
 
 __all__ = [
     "Amount",
-    "CarbonKilos",
     "Charge",
     "Discount",
     "IdentifiantLegal",

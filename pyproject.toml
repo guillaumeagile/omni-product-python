@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Port Python (FastAPI + SQLAlchemy) de omni-product-spring-boot-java-bdxio-phase1"
 requires-python = ">=3.13"
 dependencies = [
-    "httpx>=0.28.1",
     "pydantic>=2.14.3",
     "result==0.17.0",
 ]

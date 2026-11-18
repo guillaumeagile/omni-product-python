@@ -1,0 +1,16 @@
+{
+  "//": "Le legacy de l'atelier, figé par `python -m harness.cute --figer`. Voir docs/CUTE.md.",
+  "findings": {
+    "1": 4,
+    "2": 8,
+    "3": 3,
+    "4": 2,
+    "5": 4,
+    "6": 6,
+    "7": 5,
+    "8": 0,
+    "9": 13,
+    "10": 10
+  },
+  "mutable_attributes": 7
+}

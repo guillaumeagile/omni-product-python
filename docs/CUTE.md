@@ -1,7 +1,12 @@
-# Les jauges CUTE
+# Les jauges CUTE (expérimental)
 
-> **État :** conception validée, à coder dans le harnais (`harness/cute.py`). Ce document décrit le calcul. Le code
-> suivra sur une branche, avec ses tests.
+Les jauges sont expérimentales : les formules et les poids peuvent encore changer. Le calcul vit dans
+`harness/cute.py`. La scorecard l'affiche dans chaque PR, après les autres tableaux.
+
+```bash
+uv run python -m harness.cute                         # les jauges du code courant
+uv run python -m harness.cute --mutation-stats s.json # avec un score de mutation
+```
 
 ## Pourquoi des jauges
 
@@ -10,8 +15,8 @@ Pour qui découvre le harnais, la question reste : lequel regarder ?
 
 CUTE (voir [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md#cute--la-lettre-qui-manque) et la slide
 [`cute-ddd.md`](../slides/markdown/cute-ddd.md)) pose quatre questions simples. Le harnais y répond par quatre jauges
-de 0 à 100, calculées à partir des règles et des métriques qu'il a déjà. Les jauges s'affichent en tête du commentaire
-de la PR. Le détail reste disponible, replié en dessous.
+de 0 à 100, calculées à partir des règles et des métriques qu'il a déjà. Les jauges s'affichent dans le commentaire
+de la PR, à la suite des règles, des métriques, des classes et des couches.
 
 | Jauge | La question |
 |:-:|---|
@@ -30,7 +35,8 @@ Pour une règle *n*, la part faite vaut :
 R(n) = 1 − constats_aujourd'hui / constats_du_legacy      bornée entre 0 et 1
 ```
 
-Les constats du legacy sont figés une fois, dans un fichier de référence du harnais. La jauge ne bouge donc pas quand
+Les constats du legacy sont figés une fois, dans `harness/cute_reference.json`, par
+`uv run python -m harness.cute --figer`. Cette commande ne se lance que sur le code de départ de l'atelier. La jauge ne bouge donc pas quand
 la base de la PR change : elle raconte toute la progression de l'atelier. Une règle sans constat au départ vaut 1.
 
 Les métriques déjà comprises entre 0 et 1 (la métrique Uncle Bob D, le score de mutation) entrent telles quelles. Les
@@ -53,7 +59,7 @@ C = 0.6 × R1  +  0.4 × (1 − D)
 flèche à l'envers casse les frontières, quel que soit le reste.
 
 **Écartées.** TCC et LCOM valent déjà 1,0 et 0,0 sur le legacy : les classes anémiques n'ont pas de méthodes. Elles ne
-départagent rien et restent dans le détail.
+départagent rien et restent dans le tableau des métriques.
 
 ## 🗣️ Ubiquitous
 
@@ -66,7 +72,7 @@ U = 0.5 × R2  +  0.5 × Couverture_UL
 | R2 | règle 2, `EV001` et `EV002` | Une classe n'est ni entité ni Value Object, ou un mot du métier est typé par une primitive brute (`price: float`). |
 | Couverture_UL | règle 1, classement des membres | La part des membres publics que le glossaire rattache à un contexte. |
 
-**Couverture_UL** est le seul calcul nouveau. Il utilise ce que `contexte_borne.py` sait déjà :
+**Couverture_UL** est le seul calcul nouveau (`contexte_borne.coverage`). Il utilise ce que la règle 1 sait déjà :
 
 ```
 Couverture_UL = membres publics rattachés à un contexte / membres publics non génériques
@@ -75,6 +81,9 @@ Couverture_UL = membres publics rattachés à un contexte / membres publics non 
 Un membre non générique contient au moins un mot absent des `genericWords` de
 [`ubiquitous-language.json`](ubiquitous-language.json). Les membres non rattachés sont les constats `CB002`, les mots
 hors du langage.
+
+Sur le legacy, la couverture vaut déjà 1 : aucun membre ne porte de mot hors du glossaire. Elle joue donc un rôle de
+garde. Un nouveau nom hors du langage la fait baisser. Sans membre à compter, U vaut R2 seule.
 
 ## 🧪 Testable
 
@@ -95,7 +104,8 @@ Simplicité = (10 − CC_max) / 6,  bornée entre 0 et 1
 Simplicité vaut 1 quand la pire fonction a au plus 4 chemins, et 0 à partir de 10.
 
 **Sans score de mutation** (calcul en local, ou job de mutation absent), son poids se reporte sur les deux autres
-termes : `T = 0.5 × moyenne(R3, R6, R10) + 0.5 × Simplicité`. La scorecard l'indique.
+termes : `T = 0.5 × moyenne(R3, R6, R10) + 0.5 × Simplicité`. La scorecard l'indique. Elle compare la base et la PR
+avec la même formule : le score de mutation compte seulement quand les deux le donnent.
 
 ## 📖 Expressive
 
@@ -123,28 +133,28 @@ Mesurées sur le legacy (`main`, novembre 2026) :
 | Jauge | Calcul | Valeur |
 |:-:|---|--:|
 | 🗺️ | R1 = 0 (4 constats), D = 0,44 → 0,6 × 0 + 0,4 × 0,56 | **22** |
-| 🗣️ | R2 = 0 (8 constats), couverture à mesurer | **0 à 50** |
-| 🧪 | R3 = R6 = R10 = 0, CC_max = 7 → Simplicité = 0,5 | **15 + 0,4 × mutation** |
+| 🗣️ | R2 = 0 (8 constats), couverture = 1 → 0,5 × 0 + 0,5 × 1 | **50** |
+| 🧪 | R3 = R6 = R10 = 0, CC_max = 7 → Simplicité = 0,5 | **25** sans mutation, **15 + 0,4 × mutation** avec |
 | 📖 | R8 = 1 (déjà verte), le reste à 0 | **10** |
 
 ## Ce que verra un participant
 
 ```
-### 🌈 CUTE
-🗺️ Contextual   22 → 41  (+19)   ████░░░░░░
-🗣️ Ubiquitous    8 →  8          █░░░░░░░░░
-🧪 Testable     31 → 38  (+7)    ████░░░░░░
-📖 Expressive   10 → 10          █░░░░░░░░░
+### 🧪 Règles du harnais    (inchangé)
+### 📏 Métriques            (inchangé, avec les classes et les couches)
 
-▶ Le détail : règles, métriques, couches
+### 🌈 CUTE (expérimental)
+🗺️ Contextual   22 →  41  (+19)  ████░░░░░░
+🗣️ Ubiquitous   50 →  50         █████░░░░░
+🧪 Testable     27 →  34  (+7)   ███░░░░░░░
+📖 Expressive   10 →  10         █░░░░░░░░░
 ```
 
-La première colonne est la base de la PR, la deuxième la PR. Le détail actuel de la scorecard est replié dans un
-`<details>`.
+La première colonne est la base de la PR, la deuxième la PR.
 
 ## Ce qui reste hors des jauges
 
-- **Tokens, affectations, boucles, lambdas, complexité cognitive.** Ils restent dans le détail. Les ajouter compterait
+- **Tokens, affectations, boucles, lambdas, complexité cognitive.** Ils restent dans le tableau des métriques. Les ajouter compterait
   deux fois ce que les règles 8 et 9 mesurent déjà.
 - **Un score CUTE unique.** Les points de la scorecard jouent déjà ce rôle. Les jauges guident sans noter : elles ne
   rapportent aucun point.
@@ -160,9 +170,12 @@ La première colonne est la base de la PR, la deuxième la PR. Le détail actuel
 
 Ce tableau suit la colonne CUTE de [`python-regles-de-harnais.md`](python-regles-de-harnais.md).
 
-## L'intégration au harnais (à venir)
+## Dans le harnais
 
-1. `harness/cute.py` : les quatre formules, pures, à partir des constats des règles et de `Metrics`.
-2. `harness/cute_reference.json` : les constats et les attributs mutables du legacy, figés.
-3. La scorecard affiche les jauges en tête et replie le reste.
-4. Des tests à réponse connue dans `tests/harness/test_cute.py`.
+| Fichier | Rôle |
+|---|---|
+| `harness/cute.py` | Les quatre formules, pures, à partir des constats des règles et de `Metrics`. |
+| `harness/cute_reference.json` | Les constats et les attributs mutables du legacy, figés. |
+| `harness/rules/contexte_borne.py` | `coverage` : les membres rattachés et les membres comptés, pour Couverture_UL. |
+| `harness/scorecard.py` | Les jauges à la suite des autres tableaux du commentaire. |
+| `tests/harness/test_cute.py` | Les tests à réponse connue. |

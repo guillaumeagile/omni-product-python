@@ -43,8 +43,12 @@ bouger.
 uv run python -m harness.scorecard --base-ref main    # la même scorecard en local
 ```
 
-Pour lire la scorecard d'un coup d'œil, quatre jauges CUTE (🗺️ 🗣️ 🧪 📖) résumeront ces chiffres. Leur calcul est
-décrit dans [CUTE.md](CUTE.md) et sera ajouté au harnais.
+À la suite des autres tableaux, quatre jauges CUTE (🗺️ 🗣️ 🧪 📖), expérimentales, résument ces chiffres. Le calcul
+est décrit dans [CUTE.md](CUTE.md).
+
+```bash
+uv run python -m harness.cute                         # les jauges CUTE en local
+```
 
 ### 3. Les règles : le détecteur de design
 

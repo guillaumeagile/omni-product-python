@@ -177,3 +177,23 @@ def gaps(source: Source, language: UbiquitousLanguage) -> list[Gap]:
         if unknown:
             found.append(Gap(source.path, cls.lineno, cls.col_offset + 1, cls.name, tuple(unknown)))
     return found
+
+
+def coverage(source: Source, language: UbiquitousLanguage) -> tuple[int, int]:
+    """(membres rattachés à un contexte, membres non génériques), pour les membres propres de chaque classe.
+
+    Un membre non générique est rattaché à un contexte, ou porte un mot hors ubiquitous language (un trou de `gaps`).
+    Les identifiants et les membres faits de mots génériques (`get_name`) ne comptent ni d'un côté ni de l'autre.
+    La jauge 🗣️ Ubiquitous (voir `harness.cute`) en fait une part.
+    """
+    attached = counted = 0
+    for cls in top_level_classes(source.tree):
+        for name, _line, node in _public_members(cls):
+            if name.startswith("_") or language.is_identifier(name):
+                continue
+            if _concern_of(name, node, language) is not None:
+                attached += 1
+                counted += 1
+            elif any(not language.is_generic(word) for word in words(name)):
+                counted += 1
+    return attached, counted

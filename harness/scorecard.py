@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import badges, mutation
+from harness import badges, cute, mutation
 from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
 from harness.metrics.martin import LayerMetrics
@@ -98,10 +98,12 @@ def render(
     rules_md: str = "",
     mutation: tuple[float | None, float | None] = (None, None),
     badges_md: str = "",
+    cute_md: str = "",
 ) -> str:
     """`mutation` : le score de mutation (en %) de la base et de la PR, quand la CI les fournit.
 
     `badges_md` : la section des badges gagnés, affichée en tête du commentaire.
+    `cute_md` : les jauges CUTE, expérimentales (voir `harness.cute`), affichées après les autres tableaux.
     """
     lines = [
         MARKER,
@@ -124,6 +126,7 @@ def render(
         )
     lines += _mutation_row(*mutation)
     lines += ["", *_worst_classes(head), "", *_layers(head, base), ""]
+    lines += [cute_md] if cute_md else []
     lines.append(
         f"<sub>Périmètre : {description()}. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
         if base
@@ -300,6 +303,38 @@ def changed_tokens(base_src: Path, head_src: Path, roots: list[str]) -> int:
     return tokens.count("\n".join(changed))
 
 
+def _cute_section(
+    head: Metrics,
+    head_findings: dict[int, list[object]],
+    base: Metrics | None,
+    base_findings: dict[int, list[object]] | None,
+    base_coverage: float | None,
+    scores: tuple[float | None, float | None],
+) -> str:
+    """Les jauges CUTE de la PR, et de sa base quand elle existe. Le score de mutation compte quand les deux le donnent."""
+    reference = cute.Reference.load()
+    base_mutation, head_mutation = scores
+    known = head_mutation is not None and (base is None or base_mutation is not None)
+    now = cute.gauges(
+        cute.state_of(Path("src"), head, head_findings, head_mutation if known else None),
+        reference,
+    )
+    before = (
+        None
+        if base is None or base_findings is None
+        else cute.gauges(
+            cute.State(
+                findings={rule: len(found) for rule, found in base_findings.items()},
+                metrics=base,
+                mutation=base_mutation if known else None,
+                coverage=base_coverage,
+            ),
+            reference,
+        )
+    )
+    return cute.section(now, before, known)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="harness.scorecard", description="Scorecard d'une PR.")
     parser.add_argument("--base-ref", help="référence git de comparaison (ex. origin/main)")
@@ -318,23 +353,26 @@ def main() -> None:
     roots = [_relative_to_src(root) for root in args.roots]
     head_findings = evaluate_rules(Path("src"))
     base_findings = None
+    base_coverage = None
     if args.base_ref:
         with checkout(args.base_ref) as base_src:
             base = None if base_src is None else measure_tree(base_src, roots)
             changed = None if base_src is None else changed_tokens(base_src, Path("src"), roots)
             base_findings = None if base_src is None else evaluate_rules(base_src)
+            base_coverage = None if base_src is None else cute.coverage(base_src)
     else:
         base, changed = None, None
     results = rule_results(head_findings, base_findings)
     metrics = metric_lines(head, base)
     scores = (mutation.score(args.base_mutation_stats), mutation.score(args.mutation_stats))
+    cute_md = _cute_section(head, head_findings, base, base_findings, base_coverage, scores)
     pr = (
         None
         if base is None or changed is None
         else badges.Pr(head, base, changed, results, metrics, *scores)
     )
     rules_md = rules_report.section(results, metrics, changed, badges.lines(pr))
-    card = render(head, base, changed, rules_md, scores, badges.banner(badges.won(pr)))
+    card = render(head, base, changed, rules_md, scores, badges.banner(badges.won(pr)), cute_md)
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")
     else:

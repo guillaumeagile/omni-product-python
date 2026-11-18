@@ -36,31 +36,45 @@ class Row:
     """Une ligne du tableau. `better` dit dans quel sens aller : -1 pour « moins c'est mieux », +1 pour l'inverse.
 
     `scored` : la variation de cette ligne rapporte ou retire des points (voir `metric_lines`).
+    `weight` : l'importance de la ligne dans le score. 1 par défaut, 0 pour neutraliser la mesure.
     """
 
     label: str
     read: Callable[[Metrics], float]
     better: int
     scored: bool = False
+    weight: float = 1.0
 
 
 ROWS = (
     Row("Tokens", lambda m: m.tokens, -1),
     Row("Complexité cyclomatique (total)", lambda m: m.cyclomatic, -1),
-    Row("Complexité cyclomatique (max par fonction)", lambda m: m.max_cyclomatic, -1),
-    Row("WMC (pire classe)", lambda m: m.max_wmc, -1, scored=True),
+    Row(
+        "Complexité cyclomatique (max par fonction)",
+        lambda m: m.max_cyclomatic,
+        -1,
+        scored=True,
+        weight=2,
+    ),
+    Row("WMC (pire classe)", lambda m: m.max_wmc, -1, scored=True, weight=0),
     Row("Complexité cognitive (total)", lambda m: m.cognitive, -1),
-    Row("Complexité cognitive (max par fonction)", lambda m: m.max_cognitive, -1, scored=True),
-    Row("TCC (pire classe, 1 = cohésive)", lambda m: m.min_tcc, +1, scored=True),
-    Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1, scored=True),
+    Row(
+        "Complexité cognitive (max par fonction)",
+        lambda m: m.max_cognitive,
+        -1,
+        scored=True,
+        weight=2,
+    ),
+    Row("TCC (pire classe, 1 = cohésive)", lambda m: m.min_tcc, +1, scored=True, weight=0),
+    Row("LCOM* (pire classe, 0 = cohésive)", lambda m: m.max_lcom, -1, scored=True, weight=0),
     Row("Fan-out (total)", lambda m: m.fan_out, -1),
-    Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1, scored=True),
+    Row("Fan-out (pire classe)", lambda m: m.max_fan_out, -1, scored=True, weight=1),
     Row("CBO (total)", lambda m: m.cbo, -1),
-    Row("CBO (pire classe)", lambda m: m.max_cbo, -1, scored=True),
-    Row("Attributs mutables", lambda m: m.mutable_attributes, -1, scored=True),
-    Row("Affectations", lambda m: m.assignments, -1, scored=True),
-    Row("Boucles", lambda m: m.loops, -1, scored=True),
-    Row("Lambdas", lambda m: m.lambdas, +1, scored=True),
+    Row("CBO (pire classe)", lambda m: m.max_cbo, -1, scored=True, weight=1),
+    Row("Attributs mutables", lambda m: m.mutable_attributes, -1, scored=True, weight=1),
+    Row("Affectations", lambda m: m.assignments, -1, scored=True, weight=0),
+    Row("Boucles", lambda m: m.loops, -1, scored=True, weight=0),
+    Row("Lambdas", lambda m: m.lambdas, +1, scored=True, weight=1),
 )
 
 
@@ -110,7 +124,7 @@ def metric_lines(head: Metrics, base: Metrics | None) -> tuple[tuple[str, int], 
     if base is None:
         return ()
     return tuple(
-        (row.label, metric_points(row.read(head) - row.read(base), row.better))
+        (row.label, metric_points(row.read(head) - row.read(base), row.better, row.weight))
         for row in ROWS
         if row.scored
     )

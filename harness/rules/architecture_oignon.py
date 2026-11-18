@@ -1,19 +1,20 @@
 """Règle 10 : le cœur ne dépend-il que de lui-même ?
 
 Tout `import` du cœur (`domain`, et `anemic_model` tant que la règle 3 n'est pas faite) vers autre chose que le cœur
-lui-même, la bibliothèque standard ou la bibliothèque `result` est un constat (AO001). SQLAlchemy, FastAPI, `requests`,
-mais aussi `controller`, `service`, `dal`, `infrastructure`, `config` et `database` restent à l'extérieur. Le cœur
-décrit ce dont il a besoin par un port (`Protocol`) que l'extérieur implémente.
+lui-même, la bibliothèque `result` ou les outils de programmation de la bibliothèque standard (`STDLIB_ALLOWED` :
+`dataclasses`, `typing`, `enum`, `decimal`…) est un constat (AO001). SQLAlchemy, FastAPI, `requests`, mais aussi
+`controller`, `service`, `dal`, `infrastructure`, `config`, `database`, et les modules de la bibliothèque standard qui
+touchent le monde (`os`, `sys`, `time`, `random`, `json`, `pathlib`, `logging`…) restent à l'extérieur. Le cœur décrit
+ce dont il a besoin par un port (`Protocol`) que l'extérieur implémente.
 
 La règle lit les imports, y compris ceux d'un bloc `if TYPE_CHECKING:` : une annotation est déjà une dépendance.
-Les imports relatifs sont résolus contre le nom du module. Les effets de la bibliothèque standard (heure, fichier,
-réseau) restent l'affaire de la règle 6.
+Les imports relatifs sont résolus contre le nom du module. La règle 6 reste utile : `datetime` et `uuid` sont permis
+pour typer, mais `date.today()` et `uuid4()` y sont des constats.
 
 Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: CODE message`.
 """
 
 import ast
-import sys
 from dataclasses import dataclass
 
 from harness.perimetre import PACKAGE
@@ -26,6 +27,33 @@ CODE = "AO001"
 CORE = (f"{PACKAGE}.domain", f"{PACKAGE}.anemic_model")
 # Les seules bibliothèques extérieures permises : celle des résultats `Ok` / `Err` (règle 5).
 ALLOWED_LIBRARIES = frozenset({"result"})
+# La bibliothèque standard permise : des outils de programmation purs, sans accès au système, au disque ni au réseau.
+STDLIB_ALLOWED = frozenset(
+    {
+        "__future__",
+        "abc",
+        "collections",
+        "contextlib",
+        "copy",
+        "dataclasses",
+        "datetime",
+        "decimal",
+        "enum",
+        "fractions",
+        "functools",
+        "itertools",
+        "math",
+        "numbers",
+        "operator",
+        "re",
+        "statistics",
+        "string",
+        "textwrap",
+        "types",
+        "typing",
+        "uuid",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -89,4 +117,4 @@ def _is_allowed(target: str) -> bool:
     root = target.split(".")[0]
     if root == PACKAGE:
         return any(target == core or target.startswith(f"{core}.") for core in CORE)
-    return root in sys.stdlib_module_names or root in ALLOWED_LIBRARIES
+    return root in STDLIB_ALLOWED or root in ALLOWED_LIBRARIES

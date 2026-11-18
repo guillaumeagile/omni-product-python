@@ -28,6 +28,14 @@ def targets(text: str, **kwargs: str) -> list[str]:
         ("import sqlalchemy", "sqlalchemy"),
         ("import fastapi as api", "fastapi"),
         ("import requests", "requests"),
+        ("import os", "os"),
+        ("from time import sleep", "time"),
+        ("import sys", "sys"),
+        ("import random", "random"),
+        ("import json", "json"),
+        ("from pathlib import Path", "pathlib"),
+        ("import logging", "logging"),
+        ("import sqlite3", "sqlite3"),
         ("from omni_product.database import Base", "omni_product.database"),
         (
             "from omni_product.service.product_service import X",
@@ -53,6 +61,11 @@ def test_an_import_that_leaves_the_core_is_a_finding(line: str, target: str) -> 
     [
         "from dataclasses import dataclass",
         "import datetime",
+        "import uuid",
+        "from decimal import Decimal",
+        "from enum import Enum",
+        "from collections.abc import Sequence",
+        "import functools",
         "from typing import Protocol",
         "from __future__ import annotations",
         "from result import Err, Ok",
@@ -122,7 +135,7 @@ def test_findings_come_in_line_order_in_ruff_format():
 
 
 def test_one_finding_per_imported_module_of_a_plain_import():
-    assert targets("import os, requests, httpx") == ["requests", "httpx"]
+    assert targets("import os, math, requests") == ["os", "requests"]
 
 
 def test_evaluate_reads_the_core_and_ignores_the_outside(tmp_path: Path):

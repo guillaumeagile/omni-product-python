@@ -6,6 +6,7 @@ from omni_product.dal.product_dal import ProductSheet
 from omni_product.domain.model import Perishable, ProductId
 from omni_product.domain.model.errors import InvalidValueError
 from omni_product.domain.model.freshness import is_expired
+from omni_product.domain.port.clock import Clock
 
 
 class ProductService:
@@ -18,14 +19,14 @@ class ProductService:
     def find_by_id(self, product_id: str) -> Result[ProductSheet | None, InvalidValueError]:
         return ProductId.of(product_id).map(self._find_by_id)
 
-    def find_expired(self) -> list[ProductSheet]:
-        """Les produits périssables dont la date d'expiration est passée."""
+    def find_expired(self, clock: Clock) -> list[ProductSheet]:
+        """Les produits périssables dont la date d'expiration est passée, à la date de `clock`."""
         return [
             sheet
             for sheet in self.find_all()
             if isinstance(sheet.product.shelf_life, Perishable)
             and sheet.product.shelf_life.expiration_date is not None
-            and is_expired(sheet.product.shelf_life.expiration_date)
+            and is_expired(sheet.product.shelf_life.expiration_date, clock)
         ]
 
     def save(self, sheet: ProductSheet) -> ProductSheet:

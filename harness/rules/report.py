@@ -16,8 +16,9 @@ def section(
     results: tuple[RuleResult, ...],
     metric_lines: Sequence[tuple[str, int]] = (),
     changed_tokens: int | None = None,
+    badge_lines: Sequence[tuple[str, int]] = (),
 ) -> str:
-    result = score(results, metric_lines, changed_tokens)
+    result = score(results, metric_lines, changed_tokens, badge_lines)
     has_base = any(r.before is not None for r in results)
     lines = [
         "### 🧪 Règles du harnais",
@@ -41,6 +42,7 @@ def section(
                 f"| Métrique : {label} (plafond ±{METRIC_CAP}) | {points:+d} |"
                 for label, points in result.metric_lines
             ),
+            *(f"| Badge {label} | {points:+d} |" for label, points in result.badge_lines),
             *(
                 [f"| 🫥 PR vide : aucun token de code modifié | {EMPTY_PR_POINTS:+d} |"]
                 if result.empty_pr_points

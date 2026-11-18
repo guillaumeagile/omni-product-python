@@ -17,6 +17,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from harness import badges
 from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
 from harness.metrics.martin import LayerMetrics
@@ -159,7 +160,7 @@ def _verdict(change: float, better: int) -> str:
 def _small_diff(changed_tokens: int) -> str:
     if changed_tokens == 0:
         return "🫥 PR vide"
-    return "🤏 Small diff" if changed_tokens <= 400 else ""
+    return "🤏 Small diff" if changed_tokens <= badges.SMALL_DIFF_TOKENS else ""
 
 
 def _worst_classes(head: Metrics) -> list[str]:
@@ -295,9 +296,14 @@ def main() -> None:
             base_findings = None if base_src is None else evaluate_rules(base_src)
     else:
         base, changed = None, None
-    rules_md = rules_report.section(
-        rule_results(head_findings, base_findings), metric_lines(head, base), changed
+    results = rule_results(head_findings, base_findings)
+    metrics = metric_lines(head, base)
+    pr = (
+        None
+        if base is None or changed is None
+        else badges.Pr(head, base, changed, results, metrics)
     )
+    rules_md = rules_report.section(results, metrics, changed, badges.lines(pr))
     card = render(head, base, changed, rules_md)
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")

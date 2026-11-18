@@ -24,6 +24,9 @@ class Pr:
     changed_tokens: int
     results: tuple[RuleResult, ...] = ()
     metric_lines: tuple[tuple[str, int], ...] = ()
+    # Le score de mutation (en %) de la base et de la PR, `None` quand on ne le connaît pas.
+    base_mutation: float | None = None
+    head_mutation: float | None = None
 
 
 @dataclass(frozen=True)
@@ -32,10 +35,6 @@ class Badge:
     reason: str
     points: int
     earned: Callable[[Pr], bool]
-
-
-def _abstract_classes(metrics: Metrics) -> int:
-    return sum(layer.abstract_classes for layer in metrics.layers)
 
 
 BADGES = (
@@ -58,19 +57,14 @@ BADGES = (
         lambda pr: pr.head.tokens < pr.base.tokens,
     ),
     Badge(
-        "🛡️ Sans casse",
-        "aucune règle ne régresse, aucune métrique ne perd de points",
-        2,
+        "🧬 Tueur de mutants",
+        "le score de mutation monte : les tests tuent une plus grande part des mutants",
+        3,
         lambda pr: (
-            not any(r.regressed for r in pr.results)
-            and all(points >= 0 for _, points in pr.metric_lines)
+            pr.base_mutation is not None
+            and pr.head_mutation is not None
+            and pr.head_mutation > pr.base_mutation
         ),
-    ),
-    Badge(
-        "🔌 Port",
-        "une classe abstraite de plus (`Protocol`, `ABC`)",
-        2,
-        lambda pr: _abstract_classes(pr.head) > _abstract_classes(pr.base),
     ),
     Badge(
         "🧭 Uncle Bob approuve",

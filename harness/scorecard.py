@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from harness import badges
+from harness import badges, mutation
 from harness.metrics import tokens
 from harness.metrics.__main__ import DEFAULT_ROOTS
 from harness.metrics.martin import LayerMetrics
@@ -93,7 +93,9 @@ def render(
     base: Metrics | None,
     changed_tokens: int | None = None,
     rules_md: str = "",
+    mutation: tuple[float | None, float | None] = (None, None),
 ) -> str:
+    """`mutation` : le score de mutation (en %) de la base et de la PR, quand la CI les fournit."""
     lines = [
         MARKER,
         "## 📊 Scorecard du harnais",
@@ -112,6 +114,7 @@ def render(
         lines.append(
             f"| Tokens modifiés par la PR | | {changed_tokens} | | {_small_diff(changed_tokens)} |"
         )
+    lines += _mutation_row(*mutation)
     lines += ["", *_worst_classes(head), "", *_layers(head, base), ""]
     lines.append(
         f"<sub>Périmètre : {description()}. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
@@ -155,6 +158,18 @@ def _verdict(change: float, better: int) -> str:
     if change == 0:
         return "·"
     return "✅" if change * better > 0 else "⚠️"
+
+
+def _mutation_row(base: float | None, head: float | None) -> list[str]:
+    label = "Score de mutation (modèle, % de mutants tués)"
+    if head is None:
+        return []
+    if base is None:
+        return [f"| {label} | | {_fmt(head)} | | |"]
+    change = head - base
+    return [
+        f"| {label} | {_fmt(base)} | {_fmt(head)} | {_delta(round(change, 1))} | {_verdict(change, +1)} |"
+    ]
 
 
 def _small_diff(changed_tokens: int) -> str:
@@ -283,6 +298,12 @@ def main() -> None:
     parser.add_argument(
         "--output", help="écrit la scorecard dans ce fichier (sinon, sur la sortie)"
     )
+    parser.add_argument(
+        "--mutation-stats", help="statistiques mutmut de la PR (`mutmut export-cicd-stats`)"
+    )
+    parser.add_argument(
+        "--base-mutation-stats", help="statistiques mutmut de la base (dernier passage sur main)"
+    )
     parser.add_argument("roots", nargs="*", default=list(DEFAULT_ROOTS))
     args = parser.parse_args()
     head = measure_tree(Path("src"), [_relative_to_src(root) for root in args.roots])
@@ -298,13 +319,14 @@ def main() -> None:
         base, changed = None, None
     results = rule_results(head_findings, base_findings)
     metrics = metric_lines(head, base)
+    scores = (mutation.score(args.base_mutation_stats), mutation.score(args.mutation_stats))
     pr = (
         None
         if base is None or changed is None
-        else badges.Pr(head, base, changed, results, metrics)
+        else badges.Pr(head, base, changed, results, metrics, *scores)
     )
     rules_md = rules_report.section(results, metrics, changed, badges.lines(pr))
-    card = render(head, base, changed, rules_md)
+    card = render(head, base, changed, rules_md, scores)
     if args.output:
         Path(args.output).write_text(card, encoding="utf-8")
     else:

@@ -136,7 +136,7 @@ def test_the_language_coverage_counts_attached_and_unknown_members():
 def test_the_section_shows_base_then_pr():
     md = cute.section(cute.Gauges(30, 50, 25, 10), cute.Gauges(22, 50, 25, 10))
 
-    assert "### 🌈 CUTE" in md
+    assert "### 🌈 CUTE (expérimental)" in md
     assert "🗺️ Contextual   22 →  30  (+8)" in md
     assert "🗣️ Ubiquitous   50 →  50 " in md
     assert "███░░░░░░░" in md
@@ -149,10 +149,11 @@ def test_the_section_says_when_mutation_is_unknown():
     assert "🧪 est calculée sans score de mutation." in md
 
 
-def test_the_scorecard_shows_the_gauges_before_the_rules_and_folds_the_metrics():
+def test_the_scorecard_shows_the_gauges_after_the_other_tables():
     card = scorecard.render(
         METRICS, METRICS, rules_md="### 🧪 Règles du harnais\n", cute_md="### 🌈 CUTE\n"
     )
 
-    assert card.index("🌈 CUTE") < card.index("🧪 Règles du harnais") < card.index("<details>")
-    assert card.index("<details>") < card.index("📏 Métriques") < card.index("</details>")
+    assert card.index("🧪 Règles du harnais") < card.index("📏 Métriques") < card.index("🌈 CUTE")
+    assert card.index("**Les couches**") < card.index("🌈 CUTE") < card.index("<sub>Périmètre")
+    assert "<details>" not in card

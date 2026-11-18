@@ -1,6 +1,7 @@
-# Les jauges CUTE
+# Les jauges CUTE (expérimental)
 
-Le calcul vit dans `harness/cute.py`. La scorecard l'affiche en tête de chaque PR.
+Les jauges sont expérimentales : les formules et les poids peuvent encore changer. Le calcul vit dans
+`harness/cute.py`. La scorecard l'affiche dans chaque PR, après les autres tableaux.
 
 ```bash
 uv run python -m harness.cute                         # les jauges du code courant
@@ -14,8 +15,8 @@ Pour qui découvre le harnais, la question reste : lequel regarder ?
 
 CUTE (voir [`POURQUOI-CUPID.md`](POURQUOI-CUPID.md#cute--la-lettre-qui-manque) et la slide
 [`cute-ddd.md`](../slides/markdown/cute-ddd.md)) pose quatre questions simples. Le harnais y répond par quatre jauges
-de 0 à 100, calculées à partir des règles et des métriques qu'il a déjà. Les jauges s'affichent en tête du commentaire
-de la PR, avant les règles et les points. Les métriques, les classes et les couches sont repliées en dessous.
+de 0 à 100, calculées à partir des règles et des métriques qu'il a déjà. Les jauges s'affichent dans le commentaire
+de la PR, à la suite des règles, des métriques, des classes et des couches.
 
 | Jauge | La question |
 |:-:|---|
@@ -58,7 +59,7 @@ C = 0.6 × R1  +  0.4 × (1 − D)
 flèche à l'envers casse les frontières, quel que soit le reste.
 
 **Écartées.** TCC et LCOM valent déjà 1,0 et 0,0 sur le legacy : les classes anémiques n'ont pas de méthodes. Elles ne
-départagent rien et restent dans le détail.
+départagent rien et restent dans le tableau des métriques.
 
 ## 🗣️ Ubiquitous
 
@@ -139,23 +140,21 @@ Mesurées sur le legacy (`main`, novembre 2026) :
 ## Ce que verra un participant
 
 ```
-### 🌈 CUTE
-🗺️ Contextual   22 → 41  (+19)   ████░░░░░░
-🗣️ Ubiquitous    8 →  8          █░░░░░░░░░
-🧪 Testable     31 → 38  (+7)    ████░░░░░░
-📖 Expressive   10 → 10          █░░░░░░░░░
+### 🧪 Règles du harnais    (inchangé)
+### 📏 Métriques            (inchangé, avec les classes et les couches)
 
-### 🧪 Règles du harnais  (les règles et les points, inchangés)
-
-▶ Le détail : métriques, classes et couches
+### 🌈 CUTE (expérimental)
+🗺️ Contextual   22 →  41  (+19)  ████░░░░░░
+🗣️ Ubiquitous   50 →  50         █████░░░░░
+🧪 Testable     27 →  34  (+7)   ███░░░░░░░
+📖 Expressive   10 →  10         █░░░░░░░░░
 ```
 
-La première colonne est la base de la PR, la deuxième la PR. Les métriques, les classes et les couches sont repliées
-dans un `<details>`.
+La première colonne est la base de la PR, la deuxième la PR.
 
 ## Ce qui reste hors des jauges
 
-- **Tokens, affectations, boucles, lambdas, complexité cognitive.** Ils restent dans le détail. Les ajouter compterait
+- **Tokens, affectations, boucles, lambdas, complexité cognitive.** Ils restent dans le tableau des métriques. Les ajouter compterait
   deux fois ce que les règles 8 et 9 mesurent déjà.
 - **Un score CUTE unique.** Les points de la scorecard jouent déjà ce rôle. Les jauges guident sans noter : elles ne
   rapportent aucun point.
@@ -178,5 +177,5 @@ Ce tableau suit la colonne CUTE de [`python-regles-de-harnais.md`](python-regles
 | `harness/cute.py` | Les quatre formules, pures, à partir des constats des règles et de `Metrics`. |
 | `harness/cute_reference.json` | Les constats et les attributs mutables du legacy, figés. |
 | `harness/rules/contexte_borne.py` | `coverage` : les membres rattachés et les membres comptés, pour Couverture_UL. |
-| `harness/scorecard.py` | Les jauges en tête du commentaire, les métriques repliées. |
+| `harness/scorecard.py` | Les jauges à la suite des autres tableaux du commentaire. |
 | `tests/harness/test_cute.py` | Les tests à réponse connue. |

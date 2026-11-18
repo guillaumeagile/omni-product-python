@@ -179,7 +179,7 @@ def state_of(
 
 def section(head: Gauges, base: Gauges | None, mutation_known: bool = True) -> str:
     """La section « CUTE » de la scorecard : une ligne par jauge, base → PR."""
-    lines = ["### 🌈 CUTE", "", "```"]
+    lines = ["### 🌈 CUTE (expérimental)", "", "```"]
     for emoji, name, attr in LETTERS:
         now: int = getattr(head, attr)
         before: int | None = None if base is None else getattr(base, attr)

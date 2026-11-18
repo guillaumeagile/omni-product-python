@@ -103,7 +103,7 @@ def render(
     """`mutation` : le score de mutation (en %) de la base et de la PR, quand la CI les fournit.
 
     `badges_md` : la section des badges gagnés, affichée en tête du commentaire.
-    `cute_md` : les jauges CUTE (voir `harness.cute`), affichées juste après. Le détail des mesures est replié.
+    `cute_md` : les jauges CUTE, expérimentales (voir `harness.cute`), affichées après les autres tableaux.
     """
     lines = [
         MARKER,
@@ -113,10 +113,7 @@ def render(
         "Le détail de chaque chiffre est dans `docs/METRIQUES.md`.",
         "",
         *([badges_md] if badges_md else []),
-        *([cute_md] if cute_md else []),
         *([rules_md] if rules_md else []),
-        "<details><summary>Le détail : métriques, classes et couches</summary>",
-        "",
         "### 📏 Métriques",
         "",
         "| Mesure | Base | PR | Variation | |",
@@ -128,7 +125,8 @@ def render(
             f"| Tokens modifiés par la PR | | {changed_tokens} | | {_small_diff(changed_tokens)} |"
         )
     lines += _mutation_row(*mutation)
-    lines += ["", *_worst_classes(head), "", *_layers(head, base), "", "</details>", ""]
+    lines += ["", *_worst_classes(head), "", *_layers(head, base), ""]
+    lines += [cute_md] if cute_md else []
     lines.append(
         f"<sub>Périmètre : {description()}. ✅ s'améliore, ⚠️ se dégrade, · inchangé.</sub>"
         if base

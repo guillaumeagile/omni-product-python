@@ -152,9 +152,40 @@ def test_evaluate_reads_the_core_and_ignores_the_outside(tmp_path: Path):
     ]
 
 
-def test_the_core_of_the_split_model_still_reaches_outside():
-    """Modèle découpé (règles 2 à 5) : plus de SQLAlchemy dans le cœur, l'exception métier reste."""
-    findings = [str(finding) for finding in evaluate(Path("src"))[10]]
+def write_core(tmp_path: Path, text: str) -> Path:
+    module = tmp_path / "src" / "omni_product" / "domain" / "model" / "product.py"
+    module.parent.mkdir(parents=True)
+    module.write_text(textwrap.dedent(text))
+    return tmp_path / "src"
 
-    assert not any("`sqlalchemy" in text for text in findings)
-    assert any("`omni_product.exception.business_exception`" in text for text in findings)
+
+def test_a_core_that_raises_the_business_exception_is_red(tmp_path: Path):
+    """Le modèle découpé (règles 2 à 5) : SQLAlchemy est sorti, l'exception métier reste."""
+    src = write_core(
+        tmp_path,
+        """
+        from dataclasses import dataclass
+
+        from omni_product.exception.business_exception import BusinessException
+        """,
+    )
+
+    assert [finding.target for finding in evaluate(src)[10]] == [
+        "omni_product.exception.business_exception"
+    ]
+
+
+def test_a_core_whose_failures_are_values_is_green(tmp_path: Path):
+    """La règle 10 corrigée : l'échec métier est une valeur `Result`, le cœur ne sort plus."""
+    src = write_core(
+        tmp_path,
+        """
+        from dataclasses import dataclass
+
+        from result import Err, Ok, Result
+
+        from omni_product.domain.model.transport_request import TransportRequest
+        """,
+    )
+
+    assert evaluate(src)[10] == []

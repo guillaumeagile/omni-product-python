@@ -129,13 +129,16 @@ def _row(row: Row, head: Metrics, base: Metrics | None) -> str:
 
 
 def metric_lines(head: Metrics, base: Metrics | None) -> tuple[tuple[str, int], ...]:
-    """Les points des métriques : (libellé, points) pour chaque ligne `scored` qui a une base à comparer."""
+    """Les points des métriques : (libellé, points) pour chaque ligne `scored` qui a une base à comparer.
+
+    Une ligne de poids 0 ne rapporte jamais rien : elle reste dans le tableau des mesures, pas dans celui des points.
+    """
     if base is None:
         return ()
     return tuple(
         (row.label, metric_points(row.read(head) - row.read(base), row.better, row.weight))
         for row in ROWS
-        if row.scored
+        if row.scored and row.weight
     )
 
 

@@ -418,3 +418,13 @@ def test_the_cognitive_complexity_is_shown_but_not_scored():
     assert "Complexité cognitive (total)" in card
     assert "Complexité cognitive (max par fonction)" not in card
     assert not [label for label in scored if "cognitive" in label]
+
+
+def test_rows_weighing_zero_leave_the_points_table_but_stay_measured():
+    metrics = measure([source("class A:\n    def f(self):\n        return self.x\n")])
+    scored = dict(scorecard.metric_lines(metrics, metrics))
+
+    assert "WMC (pire classe)" not in scored
+    assert "Boucles" not in scored
+    assert "Fan-out (pire classe)" in scored
+    assert "| WMC (pire classe) |" in scorecard.render(metrics, metrics)

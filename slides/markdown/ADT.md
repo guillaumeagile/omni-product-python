@@ -1,30 +1,58 @@
 # ADT
 
-In functional programming (FP), ADT stands for Algebraic Data Type (not to be confused with Abstract Data Type, which is a different computer science concept). [1] (https://medium.com/@jnkrtech/abstract-data-types-and-objects-17828bd4abdc)
-An algebraic data type is a composite data type built by combining simpler types together. They are called "algebraic" because you can combine them using two primary operations—product and sum—which behave much like multiplication and addition in algebra. [1] (https://en.wikipedia.org/wiki/Algebraic_data_type), [2] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
+En programmation fonctionnelle (FP), ADT signifie *Algebraic Data Type* (type de données algébrique). Le terme ne désigne pas un *Abstract Data Type*, qui est un autre concept. [1] (https://en.wikipedia.org/wiki/Algebraic_data_type)
 
-## Core Types of ADTs
+Un type algébrique se construit en combinant des types plus simples avec deux opérations : le produit et la somme. Elles se comportent comme la multiplication et l'addition. [1] (https://en.wikipedia.org/wiki/Algebraic_data_type), [2] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
 
+## Les deux familles
 
-1. Product Types (The "AND" Combination)
+### 1. Type produit (le « ET »)
 
-• What it is: A data structure that holds multiple values at the same time.
-• How it works: If type A has x possible values and type B has y possible values, a product type containing both has x × y possible values.
-• Examples: Tuples, records, structs, or classes with multiple fields (e.g., a Point with an x: Float and a y: Float). [1] (https://rockthejvm.com/articles/algebraic-data-types-in-java), [2] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf), [3] (https://en.wikipedia.org/wiki/Algebraic_data_type)
+- **Ce que c'est :** une donnée qui porte plusieurs valeurs en même temps.
+- **Comment ça marche :** si A a x valeurs possibles et B en a y, un produit de A et B en a x × y.
+- **En Python :** un `dataclass(frozen=True)` avec plusieurs champs.
 
-2. Sum Types / Tagged Unions (The "OR" Combination)
+```python
+@dataclass(frozen=True)
+class Point:
+    x: float
+    y: float
+```
 
-• What it is: A data structure that holds one of several possible variants at any given time, tagged with an identifier. [1] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf), [2] (https://en.wikipedia.org/wiki/Algebraic_data_type), [3] (https://rockthejvm.com/articles/algebraic-data-types-in-java)
-• How it works: If type A has x values and type B has y values, a sum type of A or B has x + y possible values. [1] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
-• Examples:
-• Option / Maybe (either Some(value) or None).
-• Either / Result (either Left(Error) or Right(Success)).
-• Custom state enums (e.g., a payment state that is either CreditCard(details) or Paypal(email) or Cash). [1] (https://rockthejvm.com/articles/algebraic-data-types-in-java), [2] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
+### 2. Type somme / union étiquetée (le « OU »)
 
-## Why ADTs Matter in FP
+- **Ce que c'est :** une donnée qui porte une seule variante parmi plusieurs, identifiable à l'exécution.
+- **Comment ça marche :** si A a x valeurs et B en a y, une somme de A ou B en a x + y.
+- **En Python :** une union `A | B` de dataclasses, lue par `match`.
 
-• Making illegal states unrepresentable: By combining sum and product types, you design data models where invalid combinations cannot even be instantiated. [1] (https://rockthejvm.com/articles/algebraic-data-types-in-scala), [2] (https://rockthejvm.com/articles/algebraic-data-types-in-java)
-• Compiler exhaustiveness checking: When you consume an ADT using pattern matching (e.g., switch or match expressions), the compiler forces you to handle every single variant. If you miss one, it throws a compile-time error. [1] (https://en.wikipedia.org/wiki/Algebraic_data_type), [2] (https://rockthejvm.com/articles/algebraic-data-types-in-java)
-• Replacing null/exceptions: Instead of throwing runtime errors or returning ambiguous null values, FP uses sum types like Option or Result to make success or failure explicit in the type signature. [1] (https://rockthejvm.com/articles/algebraic-data-types-in-java), [2] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
-Read more about structural modeling on the Algebraic Data Type Wikipedia Page. [1] (https://en.wikipedia.org/wiki/Algebraic_data_type)
-Would you like to see how ADTs are written in a specific language (like TypeScript, Rust, Scala, or Swift), or focus on how to use pattern matching with them?
+```python
+@dataclass(frozen=True)
+class CarteBancaire:
+    numero: str
+
+@dataclass(frozen=True)
+class Paypal:
+    email: str
+
+@dataclass(frozen=True)
+class Especes:
+    pass
+
+Paiement = CarteBancaire | Paypal | Especes
+
+def libelle(paiement: Paiement) -> str:
+    match paiement:
+        case CarteBancaire(numero=n): return f"carte {n[-4:]}"
+        case Paypal(email=e):         return f"paypal {e}"
+        case Especes():               return "espèces"
+```
+
+Les types de résultat de l'atelier suivent le même modèle : `Retire | StockInsuffisant`. Une fonction qui retire du stock renvoie l'une des deux variantes, et l'appelant doit les traiter.
+
+## Pourquoi les ADT comptent
+
+- **Les états invalides ne se construisent pas.** Avec des produits et des sommes, le modèle ne laisse exister que les combinaisons valides. Une carte bancaire sans numéro ne peut pas être créée.
+- **Le contrôle d'exhaustivité.** Un `match` sur une union doit couvrir chaque variante. Avec `pyright` en mode strict, un cas oublié est signalé avant l'exécution. Pour le vérifier à la main, on termine le `match` par `assert_never(paiement)`.
+- **Remplacer `None` et les exceptions.** Un résultat qui peut échouer se déclare dans la signature : `Result` (`Ok | Err`) ou `Option` (`X | None`). L'appelant voit le cas d'échec sans avoir à le deviner. [1] (https://dev.to/gcanti/functional-design-algebraic-data-types-36kf)
+
+En Python, ces trois propriétés sont aujourd'hui accessibles avec la bibliothèque standard et `pyright`. Voir la section « I ❤️ FP » du harnais pour la position de l'atelier sur ces pratiques.

@@ -12,6 +12,7 @@ from pathlib import Path
 
 from harness.perimetre import dossiers_exclus
 from harness.rules import (
+    architecture_oignon,
     contexte_borne,
     echec_valeur,
     effet_impur,
@@ -71,6 +72,13 @@ RULES: tuple[Rule, ...] = (
         ("omni_product/domain/model", "omni_product/anemic_model"),
         effet_impur.check,
         tests=effet_impur.check_tests,
+    ),
+    # Le cœur : `domain`, et `anemic_model` tant que la règle 3 n'est pas faite. Il n'importe que lui-même.
+    Rule(
+        10,
+        "Architecture en oignon",
+        ("omni_product/domain", "omni_product/anemic_model"),
+        architecture_oignon.check,
     ),
 )
 

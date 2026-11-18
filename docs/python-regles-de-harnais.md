@@ -99,6 +99,16 @@ CUTE dit *ce que   le code apporte à l'équipe*.
 - **Règle 10 ✅** : elle généralise la règle 3. La règle 3 sort le stockage du modèle, la règle 10 organise tout le
   projet autour du cœur. Le port `domain/port` et l'adaptateur `infrastructure/adapter`, déjà présents pour le
   transport carbone, sont le modèle à reproduire pour le reste. La règle 3 devient donc la première marche de la 10.
+  - **Ce que le harnais lit (`AO001`)** : tout `import` du cœur (`domain/`, et `anemic_model/` tant que la règle 3 n'est
+    pas faite) vers autre chose que le cœur, la bibliothèque standard ou `result` est un constat. SQLAlchemy, FastAPI,
+    `requests`, mais aussi `controller`, `service`, `dal`, `infrastructure`, `config`, `database` et `exception` restent
+    à l'extérieur. Les imports relatifs sont résolus, et un import sous `if TYPE_CHECKING:` compte : une annotation est
+    déjà une dépendance. Les effets de la bibliothèque standard restent à la règle 6.
+  - **Refactoring attendu** : le cœur déclare ce dont il a besoin par un `Protocol` dans `domain/port/`, et
+    l'adaptateur de `infrastructure/` l'implémente. Le mapping SQLAlchemy sort du modèle, le `dal/` devient un adaptateur.
+  - **Sur le legacy de l'atelier** : la règle est rouge. `anemic_model/` importe SQLAlchemy, `database`, `service`, et
+    `domain/exception` importe `omni_product.exception`. C'est le plus gros refactoring des sources : la règle passe au
+    vert quand le cœur n'importe plus que lui-même.
 - **La testabilité n'est pas une lettre de CUPID ✅** : c'est pourquoi la colonne CUTE a le 🧪. Les règles 3, 6 et 10
   rendent le cœur testable sans base, sans horloge et sans réseau. La règle 10 est **C** côté CUPID (on branche et on
   débranche les adaptateurs) et 🧪 côté CUTE.
@@ -123,7 +133,7 @@ les deux. Les diagnostics suivent le format de ruff : `chemin:ligne:colonne: COD
 | 7 | État illégal impossible à construire | à venir | **P** | 2, tactique | ⏳ à faire |
 | 8 | Idiomes courants de Python | ruff (`PERF`, `C4`, `SIM`, `UP`, `C90`) | **I** | 2, tactique | ⏳ à faire |
 | 9 | Style fonctionnel (II) | à venir | **II** | 2, tactique | ⏳ à faire |
-| 10 | Architecture en oignon | à venir | **C** | 3, aboutissement | ⏳ à faire |
+| 10 | Architecture en oignon | `AO001` | **C** | 3, aboutissement | ✅ en place (`architecture_oignon.py`), rouge sur le legacy |
 
 Le numéro de la règle est celui du tableau « Les 10 règles » plus haut, qui donne la question, le refactoring attendu et
 la vérification. Les préfixes des codes viennent du nom de la règle : **C**ontexte **B**orné, **E**ntité **V**aleur,

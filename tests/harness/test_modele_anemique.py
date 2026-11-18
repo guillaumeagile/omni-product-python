@@ -22,7 +22,7 @@ def test_an_empty_module_under_anemic_model_is_not_a_finding():
     assert modele_anemique.check(source(""), UbiquitousLanguage.load()) == []
 
 
-def test_the_registry_has_rules_1_to_6_on_the_expected_scopes():
+def test_the_registry_has_rules_1_to_6_and_10_on_the_expected_scopes():
     # Régression : la règle 2 a été perdue à une fusion, sans que rien ne le signale.
     roots = {rule.number: rule.roots for rule in RULES}
 
@@ -33,4 +33,5 @@ def test_the_registry_has_rules_1_to_6_on_the_expected_scopes():
         4: ("omni_product/domain/model", "omni_product/anemic_model"),
         5: ("omni_product/domain/model", "omni_product/anemic_model"),
         6: ("omni_product/domain/model", "omni_product/anemic_model"),
+        10: ("omni_product/domain", "omni_product/anemic_model"),
     }

@@ -36,4 +36,4 @@ Then open <http://localhost:8000/> in a browser (not `/slides`: the folder is se
 - One Markdown file per topic in `markdown/`. Slides are separated by a line containing `---`, vertical slides by a line containing `--`.
 - The list of files played, and their transitions, is in the `<section>` elements of `index.html`.
 - Images live in `img/`, referenced relatively (`./img/...`).
-- reveal.js assets are in `dist/`. Do not edit them by hand; they are the 6.0.2 release.
+- reveal.js assets are in `dist/`, copied from the `reveal.js` 6.0.2 package by `pnpm install` (postinstall). `dist/` is not versioned: do not edit it by hand, and run `pnpm install` again after a change to the version.

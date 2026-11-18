@@ -2,7 +2,8 @@
   "name": "cute-kanddinsky-slides",
   "version": "1.0.0",
   "scripts": {
-    "dev": "live-server --port=8080 --open=/index.html --ignore=node_modules"
+    "dev": "live-server --port=8080 --open=/index.html --ignore=node_modules",
+    "postinstall": "rm -rf dist && cp -R node_modules/reveal.js/dist dist"
   },
   "type": "commonjs",
   "devDependencies": {
@@ -10,5 +11,8 @@
   },
   "private": true,
   "packageManager": "pnpm@10.31.0",
-  "description": "Reveal.js slides for the talk"
+  "description": "Reveal.js slides for the talk",
+  "dependencies": {
+    "reveal.js": "6.0.2"
+  }
 }

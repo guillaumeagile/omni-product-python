@@ -9,6 +9,9 @@ pourtant l'effet y entrer. Les noms sont résolus par les imports du fichier : `
 `dt.datetime.now()`, ou `from datetime import date as d` puis `d.today`, sont vus comme `datetime.datetime.now` et
 `datetime.date.today`. Importer `date` pour typer un champ reste permis : l'effet est `date.today`.
 
+Les tests du cœur sont lus aussi (EI002) : un `patch`, un `monkeypatch`, un `mocker.patch` ou un `freezegun` y remplace
+l'effet au lieu de le recevoir. Le cœur pur reçoit un faux en paramètre, le test n'a plus rien à remplacer.
+
 Une règle travaille fichier par fichier, donc une fonction du modèle qui appelle un autre module pur qui appelle
 l'horloge échappe à la règle. Elle offre un premier pas, sans garantie.
 
@@ -22,6 +25,7 @@ from harness.rules.sources import Source
 from harness.rules.ubiquitous_language import UbiquitousLanguage
 
 CODE = "EI001"
+CODE_TESTS = "EI002"
 
 # Les fonctions et attributs impurs, par nom qualifié.
 IMPURE_NAMES = frozenset(
@@ -58,6 +62,11 @@ IMPURE_MODULES = frozenset(
 )
 # Les fonctions natives impures : lues seulement quand elles sont appelées et que le fichier ne les redéfinit pas.
 IMPURE_BUILTINS = frozenset({"open", "print", "input"})
+# Ce qui remplace un effet dans un test : `unittest.mock.patch` (et `.object`, `.dict`), `freezegun`, `time_machine`.
+PATCH_NAMES = frozenset({"unittest.mock.patch"})
+PATCH_MODULES = frozenset({"freezegun", "time_machine"})
+# Les fixtures pytest qui remplacent : `monkeypatch.setattr(...)`, `mocker.patch(...)`.
+PATCH_FIXTURES = {"monkeypatch": None, "mocker": "patch"}
 
 
 @dataclass(frozen=True)
@@ -80,17 +89,62 @@ def check(source: Source, language: UbiquitousLanguage) -> list[Finding]:
     return sorted(visitor.findings, key=lambda finding: (finding.line, finding.col))
 
 
+def check_tests(source: Source, language: UbiquitousLanguage) -> list[Finding]:
+    """Un constat par remplacement d'effet dans un fichier de test, dans l'ordre des lignes."""
+    visitor = _Patches(source)
+    visitor.visit(source.tree)
+    return sorted(visitor.findings, key=lambda finding: (finding.line, finding.col))
+
+
+def _is_patch(qualified: str) -> bool:
+    return any(
+        qualified == name or qualified.startswith(f"{name}.")
+        for name in PATCH_NAMES | PATCH_MODULES
+    )
+
+
 def _is_impure(qualified: str) -> bool:
     return qualified in IMPURE_NAMES or any(
         qualified == module or qualified.startswith(f"{module}.") for module in IMPURE_MODULES
     )
 
 
-class _Effects(ast.NodeVisitor):
+class _Walker(ast.NodeVisitor):
+    """Ce que les deux lectures partagent : les alias d'import et la construction d'un constat."""
+
+    code = CODE
+    advice = ""
+
     def __init__(self, source: Source) -> None:
         self._path = source.path
         self.findings: list[Finding] = []
         self._aliases = _aliases(source.tree)
+
+    def _qualify(self, parts: list[str]) -> str:
+        root = self._aliases.get(parts[0], parts[0])
+        return ".".join([root, *parts[1:]])
+
+    def _report(self, node: ast.expr, effect: str) -> None:
+        self.findings.append(
+            Finding(
+                path=self._path,
+                line=node.lineno,
+                col=node.col_offset + 1,
+                effect=effect,
+                code=self.code,
+                message=f"`{effect}` {self.advice}",
+            )
+        )
+
+
+class _Effects(_Walker):
+    advice = (
+        "dans le modèle : l'effet entre par un paramètre ou par un port du métier "
+        "(`Clock`, `IdGenerator`)"
+    )
+
+    def __init__(self, source: Source) -> None:
+        super().__init__(source)
         self._defined = _defined_names(source.tree)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
@@ -122,24 +176,32 @@ class _Effects(ast.NodeVisitor):
         for child in (*node.args, *node.keywords):
             self.visit(child)
 
-    def _qualify(self, parts: list[str]) -> str:
-        root = self._aliases.get(parts[0], parts[0])
-        return ".".join([root, *parts[1:]])
 
-    def _report(self, node: ast.expr, effect: str) -> None:
-        self.findings.append(
-            Finding(
-                path=self._path,
-                line=node.lineno,
-                col=node.col_offset + 1,
-                effect=effect,
-                code=CODE,
-                message=(
-                    f"`{effect}` dans le modèle : l'effet entre par un paramètre "
-                    "ou par un port du métier (`Clock`, `IdGenerator`)"
-                ),
-            )
-        )
+class _Patches(_Walker):
+    code = CODE_TESTS
+    advice = (
+        "dans un test : le cœur reçoit un faux en paramètre, le test n'a plus d'effet à remplacer"
+    )
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        parts = _dotted(node)
+        if parts is not None and (self._is_fixture_patch(parts) or _is_patch(self._qualify(parts))):
+            self._report(node, ".".join(parts))
+            return
+        self.generic_visit(node)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, ast.Load):
+            qualified = self._qualify([node.id])
+            if qualified != node.id and _is_patch(qualified):
+                self._report(node, node.id)
+
+    @staticmethod
+    def _is_fixture_patch(parts: list[str]) -> bool:
+        if parts[0] not in PATCH_FIXTURES or len(parts) < 2:
+            return False
+        method = PATCH_FIXTURES[parts[0]]
+        return method is None or parts[1] == method
 
 
 def _dotted(node: ast.expr) -> list[str] | None:

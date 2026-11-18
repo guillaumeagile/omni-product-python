@@ -31,6 +31,16 @@ def collect(roots: Sequence[Path], src_root: Path, exclus: Sequence[Path] = ()) 
     return [_read(path, src_root) for path in paths]
 
 
+def collect_tests(tests_root: Path, exclus: Sequence[Path] = ()) -> list[Source]:
+    """Les `.py` sous `tests_root` (tests, `conftest.py` et aides), hors `exclus`, dans l'ordre alphabétique."""
+    paths = sorted(
+        path
+        for path in tests_root.rglob("*.py")
+        if not any(path.is_relative_to(dossier) for dossier in exclus)
+    )
+    return [_read(path, tests_root.parent) for path in paths]
+
+
 def _is_test(path: Path) -> bool:
     return path.name.startswith("test_") or "tests" in path.parts
 

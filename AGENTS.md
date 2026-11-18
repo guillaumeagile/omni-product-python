@@ -46,11 +46,9 @@ Ces gestes font baisser les chiffres sans améliorer le code. Tu ne les fais pas
 1. Une PR par règle. Son titre nomme la règle : « Team T >> Règle N :  … ». T est le nom de ton équipe car le jeu se joue en groupe. Le score est celui de l'équipe (et l'agent en fait partie)
 2.  la base de la PR : `main` pour la première PR, puis la branche de l'étape précédente.
 3. Une itération :
-   a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<base>`, puis lis
-      les constats.
+   a. Lance `uv run python -m harness.rules` et `uv run python -m harness.scorecard --base-ref origin/<base>`, puis lis les constats.
    b. Lis la fiche de la règle dans `docs/python-regles-de-harnais.md`.
-   c. Propose à l'humain deux ou trois options. Pour chacune : la lettre CUPID visée, les fichiers touchés, les tests à
-      adapter.
+   c. Propose à l'humain deux ou trois options. Pour chacune : la lettre CUPID visée, les fichiers touchés, les tests à adapter.
    d. Attends sa réponse. Tu ne codes rien avant.
    e. Code le choix retenu et lance les tests locaux utiles.
    f. Committe. Le message donne le nombre de constats avant et après, et le choix retenu en une ligne.

@@ -59,6 +59,12 @@ CUTE dit *ce que   le code apporte à l'équipe*.
   (règle 10 du tableau) les sortira du cœur. Un mot technique ne s'ajoute jamais à l'ubiquitous language pour faire
   taire le harnais : on exclut le fichier.
 
+- **Règle 1 : l'agrégat ne traverse qu'un contexte.** Un agrégat par contexte reste utile : il garde ses invariants (un
+  prix garde ses règles de prix, un stock ses quantités). Un agrégat qui mêle plusieurs contextes doit disparaître.
+  `ProductSheet` en est l'exemple : il réunit Catalog, Pricing, Transport, Storage et Supplier. On le remplace par des
+  agrégats par contexte, reliés par identifiant. Une vue qui réunit ces données pour l'affichage est une projection en
+  lecture, qui ne se persiste pas comme un modèle.
+
 - **Règle 2 ✅** : elle absorbe l'ancienne règle d'immuabilité. Un Value Object est frozen par définition. La métrique
   `attributs mutables` reste un thermomètre.
 - **Règle 3 ✅** : c'est une vraie décision d'architecture. Dans ce port, le modèle **est**

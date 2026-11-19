@@ -40,6 +40,12 @@ def delete_by_slug(session: Session, slug: str) -> None:
         session.commit()
 
 
+def delete_by_supplier_id(session: Session, supplier_id: str) -> None:
+    for product in session.scalars(select(Product).where(Product.supplier_id == supplier_id)):
+        session.delete(product)
+    session.commit()
+
+
 def delete_all(session: Session) -> None:
     for product in find_all(session):
         session.delete(product)

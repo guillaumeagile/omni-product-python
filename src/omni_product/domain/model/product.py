@@ -1,6 +1,7 @@
-"""Catalog : la fiche du produit. Les autres contextes s'y relient par `ProductId`."""
+"""Catalog : la fiche du produit. Sa conservation est une variante composée : `ShelfLife`.
 
-from __future__ import annotations
+Les autres contextes s'y relient par `ProductId`.
+"""
 
 from dataclasses import dataclass, field
 from datetime import date
@@ -27,26 +28,34 @@ class ShelfLifeDays:
             raise InvalidValue("Shelf life cannot be negative")
 
 
+@dataclass(frozen=True)
+class Perishable:
+    """Produit périssable : il a (ou aura) une date d'expiration."""
+
+    expiration_date: date | None = None
+    shelf_life_days: ShelfLifeDays | None = None
+
+
+@dataclass(frozen=True)
+class NonExpiring:
+    """Produit sans date limite."""
+
+
+type ShelfLife = Perishable | NonExpiring
+
+
 @dataclass(eq=False)
 class Product:
     id: ProductId
     name: str
     slug: Slug
     images: dict[str, str | None] = field(default_factory=dict[str, str | None])
+    # Aucune conservation connue : un produit standard.
+    shelf_life: ShelfLife | None = None
 
     def is_perishable(self) -> bool:
-        # La classe de base connaît sa sous-classe : une branche de plus à chaque nouveau type.
-        return isinstance(self, PerishableProduct)
-
-
-@dataclass(eq=False)
-class PerishableProduct(Product):
-    """Produit périssable."""
-
-    expiration_date: date | None = None
-    shelf_life_days: ShelfLifeDays | None = None
-
-
-@dataclass(eq=False)
-class NonExpiringProduct(Product):
-    """Produit sans date limite. Aucun champ propre : la classe ne sert qu'à porter un type."""
+        match self.shelf_life:
+            case Perishable():
+                return True
+            case NonExpiring() | None:
+                return False

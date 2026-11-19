@@ -13,8 +13,8 @@ from omni_product.dal.product_dal import ProductContext
 from omni_product.domain.model import (
     Amount,
     Location,
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Price,
     Product,
     ProductId,
@@ -24,6 +24,7 @@ from omni_product.domain.model import (
     ProductTransport,
     Quantity,
     RegionSupplier,
+    ShelfLife,
     ShelfLifeDays,
     Siren,
     Slug,
@@ -51,12 +52,23 @@ def _primitive[P](value: _HasValue[P] | None) -> P | None:
     return None if value is None else value.value
 
 
-def _kind_of(product: Product) -> ProductKind:
-    if isinstance(product, PerishableProduct):
-        return "perishable"
-    if isinstance(product, NonExpiringProduct):
-        return "non_expiring"
-    return "standard"
+def _kind_of(shelf_life: ShelfLife | None) -> ProductKind:
+    match shelf_life:
+        case Perishable():
+            return "perishable"
+        case NonExpiring():
+            return "non_expiring"
+        case None:
+            return "standard"
+
+
+def _perishable_of(shelf_life: ShelfLife | None) -> Perishable:
+    """Les champs du périssable, à plat dans la réponse : vides pour les autres produits."""
+    match shelf_life:
+        case Perishable():
+            return shelf_life
+        case NonExpiring() | None:
+            return Perishable()
 
 
 def product_to_schema(
@@ -67,14 +79,14 @@ def product_to_schema(
     supply: ProductSupply,
 ) -> ProductSchema:
     """La réponse HTTP est le seul endroit où les contextes du produit se rejoignent."""
-    perishable = product if isinstance(product, PerishableProduct) else None
+    perishable = _perishable_of(product.shelf_life)
     return ProductSchema(
         id=product.id.value,
-        kind=_kind_of(product),
+        kind=_kind_of(product.shelf_life),
         name=product.name,
         slug=product.slug.value,
-        expiration_date=perishable.expiration_date if perishable else None,
-        shelf_life_days=_primitive(perishable.shelf_life_days) if perishable else None,
+        expiration_date=perishable.expiration_date,
+        shelf_life_days=_primitive(perishable.shelf_life_days),
         price=_price_schema_of(pricing.price) if pricing.price else None,
         discounts=list(pricing.discounts),
         images=dict(product.images),
@@ -145,23 +157,27 @@ def schema_to_contexts(schema: ProductSchema, product_id: ProductId) -> list[Pro
     ]
 
 
-def _product_of(schema: ProductSchema, product_id: ProductId) -> Product:
-    slug = Slug(schema.slug)
+def _shelf_life_of(schema: ProductSchema) -> ShelfLife | None:
     match schema.kind:
         case "perishable":
-            product = PerishableProduct(
-                id=product_id,
-                name=schema.name,
-                slug=slug,
+            return Perishable(
                 expiration_date=schema.expiration_date,
                 shelf_life_days=_optional(ShelfLifeDays, schema.shelf_life_days),
             )
         case "non_expiring":
-            product = NonExpiringProduct(id=product_id, name=schema.name, slug=slug)
-        case _:
-            product = Product(id=product_id, name=schema.name, slug=slug)
-    product.images = schema.images or {}
-    return product
+            return NonExpiring()
+        case "standard" | None:
+            return None
+
+
+def _product_of(schema: ProductSchema, product_id: ProductId) -> Product:
+    return Product(
+        id=product_id,
+        name=schema.name,
+        slug=Slug(schema.slug),
+        images=schema.images or {},
+        shelf_life=_shelf_life_of(schema),
+    )
 
 
 def _pricing_of(schema: ProductSchema, product_id: ProductId) -> ProductPricing:

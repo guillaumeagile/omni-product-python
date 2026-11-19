@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -9,73 +8,14 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, composite, mapped_column, relationship
 from sqlalchemy.orm.collections import attribute_keyed_dict
 
+from omni_product.anemic_model.catalog import ProductImage
+from omni_product.anemic_model.pricing import Price, ProductDiscount
+from omni_product.anemic_model.storage import Warehouse
+from omni_product.anemic_model.supplier_context import ProductSupplierRegion, RegionSupplier
 from omni_product.database import Base
 
 if TYPE_CHECKING:
     from omni_product.anemic_model.supplier import Supplier
-
-
-# Équivalents des @Embeddable Java : des composites SQLAlchemy mis à plat dans la table parente.
-@dataclass
-class Price:
-    base: float | None = None
-    tax: float | None = None
-    tax_rate: float | None = None
-
-
-@dataclass
-class Warehouse:
-    location: str | None = None
-
-
-@dataclass
-class RegionSupplier:
-    """`Product.Supplier` en Java : fournisseur embarqué, par région."""
-
-    name: str | None = None
-    siren: str | None = None
-    tva_id: str | None = None
-
-
-# Équivalents des @ElementCollection + @CollectionTable.
-class ProductDiscount(Base):
-    __tablename__ = "product_discounts"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
-    discount: Mapped[str] = mapped_column(String)
-
-    def __init__(self, discount: str) -> None:
-        self.discount = discount
-
-
-class ProductImage(Base):
-    __tablename__ = "product_images"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
-    image_key: Mapped[str] = mapped_column(String, primary_key=True)
-    image_detail: Mapped[str | None] = mapped_column(String)
-
-    def __init__(self, image_key: str, image_detail: str | None) -> None:
-        self.image_key = image_key
-        self.image_detail = image_detail
-
-
-class ProductSupplierRegion(Base):
-    __tablename__ = "product_suppliers"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
-    region: Mapped[str] = mapped_column(String, primary_key=True)
-    supplier: Mapped[RegionSupplier] = composite(
-        RegionSupplier,
-        mapped_column("name", String),
-        mapped_column("siren", String),
-        mapped_column("tva_id", String),
-    )
-
-    def __init__(self, region: str, supplier: RegionSupplier) -> None:
-        self.region = region
-        self.supplier = supplier
 
 
 _ROW_CASCADE = "all, delete-orphan"

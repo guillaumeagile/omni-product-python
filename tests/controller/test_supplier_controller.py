@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, Supplier
+from omni_product.anemic_model import Product, ProductAggregate, Supplier
 from omni_product.dal import product_dal, supplier_dal
 
 
@@ -86,7 +86,10 @@ def test_should_get_suppliers_by_product(client: TestClient, session: Session) -
     supplier_dal.save(session, _supplier("sup1", "Supplier A"))
     supplier_dal.save(session, _supplier("sup2", "Supplier B"))
     product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+        session,
+        ProductAggregate.of(
+            Product(id="prod1", name="Test Product", slug="test-product"), supplier_id="sup1"
+        ),
     )
 
     response = client.get("/api/suppliers/product/prod1")
@@ -126,7 +129,10 @@ def test_should_cascade_delete_products_when_supplier_deleted(
 ) -> None:
     supplier_dal.save(session, _supplier("sup1", "Supplier A"))
     product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
+        session,
+        ProductAggregate.of(
+            Product(id="prod1", name="Test Product", slug="test-product"), supplier_id="sup1"
+        ),
     )
 
     assert client.delete("/api/suppliers/sup1").status_code == 204

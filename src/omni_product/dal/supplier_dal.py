@@ -1,7 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, Supplier
+from omni_product.anemic_model import ProductSourcing, Supplier
+from omni_product.dal import product_dal
 
 
 def find_all(session: Session) -> list[Supplier]:
@@ -25,8 +26,14 @@ def find_by_name(session: Session, name: str) -> Supplier | None:
 
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
-    """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
-    return _find_all_where(session, Supplier.products.any(Product.id == product_id))
+    """Requête SQL : le lien produit → fournisseur passe par la table `product_sourcing`."""
+    statement = (
+        select(Supplier)
+        .join(ProductSourcing, ProductSourcing.supplier_id == Supplier.id)
+        .where(ProductSourcing.product_id == product_id)
+        .order_by(Supplier.id)
+    )
+    return list(session.scalars(statement))
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:
@@ -36,14 +43,19 @@ def save(session: Session, supplier: Supplier) -> Supplier:
 
 
 def delete(session: Session, supplier: Supplier) -> None:
+    # Un fournisseur supprimé emporte ses produits (comportement d'origine, cascade Java).
+    product_ids = session.scalars(
+        select(ProductSourcing.product_id).where(ProductSourcing.supplier_id == supplier.id)
+    ).all()
+    for product_id in product_ids:
+        product_dal.delete_by_id(session, product_id)
     session.delete(supplier)
     session.commit()
 
 
 def delete_all(session: Session) -> None:
     for supplier in find_all(session):
-        session.delete(supplier)
-    session.commit()
+        delete(session, supplier)
 
 
 def _find_all_where(session: Session, criterion: object) -> list[Supplier]:

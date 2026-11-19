@@ -5,6 +5,7 @@ branche les dataclasses du domaine de l'extérieur, une seule fois, à l'import.
 """
 
 from collections.abc import Callable
+from datetime import date
 from typing import Any, Protocol, override
 
 from sqlalchemy import (
@@ -19,16 +20,17 @@ from sqlalchemy import (
     String,
     Table,
     TypeDecorator,
+    event,
 )
-from sqlalchemy.orm import composite, registry
+from sqlalchemy.orm import Session, composite, registry
 
 from omni_product.domain.model import (
     Amount,
     Country,
     Email,
     Location,
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Phone,
     Price,
     Product,
@@ -40,6 +42,7 @@ from omni_product.domain.model import (
     Quantity,
     Region,
     RegionSupplier,
+    ShelfLife,
     ShelfLifeDays,
     Siren,
     Slug,
@@ -152,7 +155,7 @@ products = Table(
     "products",
     metadata,
     Column("id", _StringValued(ProductId), primary_key=True),
-    # Héritage mono-table : toutes les variantes partagent la table `products`.
+    # La conservation (`ShelfLife`) se range à plat : son genre et les champs du périssable.
     Column("kind", String(), nullable=False),
     Column("name", String(), nullable=False),
     Column("slug", _StringValued(Slug), unique=True, nullable=False),
@@ -196,24 +199,17 @@ product_supply = Table(
     Column("suppliers_regions", _RegionSuppliers(), nullable=False),
 )
 
-_PERISHABLE_COLUMNS = ["expiration_date", "shelf_life_days"]
-
 mapper_registry.map_imperatively(Supplier, suppliers)
+# Les colonnes de la conservation vivent dans des attributs privés, que le modèle ne déclare pas.
+# Les événements plus bas les tiennent d'accord avec `Product.shelf_life`.
 mapper_registry.map_imperatively(
     Product,
     products,
-    polymorphic_on=products.c.kind,
-    polymorphic_identity="standard",
-    exclude_properties=_PERISHABLE_COLUMNS,
-)
-mapper_registry.map_imperatively(
-    PerishableProduct,
-    inherits=Product,
-    polymorphic_identity="perishable",
-    properties={column: products.c[column] for column in _PERISHABLE_COLUMNS},
-)
-mapper_registry.map_imperatively(
-    NonExpiringProduct, inherits=Product, polymorphic_identity="non_expiring"
+    properties={
+        "_kind": products.c.kind,
+        "_expiration_date": products.c.expiration_date,
+        "_shelf_life_days": products.c.shelf_life_days,
+    },
 )
 mapper_registry.map_imperatively(
     ProductPricing,
@@ -243,3 +239,63 @@ mapper_registry.map_imperatively(
 mapper_registry.map_imperatively(
     ProductSupply, product_supply, properties={"id": product_supply.c.product_id}
 )
+
+
+def _shelf_life_of_columns(
+    kind: str, expiration_date: date | None, shelf_life_days: ShelfLifeDays | None
+) -> ShelfLife | None:
+    match kind:
+        case "perishable":
+            return Perishable(expiration_date=expiration_date, shelf_life_days=shelf_life_days)
+        case "non_expiring":
+            return NonExpiring()
+        case _:
+            return None
+
+
+def _columns_of_shelf_life(
+    shelf_life: ShelfLife | None,
+) -> tuple[str, date | None, ShelfLifeDays | None]:
+    match shelf_life:
+        case Perishable(expiration_date=expiration_date, shelf_life_days=shelf_life_days):
+            return "perishable", expiration_date, shelf_life_days
+        case NonExpiring():
+            return "non_expiring", None, None
+        case None:
+            return "standard", None, None
+
+
+# Les attributs privés que le mapping ajoute à `Product`, dans l'ordre des colonnes.
+_SHELF_LIFE_ATTRIBUTES = ("_kind", "_expiration_date", "_shelf_life_days")
+
+
+@event.listens_for(Product, "load")
+def _read_shelf_life(product: Product, _: object) -> None:
+    kind, expiration_date, shelf_life_days = (
+        getattr(product, name) for name in _SHELF_LIFE_ATTRIBUTES
+    )
+    product.shelf_life = _shelf_life_of_columns(kind, expiration_date, shelf_life_days)
+
+
+def _products_with_shelf_life(session: Session) -> list[Product]:
+    """Les produits de la session ; `merge` en crée sans `shelf_life`, avant de le recopier."""
+    products_in_session = [
+        instance
+        for instance in (*session.new, *session.identity_map.values())
+        if isinstance(instance, Product)
+    ]
+    return [product for product in products_in_session if "shelf_life" in vars(product)]
+
+
+@event.listens_for(Session, "before_commit")
+@event.listens_for(Session, "before_flush")
+def _write_shelf_life(session: Session, *_: object) -> None:
+    """`shelf_life` n'est pas suivi par la session : on le recopie dans les colonnes.
+
+    Avant le commit aussi : si seul `shelf_life` a changé, la session se croit propre et ne
+    lancerait pas de flush.
+    """
+    for product in _products_with_shelf_life(session):
+        columns = _columns_of_shelf_life(product.shelf_life)
+        for name, value in zip(_SHELF_LIFE_ATTRIBUTES, columns, strict=True):
+            setattr(product, name, value)

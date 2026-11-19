@@ -1,8 +1,8 @@
 """Le modèle s'instancie sans session ni base : il ignore le stockage."""
 
 from omni_product.domain.model import (
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Product,
     ProductId,
     ProductPricing,
@@ -14,17 +14,22 @@ from omni_product.domain.model import (
 )
 
 
+def _product(shelf_life: Perishable | NonExpiring | None = None) -> Product:
+    return Product(id=ProductId("p1"), name="Lait", slug=Slug("lait"), shelf_life=shelf_life)
+
+
 def test_is_perishable_is_true_only_for_perishable_products() -> None:
-    assert PerishableProduct(id=ProductId("p1"), name="Lait", slug=Slug("lait")).is_perishable()
-    assert not NonExpiringProduct(id=ProductId("p2"), name="Sel", slug=Slug("sel")).is_perishable()
-    assert not Product(id=ProductId("p3"), name="Stylo", slug=Slug("stylo")).is_perishable()
+    assert _product(Perishable()).is_perishable() is True
+    assert _product(NonExpiring()).is_perishable() is False
+    assert _product().is_perishable() is False
+
+
+def test_a_product_without_shelf_life_is_standard() -> None:
+    assert Product(id=ProductId("p1"), name="Stylo", slug=Slug("stylo")).shelf_life is None
 
 
 def test_perishable_fields_are_optional_in_memory() -> None:
-    product = PerishableProduct(id=ProductId("p1"), name="Lait", slug=Slug("lait"))
-
-    assert product.expiration_date is None
-    assert product.shelf_life_days is None
+    assert Perishable() == Perishable(expiration_date=None, shelf_life_days=None)
 
 
 def test_contexts_are_plain_objects_without_session() -> None:

@@ -65,6 +65,8 @@ def save_with_contexts(
 ) -> Product:
     """Enregistre le produit et ce que chaque contexte en sait, en une transaction."""
     saved = session.merge(product)
+    # `merge` ne recopie que les attributs mappés : la conservation suit à la main.
+    saved.shelf_life = product.shelf_life
     for context in contexts:
         session.merge(context)
     session.commit()

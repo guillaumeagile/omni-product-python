@@ -3,9 +3,10 @@
 from omni_product.domain.model.identity import ProductId, SupplierId
 from omni_product.domain.model.pricing import Amount, Price, ProductPricing, TaxRate
 from omni_product.domain.model.product import (
-    NonExpiringProduct,
-    PerishableProduct,
+    NonExpiring,
+    Perishable,
     Product,
+    ShelfLife,
     ShelfLifeDays,
     Slug,
 )
@@ -28,8 +29,8 @@ __all__ = [
     "Distance",
     "Email",
     "Location",
-    "NonExpiringProduct",
-    "PerishableProduct",
+    "NonExpiring",
+    "Perishable",
     "Phone",
     "Price",
     "Product",
@@ -41,6 +42,7 @@ __all__ = [
     "Quantity",
     "Region",
     "RegionSupplier",
+    "ShelfLife",
     "ShelfLifeDays",
     "Siren",
     "Slug",

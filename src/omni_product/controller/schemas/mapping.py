@@ -3,6 +3,7 @@ from omni_product.anemic_model import (
     PerishableProduct,
     Price,
     Product,
+    ProductCatalog,
     ProductPricing,
     ProductStock,
     ProductTransport,
@@ -33,18 +34,19 @@ def product_to_schema(
     transport: ProductTransport | None = None,
     stock: ProductStock | None = None,
     pricing: ProductPricing | None = None,
+    catalog: ProductCatalog | None = None,
 ) -> ProductSchema:
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
         kind=_kind_of(product),
         name=product.name,
-        slug=product.slug,
+        slug=catalog.slug if catalog else None,
         expiration_date=perishable.expiration_date if perishable else None,
         shelf_life_days=perishable.shelf_life_days if perishable else None,
         price=PriceSchema.model_validate(pricing.price) if pricing else None,
         discounts=list(pricing.discounts) if pricing else [],
-        images=dict(product.images),
+        images=dict(catalog.images) if catalog else {},
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
             for region, supplier in product.suppliers_regions.items()
@@ -65,16 +67,14 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = PerishableProduct(
                 id=product_id,
                 name=schema.name,
-                slug=schema.slug,
                 expiration_date=schema.expiration_date,
                 shelf_life_days=schema.shelf_life_days,
             )
         case "non_expiring":
-            product = NonExpiringProduct(id=product_id, name=schema.name, slug=schema.slug)
+            product = NonExpiringProduct(id=product_id, name=schema.name)
         case _:
-            product = Product(id=product_id, name=schema.name, slug=schema.slug)
+            product = Product(id=product_id, name=schema.name)
     product.supplier_id = schema.supplier_id
-    product.images = schema.images or {}
     product.suppliers_regions = {
         region: RegionSupplier(**supplier.model_dump())
         for region, supplier in (schema.suppliers_regions or {}).items()
@@ -92,6 +92,11 @@ def schema_to_pricing(schema: ProductSchema, product_id: str) -> ProductPricing:
         price=Price(**schema.price.model_dump()) if schema.price is not None else Price(),
         discounts=schema.discounts or [],
     )
+
+
+def schema_to_catalog(schema: ProductSchema, product_id: str) -> ProductCatalog:
+    # La présence du slug est vérifiée par le controller avant la conversion.
+    return ProductCatalog(product_id=product_id, slug=schema.slug or "", images=schema.images or {})
 
 
 def schema_to_stock(schema: ProductSchema, product_id: str) -> ProductStock:

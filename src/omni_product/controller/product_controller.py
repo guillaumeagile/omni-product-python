@@ -4,6 +4,7 @@ from omni_product.anemic_model import Product
 from omni_product.controller.schemas import (
     ProductSchema,
     product_to_schema,
+    schema_to_catalog,
     schema_to_pricing,
     schema_to_product,
     schema_to_stock,
@@ -21,6 +22,19 @@ def _to_schema(product_service: ProductServiceDep, product: Product) -> ProductS
         product_service.find_transport(product.id),
         product_service.find_stock(product.id),
         product_service.find_pricing(product.id),
+        product_service.find_catalog(product.id),
+    )
+
+
+def _save(product_service: ProductServiceDep, body: ProductSchema, product_id: str) -> Product:
+    if body.slug is None or not body.slug.strip():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product slug is missing")
+    return product_service.save(
+        schema_to_product(body, product_id),
+        schema_to_transport(body, product_id),
+        schema_to_stock(body, product_id),
+        schema_to_pricing(body, product_id),
+        schema_to_catalog(body, product_id),
     )
 
 
@@ -47,13 +61,7 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
     if body is not None:
         if body.name is not None:
-            product = product_service.save(
-                schema_to_product(body, body.id),
-                schema_to_transport(body, body.id),
-                schema_to_stock(body, body.id),
-                schema_to_pricing(body, body.id),
-            )
-            return _to_schema(product_service, product)
+            return _to_schema(product_service, _save(product_service, body, body.id))
     raise ProductNameException("Something went wrong in the void")
 
 
@@ -64,13 +72,7 @@ def update_product(
     if product_service.find_by_id(product_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     # L'id du chemin prévaut sur celui du corps.
-    product = product_service.save(
-        schema_to_product(body, product_id),
-        schema_to_transport(body, product_id),
-        schema_to_stock(body, product_id),
-        schema_to_pricing(body, product_id),
-    )
-    return _to_schema(product_service, product)
+    return _to_schema(product_service, _save(product_service, body, product_id))
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

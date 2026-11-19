@@ -112,9 +112,7 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     supplier_service: SupplierService, session: Session
 ) -> None:
     _create(supplier_service, "sup1", "Supplier A")
-    product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
-    )
+    product_dal.save(session, Product(id="prod1", name="Test Product", supplier_id="sup1"))
     assert product_dal.find_by_id(session, "prod1") is not None
 
     supplier_service.delete_supplier("sup1")
@@ -128,9 +126,7 @@ def test_should_get_suppliers_by_product(
     """Désactivé en Java (LAZY_LOADING_ISSUE.md) : une requête SQL évite le lazy loading."""
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
-    product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
-    )
+    product_dal.save(session, Product(id="prod1", name="Test Product", supplier_id="sup1"))
 
     suppliers = supplier_service.get_suppliers_by_product("prod1")
 

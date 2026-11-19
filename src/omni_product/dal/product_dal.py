@@ -12,14 +12,6 @@ def find_by_id(session: Session, product_id: str) -> Product | None:
     return session.get(Product, product_id)
 
 
-def find_by_slug(session: Session, slug: str) -> Product | None:
-    return session.scalars(select(Product).where(Product.slug == slug)).first()
-
-
-def exists_by_slug(session: Session, slug: str) -> bool:
-    return find_by_slug(session, slug) is not None
-
-
 def save(session: Session, product: Product) -> Product:
     saved = session.merge(product)
     session.commit()
@@ -28,13 +20,6 @@ def save(session: Session, product: Product) -> Product:
 
 def delete_by_id(session: Session, product_id: str) -> None:
     product = find_by_id(session, product_id)
-    if product is not None:
-        session.delete(product)
-        session.commit()
-
-
-def delete_by_slug(session: Session, slug: str) -> None:
-    product = find_by_slug(session, slug)
     if product is not None:
         session.delete(product)
         session.commit()

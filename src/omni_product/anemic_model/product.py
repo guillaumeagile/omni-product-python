@@ -55,7 +55,9 @@ class ProductDiscount(Base):
 class ProductImage(Base):
     __tablename__ = "product_images"
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("product_catalogs.product_id"), primary_key=True
+    )
     image_key: Mapped[str] = mapped_column(String, primary_key=True)
     image_detail: Mapped[str | None] = mapped_column(String)
 
@@ -134,6 +136,24 @@ class ProductPricing(Base):
         self.discounts = discounts
 
 
+class ProductCatalog(Base):
+    __tablename__ = "product_catalogs"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    image_rows: Mapped[dict[str, ProductImage]] = relationship(
+        collection_class=attribute_keyed_dict("image_key"), cascade=_ROW_CASCADE
+    )
+    images: AssociationProxy[dict[str, str | None]] = association_proxy(
+        "image_rows", "image_detail", creator=ProductImage
+    )
+
+    def __init__(self, product_id: str, slug: str, images: dict[str, str | None]) -> None:
+        self.product_id = product_id
+        self.slug = slug
+        self.images = images
+
+
 class Product(Base):
     __tablename__ = "products"
     # Héritage mono-table : toutes les sous-classes partagent la table `products`.
@@ -145,28 +165,17 @@ class Product(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     kind: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
 
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
     supplier: Mapped[Supplier | None] = relationship()
 
-    image_rows: Mapped[dict[str, ProductImage]] = relationship(
-        collection_class=attribute_keyed_dict("image_key"), cascade=_ROW_CASCADE
-    )
     supplier_region_rows: Mapped[dict[str, ProductSupplierRegion]] = relationship(
         collection_class=attribute_keyed_dict("region"), cascade=_ROW_CASCADE
     )
 
-    images: AssociationProxy[dict[str, str | None]] = association_proxy(
-        "image_rows", "image_detail", creator=ProductImage
-    )
     suppliers_regions: AssociationProxy[dict[str, RegionSupplier]] = association_proxy(
         "supplier_region_rows", "supplier", creator=ProductSupplierRegion
     )
-
-    def is_perishable(self) -> bool:
-        # La classe de base connaît sa sous-classe : une branche de plus à chaque nouveau type.
-        return isinstance(self, PerishableProduct)
 
 
 class PerishableProduct(Product):

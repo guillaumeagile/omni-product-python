@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from omni_product.anemic_model import Supplier
 from omni_product.dal import (
+    product_catalog_dal,
     product_dal,
     product_pricing_dal,
     product_stock_dal,
@@ -70,6 +71,7 @@ class SupplierService:
     def delete_supplier(self, supplier_id: str) -> None:
         supplier = self._get_or_raise(supplier_id)
         # Règle métier conservée : supprimer un fournisseur supprime ses produits.
+        product_catalog_dal.mark_for_deletion_by_supplier_id(self._session, supplier_id)
         product_pricing_dal.mark_for_deletion_by_supplier_id(self._session, supplier_id)
         product_stock_dal.mark_for_deletion_by_supplier_id(self._session, supplier_id)
         product_transport_dal.mark_for_deletion_by_supplier_id(self._session, supplier_id)

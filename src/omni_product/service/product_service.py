@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import PerishableProduct, Product, ProductTransport
-from omni_product.dal import product_dal, product_transport_dal
+from omni_product.anemic_model import PerishableProduct, Product, ProductStock, ProductTransport
+from omni_product.dal import product_dal, product_stock_dal, product_transport_dal
 from omni_product.domain.model.freshness import is_expired
 
 
@@ -28,12 +28,23 @@ class ProductService:
     def find_transport(self, product_id: str) -> ProductTransport | None:
         return product_transport_dal.find_by_product_id(self._session, product_id)
 
-    def save(self, product: Product, transport: ProductTransport | None = None) -> Product:
+    def find_stock(self, product_id: str) -> ProductStock | None:
+        return product_stock_dal.find_by_product_id(self._session, product_id)
+
+    def save(
+        self,
+        product: Product,
+        transport: ProductTransport | None = None,
+        stock: ProductStock | None = None,
+    ) -> Product:
         saved = product_dal.save(self._session, product)
         if transport is not None:
             product_transport_dal.save(self._session, transport)
+        if stock is not None:
+            product_stock_dal.save(self._session, stock)
         return saved
 
     def delete_by_id(self, product_id: str) -> None:
+        product_stock_dal.delete_by_product_id(self._session, product_id)
         product_transport_dal.delete_by_product_id(self._session, product_id)
         product_dal.delete_by_id(self._session, product_id)

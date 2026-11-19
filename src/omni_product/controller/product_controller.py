@@ -9,6 +9,7 @@ from omni_product.controller.schemas import (
 from omni_product.dependencies import ProductServiceDep
 from omni_product.domain.model import (
     Product,
+    ProductId,
     ProductPricing,
     ProductStorage,
     ProductSupply,
@@ -37,7 +38,9 @@ def _require_name(body: ProductSchema) -> None:
         raise ProductNameException("Product name is missing")
 
 
-def _save(body: ProductSchema, product_id: str, product_service: ProductService) -> ProductSchema:
+def _save(
+    body: ProductSchema, product_id: ProductId, product_service: ProductService
+) -> ProductSchema:
     saved = product_service.save_with_contexts(
         schema_to_product(body, product_id), schema_to_contexts(body, product_id)
     )
@@ -53,7 +56,7 @@ def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
 
 @router.get("/{product_id}")
 def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> ProductSchema:
-    product = product_service.find_by_id(product_id)
+    product = product_service.find_by_id(ProductId(product_id))
     if product is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return _to_schema(product, product_service)
@@ -66,7 +69,7 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
     if body is not None:
         if body.name is not None:
-            return _save(body, body.id, product_service)
+            return _save(body, ProductId(body.id), product_service)
     raise ProductNameException("Something went wrong in the void")
 
 
@@ -74,16 +77,18 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
 def update_product(
     product_id: str, body: ProductSchema, product_service: ProductServiceDep
 ) -> ProductSchema:
-    if product_service.find_by_id(product_id) is None:
+    id = ProductId(product_id)
+    if product_service.find_by_id(id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     _require_name(body)
     # L'id du chemin prévaut sur celui du corps.
-    return _save(body, product_id, product_service)
+    return _save(body, id, product_service)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: str, product_service: ProductServiceDep) -> Response:
-    if product_service.find_by_id(product_id) is None:
+    id = ProductId(product_id)
+    if product_service.find_by_id(id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    product_service.delete_by_id(product_id)
+    product_service.delete_by_id(id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

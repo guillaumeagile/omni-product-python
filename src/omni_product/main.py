@@ -9,6 +9,7 @@ from omni_product.config import Settings
 from omni_product.controller import product_controller, supplier_controller
 from omni_product.dal.mapping import metadata
 from omni_product.database import create_db_engine, create_session_factory
+from omni_product.domain.exception.invalid_value import InvalidValue
 from omni_product.exception.product_name_exception import ProductNameException
 
 FAILED_DEPENDENCY = 424
@@ -38,6 +39,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(ProductNameException)
     def product_name_handler(_: Request, exc: ProductNameException) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
         return JSONResponse({"detail": str(exc)}, status_code=FAILED_DEPENDENCY)
+
+    @app.exception_handler(InvalidValue)
+    def invalid_value_handler(_: Request, exc: InvalidValue) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        return JSONResponse({"detail": str(exc)}, status_code=422)
 
     app.include_router(product_controller.router)
     app.include_router(supplier_controller.router)

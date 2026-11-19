@@ -1,7 +1,15 @@
 from sqlalchemy.orm import Session
 
 from omni_product.dal import product_dal, supplier_dal
-from omni_product.domain.model import Supplier
+from omni_product.domain.model import (
+    Country,
+    Email,
+    Phone,
+    ProductId,
+    Region,
+    Supplier,
+    SupplierId,
+)
 
 
 class SupplierService:
@@ -10,12 +18,12 @@ class SupplierService:
 
     def create_supplier(
         self,
-        id: str,
+        id: SupplierId,
         name: str | None,
-        contact_email: str | None,
-        contact_phone: str | None,
-        country: str | None,
-        region: str | None,
+        contact_email: Email | None,
+        contact_phone: Phone | None,
+        country: Country | None,
+        region: Region | None,
     ) -> Supplier:
         supplier = Supplier(
             id=id,
@@ -27,31 +35,31 @@ class SupplierService:
         )
         return supplier_dal.save(self._session, supplier)
 
-    def get_supplier(self, supplier_id: str) -> Supplier | None:
+    def get_supplier(self, supplier_id: SupplierId) -> Supplier | None:
         return supplier_dal.find_by_id(self._session, supplier_id)
 
     def get_all_suppliers(self) -> list[Supplier]:
         return supplier_dal.find_all(self._session)
 
-    def get_suppliers_by_product(self, product_id: str) -> list[Supplier]:
+    def get_suppliers_by_product(self, product_id: ProductId) -> list[Supplier]:
         if product_dal.find_by_id(self._session, product_id) is None:
-            raise ValueError(f"Product not found: {product_id}")
+            raise ValueError(f"Product not found: {product_id.value}")
         return supplier_dal.find_by_product_id(self._session, product_id)
 
-    def get_suppliers_by_country(self, country: str) -> list[Supplier]:
+    def get_suppliers_by_country(self, country: Country) -> list[Supplier]:
         return supplier_dal.find_by_country(self._session, country)
 
-    def get_suppliers_by_region(self, region: str) -> list[Supplier]:
+    def get_suppliers_by_region(self, region: Region) -> list[Supplier]:
         return supplier_dal.find_by_region(self._session, region)
 
     def update_supplier(
         self,
-        id: str,
+        id: SupplierId,
         name: str | None,
-        contact_email: str | None,
-        contact_phone: str | None,
-        country: str | None,
-        region: str | None,
+        contact_email: Email | None,
+        contact_phone: Phone | None,
+        country: Country | None,
+        region: Region | None,
     ) -> Supplier:
         supplier = self._get_or_raise(id)
         supplier.name = name or supplier.name
@@ -61,11 +69,11 @@ class SupplierService:
         supplier.region = region
         return supplier_dal.save(self._session, supplier)
 
-    def delete_supplier(self, supplier_id: str) -> None:
+    def delete_supplier(self, supplier_id: SupplierId) -> None:
         supplier_dal.delete(self._session, self._get_or_raise(supplier_id))
 
-    def _get_or_raise(self, supplier_id: str) -> Supplier:
+    def _get_or_raise(self, supplier_id: SupplierId) -> Supplier:
         supplier = supplier_dal.find_by_id(self._session, supplier_id)
         if supplier is None:
-            raise ValueError(f"Supplier not found: {supplier_id}")
+            raise ValueError(f"Supplier not found: {supplier_id.value}")
         return supplier

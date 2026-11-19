@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from omni_product.anemic_model import Product
 from omni_product.controller.schemas import (
     ProductSchema,
     product_to_schema,
@@ -11,6 +10,7 @@ from omni_product.controller.schemas import (
     schema_to_stock,
 )
 from omni_product.dependencies import ProductServiceDep
+from omni_product.domain.model.product import Product
 from omni_product.exception.product_name_exception import ProductNameException
 from omni_product.service.product_service import ProductService
 

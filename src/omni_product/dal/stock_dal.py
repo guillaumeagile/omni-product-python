@@ -1,13 +1,16 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import ProductStock
+from omni_product.dal.conversion import stock_from_row, stock_to_row
+from omni_product.dal.rows import ProductStockRow
+from omni_product.domain.model.stock import ProductStock
 
 
 def find_by_product_id(session: Session, product_id: str) -> ProductStock | None:
-    return session.get(ProductStock, product_id)
+    row = session.get(ProductStockRow, product_id)
+    return None if row is None else stock_from_row(row)
 
 
 def save(session: Session, stock: ProductStock) -> ProductStock:
-    saved = session.merge(stock)
+    session.merge(stock_to_row(stock))
     session.commit()
-    return saved
+    return stock

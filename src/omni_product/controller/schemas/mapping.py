@@ -1,17 +1,5 @@
 from collections.abc import Mapping, Sequence
 
-from omni_product.anemic_model import (
-    NonExpiringProduct,
-    PerishableProduct,
-    Price,
-    Product,
-    ProductPrice,
-    ProductShipment,
-    ProductStock,
-    RegionSupplier,
-    Supplier,
-    Warehouse,
-)
 from omni_product.controller.schemas.product import (
     PriceSchema,
     ProductKind,
@@ -20,6 +8,12 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
+from omni_product.domain.model.pricing import Price, ProductPrice
+from omni_product.domain.model.product import NonExpiringProduct, PerishableProduct, Product
+from omni_product.domain.model.shipment import ProductShipment
+from omni_product.domain.model.stock import ProductStock, Warehouse
+from omni_product.domain.model.supplier import Supplier
+from omni_product.domain.model.supplier_region import RegionSupplier
 
 
 def _kind_of(product: Product) -> ProductKind:
@@ -66,6 +60,9 @@ def product_to_schema(
 
 def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
     """Construit une entité neuve ; `save` la fusionne avec l'existante (comme `PUT` en Java)."""
+    if schema.name is None or schema.slug is None:
+        # La base refuse déjà un nom ou un slug absent : on le dit avant d'arriver au modèle.
+        raise ValueError("Product name and slug are required")
     match schema.kind:
         case "perishable":
             product = PerishableProduct(

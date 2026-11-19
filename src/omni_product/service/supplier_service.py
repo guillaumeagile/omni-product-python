@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Supplier
 from omni_product.dal import product_dal, supplier_dal
+from omni_product.domain.model.supplier import Supplier
 
 
 class SupplierService:

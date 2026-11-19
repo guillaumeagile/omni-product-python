@@ -4,17 +4,12 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import (
-    NonExpiringProduct,
-    PerishableProduct,
-    Price,
-    ProductPrice,
-    ProductShipment,
-    ProductStock,
-    RegionSupplier,
-    Warehouse,
-)
 from omni_product.domain.model import freshness
+from omni_product.domain.model.pricing import Price, ProductPrice
+from omni_product.domain.model.product import NonExpiringProduct, PerishableProduct
+from omni_product.domain.model.shipment import ProductShipment
+from omni_product.domain.model.stock import ProductStock, Warehouse
+from omni_product.domain.model.supplier_region import RegionSupplier
 from omni_product.service.product_service import ProductService
 
 

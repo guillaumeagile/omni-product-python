@@ -1,22 +1,55 @@
-"""Le modèle du domaine : des dataclasses qui ignorent le stockage."""
+"""Le modèle du domaine : des entités (id typé) et des Value Objects (frozen), sans stockage."""
 
-from omni_product.domain.model.pricing import Price, ProductPricing
-from omni_product.domain.model.product import NonExpiringProduct, PerishableProduct, Product
-from omni_product.domain.model.storage import ProductStorage, Warehouse
-from omni_product.domain.model.supplier import Supplier
-from omni_product.domain.model.supply import ProductSupply, RegionSupplier
-from omni_product.domain.model.transport import ProductTransport
+from omni_product.domain.model.identity import ProductId, SupplierId
+from omni_product.domain.model.pricing import Amount, Price, ProductPricing, TaxRate
+from omni_product.domain.model.product import (
+    NonExpiringProduct,
+    PerishableProduct,
+    Product,
+    ShelfLifeDays,
+    Slug,
+)
+from omni_product.domain.model.storage import Location, ProductStorage, Quantity, Warehouse
+from omni_product.domain.model.supplier import Country, Email, Phone, Region, Supplier
+from omni_product.domain.model.supply import ProductSupply, RegionSupplier, Siren, TvaId
+from omni_product.domain.model.transport import (
+    CarbonEmission,
+    Distance,
+    ProductTransport,
+    TransportMode,
+    Volume,
+    Weight,
+)
 
 __all__ = [
+    "Amount",
+    "CarbonEmission",
+    "Country",
+    "Distance",
+    "Email",
+    "Location",
     "NonExpiringProduct",
     "PerishableProduct",
+    "Phone",
     "Price",
     "Product",
+    "ProductId",
     "ProductPricing",
     "ProductStorage",
     "ProductSupply",
     "ProductTransport",
+    "Quantity",
+    "Region",
     "RegionSupplier",
+    "ShelfLifeDays",
+    "Siren",
+    "Slug",
     "Supplier",
+    "SupplierId",
+    "TaxRate",
+    "TransportMode",
+    "TvaId",
+    "Volume",
     "Warehouse",
+    "Weight",
 ]

@@ -2,19 +2,30 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from omni_product.dal import product_dal, supplier_dal
-from omni_product.domain.model import Product, ProductSupply, Supplier
+from omni_product.domain.model import (
+    Country,
+    Email,
+    Phone,
+    Product,
+    ProductId,
+    ProductSupply,
+    Region,
+    Slug,
+    Supplier,
+    SupplierId,
+)
 
 
 def _supplier(
     supplier_id: str, name: str, country: str = "France", region: str = "Île-de-France"
 ) -> Supplier:
     return Supplier(
-        id=supplier_id,
+        id=SupplierId(supplier_id),
         name=name,
-        contact_email=f"contact@{name.replace(' ', '').lower()}.com",
-        contact_phone="+33123456789",
-        country=country,
-        region=region,
+        contact_email=Email(f"contact@{name.replace(' ', '').lower()}.com"),
+        contact_phone=Phone("+33123456789"),
+        country=Country(country),
+        region=Region(region),
     )
 
 
@@ -87,8 +98,8 @@ def test_should_get_suppliers_by_product(client: TestClient, session: Session) -
     supplier_dal.save(session, _supplier("sup2", "Supplier B"))
     product_dal.save_with_contexts(
         session,
-        Product(id="prod1", name="Test Product", slug="test-product"),
-        [ProductSupply(product_id="prod1", supplier_id="sup1")],
+        Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
+        [ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1"))],
     )
 
     response = client.get("/api/suppliers/product/prod1")
@@ -129,8 +140,8 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     supplier_dal.save(session, _supplier("sup1", "Supplier A"))
     product_dal.save_with_contexts(
         session,
-        Product(id="prod1", name="Test Product", slug="test-product"),
-        [ProductSupply(product_id="prod1", supplier_id="sup1")],
+        Product(id=ProductId("prod1"), name="Test Product", slug=Slug("test-product")),
+        [ProductSupply(id=ProductId("prod1"), supplier_id=SupplierId("sup1"))],
     )
 
     assert client.delete("/api/suppliers/sup1").status_code == 204

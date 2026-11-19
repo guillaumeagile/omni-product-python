@@ -107,7 +107,7 @@ class Product(Base):
     warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))
 
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
-    supplier: Mapped[Supplier | None] = relationship(back_populates="products")
+    supplier: Mapped[Supplier | None] = relationship()
 
     discount_rows: Mapped[list[ProductDiscount]] = relationship(
         cascade=_ROW_CASCADE, order_by=ProductDiscount.id

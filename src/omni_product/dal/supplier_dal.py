@@ -26,7 +26,8 @@ def find_by_name(session: Session, name: str) -> Supplier | None:
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
-    return _find_all_where(session, Supplier.products.any(Product.id == product_id))
+    supplier_id = select(Product.supplier_id).where(Product.id == product_id).scalar_subquery()
+    return _find_all_where(session, Supplier.id == supplier_id)
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:
@@ -36,6 +37,9 @@ def save(session: Session, supplier: Supplier) -> Supplier:
 
 
 def delete(session: Session, supplier: Supplier) -> None:
+    """Supprime le fournisseur et ses produits (liés par `supplier_id`) en une transaction."""
+    for product in session.scalars(select(Product).where(Product.supplier_id == supplier.id)):
+        session.delete(product)
     session.delete(supplier)
     session.commit()
 

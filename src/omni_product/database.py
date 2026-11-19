@@ -1,12 +1,8 @@
 from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from omni_product.config import Settings
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 def create_db_engine(settings: Settings) -> Engine:

@@ -1,12 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from omni_product.anemic_model import (
-    Product,
-    ProductPricing,
-    ProductStorage,
-    ProductSupply,
-    ProductTransport,
-)
 from omni_product.controller.schemas import (
     ProductSchema,
     product_to_schema,
@@ -14,6 +7,13 @@ from omni_product.controller.schemas import (
     schema_to_product,
 )
 from omni_product.dependencies import ProductServiceDep
+from omni_product.domain.model import (
+    Product,
+    ProductPricing,
+    ProductStorage,
+    ProductSupply,
+    ProductTransport,
+)
 from omni_product.exception.product_name_exception import ProductNameException
 from omni_product.service.product_service import ProductService
 
@@ -29,6 +29,12 @@ def _to_schema(product: Product, product_service: ProductService) -> ProductSche
         transport=product_service.find_context(ProductTransport, product.id),
         supply=product_service.find_context(ProductSupply, product.id),
     )
+
+
+def _require_name(body: ProductSchema) -> None:
+    """Un nom fait seulement d'espaces n'est pas un nom : le schéma ne le voit pas."""
+    if not body.name.strip():
+        raise ProductNameException("Product name is missing")
 
 
 def _save(body: ProductSchema, product_id: str, product_service: ProductService) -> ProductSchema:
@@ -55,8 +61,7 @@ def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> Pr
 
 @router.post("")
 def create_product(body: ProductSchema, product_service: ProductServiceDep) -> ProductSchema:
-    if body.name is None or not body.name.strip():
-        raise ProductNameException("Product name is missing")
+    _require_name(body)
     if body.id is None:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
     if body is not None:
@@ -71,6 +76,7 @@ def update_product(
 ) -> ProductSchema:
     if product_service.find_by_id(product_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
+    _require_name(body)
     # L'id du chemin prévaut sur celui du corps.
     return _save(body, product_id, product_service)
 

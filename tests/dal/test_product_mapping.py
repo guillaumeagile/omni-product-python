@@ -1,23 +1,12 @@
+"""Le branchement du modèle sur la base : `dal/mapping.py`."""
+
 from datetime import date
 
 from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import NonExpiringProduct, PerishableProduct, Product
-
-
-def test_is_perishable_is_true_only_for_perishable_products() -> None:
-    assert PerishableProduct(id="p1", name="Lait", slug="lait").is_perishable()
-    assert not NonExpiringProduct(id="p2", name="Sel", slug="sel").is_perishable()
-    assert not Product(id="p3", name="Stylo", slug="stylo").is_perishable()
-
-
-def test_perishable_fields_are_optional_in_memory() -> None:
-    product = PerishableProduct(id="p1", name="Lait", slug="lait")
-
-    assert product.expiration_date is None
-    assert product.shelf_life_days is None
+from omni_product.domain.model import NonExpiringProduct, PerishableProduct, Product
 
 
 def test_kind_is_written_from_the_python_class(session: Session) -> None:

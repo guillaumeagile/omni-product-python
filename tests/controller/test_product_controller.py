@@ -35,7 +35,7 @@ def test_crud_operations(client: TestClient) -> None:
     assert body["warehouse"] == {"location": "Main Warehouse"}
 
     # Validation rule: the name is required
-    assert client.post("/api/products", json={"name": ""}).status_code == 424
+    assert client.post("/api/products", json={"name": "", "slug": "vide"}).status_code == 424
 
     # Get all
     all_products = client.get("/api/products")
@@ -69,9 +69,22 @@ def test_crud_operations(client: TestClient) -> None:
 
 
 def test_update_and_delete_unknown_product_return_not_found(client: TestClient) -> None:
-    assert client.put("/api/products/ghost", json={"name": "x"}).status_code == 404
+    assert client.put("/api/products/ghost", json={"name": "x", "slug": "x"}).status_code == 404
     assert client.delete("/api/products/ghost").status_code == 404
 
 
 def test_create_product_without_id_is_rejected(client: TestClient) -> None:
-    assert client.post("/api/products", json={"name": "No id"}).status_code == 422
+    assert client.post("/api/products", json={"name": "No id", "slug": "no-id"}).status_code == 422
+
+
+def test_create_or_update_product_without_name_or_slug_is_rejected(client: TestClient) -> None:
+    assert client.post("/api/products", json={"id": "p1", "slug": "s"}).status_code == 422
+    assert client.post("/api/products", json={"id": "p1", "name": "n"}).status_code == 422
+    client.post("/api/products", json={"id": "p1", "name": "Stylo", "slug": "stylo"})
+    assert client.put("/api/products/p1", json={"slug": "stylo"}).status_code == 422
+
+
+def test_update_product_with_blank_name_is_rejected(client: TestClient) -> None:
+    client.post("/api/products", json={"id": "p1", "name": "Stylo", "slug": "stylo"})
+
+    assert client.put("/api/products/p1", json={"name": "  ", "slug": "stylo"}).status_code == 424

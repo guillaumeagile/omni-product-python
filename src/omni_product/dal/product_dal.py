@@ -3,7 +3,8 @@ from collections.abc import Iterable
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import (
+from omni_product.dal.mapping import product_supply, products
+from omni_product.domain.model import (
     Product,
     ProductPricing,
     ProductStorage,
@@ -22,7 +23,7 @@ _CONTEXTS: tuple[type[ProductContext], ...] = (
 
 
 def find_all(session: Session) -> list[Product]:
-    return list(session.scalars(select(Product).order_by(Product.id)))
+    return list(session.scalars(select(Product).order_by(products.c.id)))
 
 
 def find_by_id(session: Session, product_id: str) -> Product | None:
@@ -30,15 +31,15 @@ def find_by_id(session: Session, product_id: str) -> Product | None:
 
 
 def find_by_slug(session: Session, slug: str) -> Product | None:
-    return session.scalars(select(Product).where(Product.slug == slug)).first()
+    return session.scalars(select(Product).where(products.c.slug == slug)).first()
 
 
 def find_by_supplier_id(session: Session, supplier_id: str) -> list[Product]:
     statement = (
         select(Product)
-        .join(ProductSupply, ProductSupply.product_id == Product.id)
-        .where(ProductSupply.supplier_id == supplier_id)
-        .order_by(Product.id)
+        .join(product_supply, product_supply.c.product_id == products.c.id)
+        .where(product_supply.c.supplier_id == supplier_id)
+        .order_by(products.c.id)
     )
     return list(session.scalars(statement))
 

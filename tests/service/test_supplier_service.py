@@ -1,8 +1,8 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, ProductSupply
 from omni_product.dal import product_dal
+from omni_product.domain.model import Product, ProductSupply
 from omni_product.service.supplier_service import SupplierService
 
 

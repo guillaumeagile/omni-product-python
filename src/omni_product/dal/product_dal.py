@@ -21,26 +21,9 @@ def exists_by_slug(session: Session, slug: str) -> bool:
 
 
 def save(session: Session, product: Product) -> Product:
-    saved = session.merge(product)
-    session.commit()
-    return saved
+    """Fusionne le produit sans valider : le service valide la transaction complète."""
+    return session.merge(product)
 
 
-def delete_by_id(session: Session, product_id: str) -> None:
-    product = find_by_id(session, product_id)
-    if product is not None:
-        session.delete(product)
-        session.commit()
-
-
-def delete_by_slug(session: Session, slug: str) -> None:
-    product = find_by_slug(session, slug)
-    if product is not None:
-        session.delete(product)
-        session.commit()
-
-
-def delete_all(session: Session) -> None:
-    for product in find_all(session):
-        session.delete(product)
-    session.commit()
+def delete(session: Session, product: Product) -> None:
+    session.delete(product)

@@ -30,21 +30,28 @@ class Point:
 class CarteBancaire:
     numero: str
 
+
 @dataclass(frozen=True)
 class Paypal:
     email: str
+
 
 @dataclass(frozen=True)
 class Especes:
     pass
 
+
 Paiement = CarteBancaire | Paypal | Especes
+
 
 def libelle(paiement: Paiement) -> str:
     match paiement:
-        case CarteBancaire(numero=n): return f"carte {n[-4:]}"
-        case Paypal(email=e):         return f"paypal {e}"
-        case Especes():               return "espèces"
+        case CarteBancaire(numero=n):
+            return f"carte {n[-4:]}"
+        case Paypal(email=e):
+            return f"paypal {e}"
+        case Especes():
+            return "espèces"
 ```
 
 Les types de résultat de l'atelier suivent le même modèle : `Retire | StockInsuffisant`. Une fonction qui retire du stock renvoie l'une des deux variantes, et l'appelant doit les traiter.

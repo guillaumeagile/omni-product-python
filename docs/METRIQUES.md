@@ -46,12 +46,12 @@ seuls ou de documentation seule en fait partie.
 Chaque `if`, `for`, `while`, `and`, `or` ou `except` en ajoute un.
 
 ```python
-def frais(poids, express):          # 1 chemin de base
-    if poids > 20:                  # +1
+def frais(poids, express):  # 1 chemin de base
+    if poids > 20:  # +1
         return 30
-    if express and poids > 5:       # +1 pour le if, +1 pour le and
+    if express and poids > 5:  # +1 pour le if, +1 pour le and
         return 15
-    return 5                        # complexité = 4
+    return 5  # complexité = 4
 ```
 
 **Pourquoi on le regarde.** C'est le nombre de tests minimum pour couvrir la fonction. À 4, il faut 4 cas de test. À

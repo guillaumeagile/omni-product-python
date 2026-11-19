@@ -1,14 +1,24 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product
+from omni_product.anemic_model import Product, ProductSupply
 from omni_product.dal import product_dal
+from omni_product.service.product_service import ProductService
+from omni_product.service.product_view import ProductView
 from omni_product.service.supplier_service import SupplierService
 
 
 @pytest.fixture
 def supplier_service(session: Session) -> SupplierService:
     return SupplierService(session)
+
+
+def _product_of(session: Session, product_id: str, supplier_id: str) -> None:
+    view = ProductView(
+        product=Product(id=product_id, name="Test Product", slug="test-product"),
+        supply=ProductSupply(product_id=product_id, supplier_id=supplier_id),
+    )
+    ProductService(session).save(view)
 
 
 def _create(
@@ -112,9 +122,7 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     supplier_service: SupplierService, session: Session
 ) -> None:
     _create(supplier_service, "sup1", "Supplier A")
-    product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
-    )
+    _product_of(session, "prod1", "sup1")
     assert product_dal.find_by_id(session, "prod1") is not None
 
     supplier_service.delete_supplier("sup1")
@@ -128,9 +136,7 @@ def test_should_get_suppliers_by_product(
     """Désactivé en Java (LAZY_LOADING_ISSUE.md) : une requête SQL évite le lazy loading."""
     _create(supplier_service, "sup1", "Supplier A")
     _create(supplier_service, "sup2", "Supplier B")
-    product_dal.save(
-        session, Product(id="prod1", name="Test Product", slug="test-product", supplier_id="sup1")
-    )
+    _product_of(session, "prod1", "sup1")
 
     suppliers = supplier_service.get_suppliers_by_product("prod1")
 

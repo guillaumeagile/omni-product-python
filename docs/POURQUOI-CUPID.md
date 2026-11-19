@@ -39,7 +39,9 @@ Chaque lettre en une image, avec du code :
 
 ```python
 # avant : le seuil est dans le code
-def remise_fidelite(total): return total * 0.9 if total > 100 else total
+def remise_fidelite(total):
+    return total * 0.9 if total > 100 else total
+
 
 # après : on compose
 def remise(seuil: float, taux: float) -> Callable[[float], float]:
@@ -56,6 +58,7 @@ chacune une peuvent se lire, se tester et se changer séparément.
 def retirer(self, quantite):
     if quantite > self.stock:
         raise ValueError("stock insuffisant")
+
 
 # après : le résultat dit tout
 def retirer(self, quantite) -> Retire | StockInsuffisant: ...
@@ -77,7 +80,7 @@ perimes = [produit.nom for produit in produits if produit.est_perime()]
 
 # plus loin : un enchaînement fluide sur un résultat (monade), sans `if` ni `try`
 prix_ttc = (
-    trouver(produit_id)                   # Ok(produit) ou Err(Introuvable)
+    trouver(produit_id)  # Ok(produit) ou Err(Introuvable)
     .map(lambda produit: produit.prix)
     .map(lambda prix: prix * 1.2)
 )
@@ -213,9 +216,9 @@ saute les étapes suivantes. Il n'y a ni `if` ni `try` entre les étapes.
 ```python
 def passer_commande(demande):
     return (
-        valider(demande)              # Ok(demande) ou Err(Invalide)
-        .and_then(trouver_produit)    # Ok(produit)  ou Err(Introuvable)
-        .and_then(retirer_du_stock)   # Ok(retrait)  ou Err(StockInsuffisant)
+        valider(demande)  # Ok(demande) ou Err(Invalide)
+        .and_then(trouver_produit)  # Ok(produit)  ou Err(Introuvable)
+        .and_then(retirer_du_stock)  # Ok(retrait)  ou Err(StockInsuffisant)
         .map(facturer)
     )
 ```

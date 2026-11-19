@@ -1,7 +1,7 @@
+from omni_product.anemic_model.pricing import Price, ProductDiscount, ProductPrice
 from omni_product.anemic_model.product import (
     NonExpiringProduct,
     PerishableProduct,
-    Price,
     Product,
     RegionSupplier,
 )
@@ -14,6 +14,8 @@ __all__ = [
     "PerishableProduct",
     "Price",
     "Product",
+    "ProductDiscount",
+    "ProductPrice",
     "ProductShipment",
     "ProductStock",
     "RegionSupplier",

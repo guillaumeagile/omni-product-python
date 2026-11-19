@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String
+from sqlalchemy import Date, ForeignKey, Integer, String
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, composite, mapped_column, relationship
 from sqlalchemy.orm.collections import attribute_keyed_dict
@@ -13,14 +13,6 @@ from omni_product.database import Base
 
 if TYPE_CHECKING:
     from omni_product.anemic_model.supplier import Supplier
-
-
-# Équivalents des @Embeddable Java : des composites SQLAlchemy mis à plat dans la table parente.
-@dataclass
-class Price:
-    base: float | None = None
-    tax: float | None = None
-    tax_rate: float | None = None
 
 
 @dataclass
@@ -33,17 +25,6 @@ class RegionSupplier:
 
 
 # Équivalents des @ElementCollection + @CollectionTable.
-class ProductDiscount(Base):
-    __tablename__ = "product_discounts"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
-    discount: Mapped[str] = mapped_column(String)
-
-    def __init__(self, discount: str) -> None:
-        self.discount = discount
-
-
 class ProductImage(Base):
     __tablename__ = "product_images"
 
@@ -89,19 +70,9 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
 
-    price: Mapped[Price] = composite(
-        Price,
-        mapped_column("price_base", Float),
-        mapped_column("price_tax", Float),
-        mapped_column("price_tax_rate", Float),
-    )
-
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
     supplier: Mapped[Supplier | None] = relationship()
 
-    discount_rows: Mapped[list[ProductDiscount]] = relationship(
-        cascade=_ROW_CASCADE, order_by=ProductDiscount.id
-    )
     image_rows: Mapped[dict[str, ProductImage]] = relationship(
         collection_class=attribute_keyed_dict("image_key"), cascade=_ROW_CASCADE
     )
@@ -109,9 +80,6 @@ class Product(Base):
         collection_class=attribute_keyed_dict("region"), cascade=_ROW_CASCADE
     )
 
-    discounts: AssociationProxy[list[str]] = association_proxy(
-        "discount_rows", "discount", creator=ProductDiscount
-    )
     images: AssociationProxy[dict[str, str | None]] = association_proxy(
         "image_rows", "image_detail", creator=ProductImage
     )

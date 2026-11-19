@@ -1,8 +1,11 @@
+from collections.abc import Sequence
+
 from omni_product.anemic_model import (
     NonExpiringProduct,
     PerishableProduct,
     Price,
     Product,
+    ProductPrice,
     ProductShipment,
     ProductStock,
     RegionSupplier,
@@ -31,6 +34,8 @@ def product_to_schema(
     product: Product,
     stock: ProductStock | None = None,
     shipment: ProductShipment | None = None,
+    price: ProductPrice | None = None,
+    discounts: Sequence[str] = (),
 ) -> ProductSchema:
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
@@ -40,8 +45,8 @@ def product_to_schema(
         slug=product.slug,
         expiration_date=perishable.expiration_date if perishable else None,
         shelf_life_days=perishable.shelf_life_days if perishable else None,
-        price=PriceSchema.model_validate(product.price) if product.price else None,
-        discounts=list(product.discounts),
+        price=PriceSchema.model_validate(price.price) if price and price.price else None,
+        discounts=list(discounts),
         images=dict(product.images),
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
@@ -74,9 +79,6 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
         case _:
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
     product.supplier_id = schema.supplier_id
-    if schema.price is not None:
-        product.price = Price(**schema.price.model_dump())
-    product.discounts = schema.discounts or []
     product.images = schema.images or {}
     product.suppliers_regions = {
         region: RegionSupplier(**supplier.model_dump())
@@ -98,6 +100,11 @@ def schema_to_stock(schema: ProductSchema, product_id: str) -> ProductStock:
 
 def schema_to_shipment(schema: ProductSchema, product_id: str) -> ProductShipment:
     return ProductShipment(product_id=product_id, kilos=schema.kilos, volume=schema.volume)
+
+
+def schema_to_price(schema: ProductSchema, product_id: str) -> ProductPrice:
+    price = Price(**schema.price.model_dump()) if schema.price is not None else None
+    return ProductPrice(product_id=product_id, price=price)
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

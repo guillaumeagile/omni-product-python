@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from omni_product.anemic_model import (
     NonExpiringProduct,
     PerishableProduct,
+    Price,
+    ProductPrice,
     ProductShipment,
     ProductStock,
     Warehouse,
@@ -33,6 +35,19 @@ def test_should_delete_stock_and_shipment_with_their_product(
 
     assert product_service.find_stock("p1") is None
     assert product_service.find_shipment("p1") is None
+
+
+def test_should_delete_price_and_discounts_with_their_product(
+    product_service: ProductService,
+) -> None:
+    product_service.save(NonExpiringProduct(id="p1", name="Sel", slug="sel"))
+    product_service.save_price(ProductPrice(product_id="p1", price=Price(base=10.0, tax=2.0)))
+    product_service.replace_discounts("p1", ["Soldes", "Fidélité"])
+
+    product_service.delete_by_id("p1")
+
+    assert product_service.find_price("p1") is None
+    assert product_service.find_discounts("p1") == []
 
 
 def test_find_expired_returns_only_perishable_products_past_their_date(

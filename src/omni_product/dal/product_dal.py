@@ -1,7 +1,13 @@
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, ProductShipment, ProductStock
+from omni_product.anemic_model import (
+    Product,
+    ProductDiscount,
+    ProductPrice,
+    ProductShipment,
+    ProductStock,
+)
 
 
 def find_all(session: Session) -> list[Product]:
@@ -50,8 +56,8 @@ def delete_by_supplier_id(session: Session, supplier_id: str) -> None:
 
 
 def delete_all(session: Session) -> None:
-    session.execute(delete(ProductStock))
-    session.execute(delete(ProductShipment))
+    for table in (ProductStock, ProductShipment, ProductPrice, ProductDiscount):
+        session.execute(delete(table))
     for product in find_all(session):
         session.delete(product)
     session.commit()
@@ -59,5 +65,5 @@ def delete_all(session: Session) -> None:
 
 def _delete_details(session: Session, product_id: str) -> None:
     """Supprime les lignes liées au produit (stock, expédition) avant le produit lui-même."""
-    session.execute(delete(ProductStock).where(ProductStock.product_id == product_id))
-    session.execute(delete(ProductShipment).where(ProductShipment.product_id == product_id))
+    for table in (ProductStock, ProductShipment, ProductPrice, ProductDiscount):
+        session.execute(delete(table).where(table.product_id == product_id))

@@ -3,6 +3,7 @@ from omni_product.anemic_model import (
     PerishableProduct,
     Price,
     Product,
+    ProductTransport,
     RegionSupplier,
     Supplier,
     Warehouse,
@@ -25,7 +26,7 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
-def product_to_schema(product: Product) -> ProductSchema:
+def product_to_schema(product: Product, transport: ProductTransport | None = None) -> ProductSchema:
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
@@ -41,8 +42,8 @@ def product_to_schema(product: Product) -> ProductSchema:
             region: RegionSupplierSchema.model_validate(supplier)
             for region, supplier in product.suppliers_regions.items()
         },
-        kilos=product.kilos,
-        volume=product.volume,
+        kilos=transport.kilos if transport else None,
+        volume=transport.volume if transport else None,
         quantity=product.quantity,
         stock=product.stock,
         warehouse=WarehouseSchema.model_validate(product.warehouse) if product.warehouse else None,
@@ -65,8 +66,6 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = NonExpiringProduct(id=product_id, name=schema.name, slug=schema.slug)
         case _:
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
-    product.kilos = schema.kilos
-    product.volume = schema.volume
     product.quantity = schema.quantity if schema.quantity is not None else schema.stock
     product.stock = schema.stock or 0
     product.supplier_id = schema.supplier_id
@@ -81,6 +80,10 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
         for region, supplier in (schema.suppliers_regions or {}).items()
     }
     return product
+
+
+def schema_to_transport(schema: ProductSchema, product_id: str) -> ProductTransport:
+    return ProductTransport(product_id=product_id, kilos=schema.kilos, volume=schema.volume)
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

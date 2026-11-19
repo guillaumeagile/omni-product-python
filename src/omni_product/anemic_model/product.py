@@ -78,6 +78,19 @@ class ProductSupplierRegion(Base):
         self.supplier = supplier
 
 
+class ProductTransport(Base):
+    __tablename__ = "product_transports"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    kilos: Mapped[float | None] = mapped_column(Float)
+    volume: Mapped[str | None] = mapped_column(String)
+
+    def __init__(self, product_id: str, kilos: float | None, volume: str | None) -> None:
+        self.product_id = product_id
+        self.kilos = kilos
+        self.volume = volume
+
+
 _ROW_CASCADE = "all, delete-orphan"
 
 
@@ -100,8 +113,6 @@ class Product(Base):
         mapped_column("price_tax", Float),
         mapped_column("price_tax_rate", Float),
     )
-    kilos: Mapped[float | None] = mapped_column(Float)
-    volume: Mapped[str | None] = mapped_column(String)
     quantity: Mapped[int | None] = mapped_column(Integer)
     stock: Mapped[int | None] = mapped_column(Integer)
     warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))

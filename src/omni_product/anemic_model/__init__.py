@@ -3,6 +3,7 @@ from omni_product.anemic_model.product import (
     PerishableProduct,
     Price,
     Product,
+    ProductTransport,
     RegionSupplier,
     Warehouse,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "PerishableProduct",
     "Price",
     "Product",
+    "ProductTransport",
     "RegionSupplier",
     "Supplier",
     "Warehouse",

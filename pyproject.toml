@@ -39,7 +39,7 @@ addopts = "-ra --strict-markers"
 [tool.mutmut]
 # Périmètre limité au modèle : la mutation sur tout le code prendrait trop de temps en CI.
 source_paths = ["src/omni_product/"]
-only_mutate = ["src/omni_product/anemic_model/*"]
+only_mutate = ["src/omni_product/anemic_model/*", "src/omni_product/dal/*", "src/omni_product/service/supplier_service.py"]
 pytest_add_cli_args_test_selection = ["tests/"]
 # Les tests du harnais et des scripts importent `harness` et `scripts`, absents de la copie que mutmut
 # exécute (mutants/) : hors périmètre.

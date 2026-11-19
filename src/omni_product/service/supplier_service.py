@@ -67,6 +67,13 @@ class SupplierService:
         ProductService(self._session).delete_by_supplier_id(supplier_id)
         supplier_dal.delete(self._session, supplier)
 
+    def from_services(self, id: str, name: str) -> Supplier:
+        """Fournisseur neuf, avec sa région connue. Sans liste de produits (contexte Catalog)."""
+        supplier = Supplier(id=id, name=name)
+        existing = self.get_supplier(id)
+        supplier.region = existing.region if existing is not None else None
+        return supplier
+
     def _get_or_raise(self, supplier_id: str) -> Supplier:
         supplier = supplier_dal.find_by_id(self._session, supplier_id)
         if supplier is None:

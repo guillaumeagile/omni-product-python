@@ -15,6 +15,11 @@ class ProductImage(Base):
     image_key: Mapped[str] = mapped_column(String, primary_key=True)
     image_detail: Mapped[str | None] = mapped_column(String)
 
+    def __init__(self, product_id: str, image_key: str, image_detail: str | None) -> None:
+        self.product_id = product_id
+        self.image_key = image_key
+        self.image_detail = image_detail
+
 
 def find_all(session: Session) -> list[Product]:
     return list(session.scalars(select(Product).order_by(Product.id)))

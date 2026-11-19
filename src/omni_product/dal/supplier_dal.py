@@ -20,6 +20,11 @@ class ProductSupplierRegion(Base):
         mapped_column("tva_id", String),
     )
 
+    def __init__(self, product_id: str, region: str, supplier: RegionSupplier) -> None:
+        self.product_id = product_id
+        self.region = region
+        self.supplier = supplier
+
 
 def find_all(session: Session) -> list[Supplier]:
     return list(session.scalars(select(Supplier).order_by(Supplier.id)))

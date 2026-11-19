@@ -26,6 +26,10 @@ class ProductDiscount(Base):
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
     discount: Mapped[str] = mapped_column(String)
 
+    def __init__(self, product_id: str, discount: str) -> None:
+        self.product_id = product_id
+        self.discount = discount
+
 
 def find_price(session: Session, product_id: str) -> Price | None:
     row = session.get(ProductPrice, product_id)

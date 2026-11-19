@@ -1,7 +1,24 @@
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import ForeignKey, String, select
+from sqlalchemy import delete as delete_rows
+from sqlalchemy.orm import Mapped, Session, composite, mapped_column
 
-from omni_product.anemic_model import Product, Supplier
+from omni_product.anemic_model import Product, RegionSupplier, Supplier
+from omni_product.database import Base
+
+
+class ProductSupplierRegion(Base):
+    """Contexte Supplier : le fournisseur d'un produit par région, lié par `product_id`."""
+
+    __tablename__ = "product_suppliers"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    region: Mapped[str] = mapped_column(String, primary_key=True)
+    supplier: Mapped[RegionSupplier] = composite(
+        RegionSupplier,
+        mapped_column("name", String),
+        mapped_column("siren", String),
+        mapped_column("tva_id", String),
+    )
 
 
 def find_all(session: Session) -> list[Supplier]:
@@ -26,7 +43,29 @@ def find_by_name(session: Session, name: str) -> Supplier | None:
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
-    return _find_all_where(session, Supplier.products.any(Product.id == product_id))
+    supplier_ids = select(Product.supplier_id).where(Product.id == product_id)
+    return _find_all_where(session, Supplier.id.in_(supplier_ids))
+
+
+def find_regions(session: Session, product_id: str) -> dict[str, RegionSupplier]:
+    statement = select(ProductSupplierRegion).where(ProductSupplierRegion.product_id == product_id)
+    return {row.region: row.supplier for row in session.scalars(statement)}
+
+
+def replace_regions(
+    session: Session, product_id: str, suppliers_regions: dict[str, RegionSupplier]
+) -> None:
+    delete_regions_for(session, product_id)
+    session.add_all(
+        ProductSupplierRegion(product_id=product_id, region=region, supplier=supplier)
+        for region, supplier in suppliers_regions.items()
+    )
+
+
+def delete_regions_for(session: Session, product_id: str) -> None:
+    session.execute(
+        delete_rows(ProductSupplierRegion).where(ProductSupplierRegion.product_id == product_id)
+    )
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:

@@ -1,12 +1,3 @@
-from omni_product.anemic_model import (
-    NonExpiringProduct,
-    PerishableProduct,
-    Price,
-    Product,
-    RegionSupplier,
-    Supplier,
-    Warehouse,
-)
 from omni_product.controller.schemas.product import (
     PriceSchema,
     ProductKind,
@@ -15,6 +6,15 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
+from omni_product.domain.model.product import (
+    NonExpiringProduct,
+    PerishableProduct,
+    Price,
+    Product,
+    RegionSupplier,
+    Warehouse,
+)
+from omni_product.domain.model.supplier import Supplier
 from omni_product.service.product_service import ProductDetails
 
 

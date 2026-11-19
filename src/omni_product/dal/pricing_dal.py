@@ -3,8 +3,8 @@
 from sqlalchemy import Float, ForeignKey, String, delete, select
 from sqlalchemy.orm import Mapped, Session, composite, mapped_column
 
-from omni_product.anemic_model import Price
 from omni_product.database import Base
+from omni_product.domain.model.product import Price
 
 
 class ProductPrice(Base):

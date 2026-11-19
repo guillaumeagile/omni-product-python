@@ -3,8 +3,8 @@
 from sqlalchemy import ForeignKey, Integer, String, delete
 from sqlalchemy.orm import Mapped, Session, composite, mapped_column
 
-from omni_product.anemic_model import Warehouse
 from omni_product.database import Base
+from omni_product.domain.model.product import Warehouse
 
 
 class ProductStock(Base):

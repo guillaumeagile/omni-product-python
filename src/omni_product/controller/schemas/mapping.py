@@ -19,7 +19,7 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
-from omni_product.service.product_sheet import ProductSheet
+from omni_product.dal.product_dal import ProductContext
 
 
 def _kind_of(product: Product) -> ProductKind:
@@ -30,8 +30,14 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
-def sheet_to_schema(sheet: ProductSheet) -> ProductSchema:
-    product, pricing, storage = sheet.product, sheet.pricing, sheet.storage
+def product_to_schema(
+    product: Product,
+    pricing: ProductPricing,
+    storage: ProductStorage,
+    transport: ProductTransport,
+    supply: ProductSupply,
+) -> ProductSchema:
+    """La réponse HTTP est le seul endroit où les contextes du produit se rejoignent."""
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
@@ -45,25 +51,29 @@ def sheet_to_schema(sheet: ProductSheet) -> ProductSchema:
         images=dict(product.images),
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
-            for region, supplier in sheet.supply.suppliers_regions.items()
+            for region, supplier in supply.suppliers_regions.items()
         },
-        kilos=sheet.transport.kilos,
-        volume=sheet.transport.volume,
+        kilos=transport.kilos,
+        volume=transport.volume,
         quantity=storage.quantity,
         stock=storage.stock,
         warehouse=WarehouseSchema.model_validate(storage.warehouse) if storage.warehouse else None,
-        supplier_id=sheet.supply.supplier_id,
+        supplier_id=supply.supplier_id,
     )
 
 
-def schema_to_sheet(schema: ProductSchema, product_id: str) -> ProductSheet:
-    """Construit des entités neuves ; `save_sheet` les fusionne avec l'existant (`PUT` en Java)."""
-    return ProductSheet(
-        product=_product_of(schema, product_id),
-        pricing=_pricing_of(schema, product_id),
-        storage=_storage_of(schema, product_id),
-        transport=ProductTransport(product_id=product_id, kilos=schema.kilos, volume=schema.volume),
-        supply=ProductSupply(
+def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
+    """Construit une entité neuve ; l'enregistrement la fusionne avec l'existante (`PUT`)."""
+    return _product_of(schema, product_id)
+
+
+def schema_to_contexts(schema: ProductSchema, product_id: str) -> list[ProductContext]:
+    """Ce que chaque contexte retient du corps de la requête, relié au produit par son id."""
+    return [
+        _pricing_of(schema, product_id),
+        _storage_of(schema, product_id),
+        ProductTransport(product_id=product_id, kilos=schema.kilos, volume=schema.volume),
+        ProductSupply(
             product_id=product_id,
             supplier_id=schema.supplier_id,
             suppliers_regions={
@@ -71,7 +81,7 @@ def schema_to_sheet(schema: ProductSchema, product_id: str) -> ProductSheet:
                 for region, supplier in (schema.suppliers_regions or {}).items()
             },
         ),
-    )
+    ]
 
 
 def _product_of(schema: ProductSchema, product_id: str) -> Product:

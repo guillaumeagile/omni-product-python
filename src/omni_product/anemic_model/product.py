@@ -1,20 +1,18 @@
+"""Catalog : la fiche du produit. Les autres contextes s'y relient par `product_id`."""
+
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String
+from sqlalchemy import Date, ForeignKey, Integer, String
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.orm import Mapped, composite, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.collections import attribute_keyed_dict
 
 from omni_product.database import Base
 
 _ROW_CASCADE = "all, delete-orphan"
 _PRODUCT_ID = "products.id"
-
-
-# --- Catalog : la fiche du produit. Les autres contextes s'y relient par `product_id`.
 
 
 class ProductImage(Base):
@@ -67,116 +65,3 @@ class NonExpiringProduct(Product):
     """Produit sans date limite. Aucun champ propre : la classe ne sert qu'à porter un type."""
 
     __mapper_args__ = {"polymorphic_identity": "non_expiring"}  # noqa: RUF012
-
-
-# --- Pricing : le prix d'un produit et ses remises.
-
-
-@dataclass
-class Price:
-    base: float | None = None
-    tax: float | None = None
-    tax_rate: float | None = None
-
-
-class ProductDiscount(Base):
-    __tablename__ = "product_discounts"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("product_pricing.product_id"))
-    discount: Mapped[str] = mapped_column(String)
-
-    def __init__(self, discount: str) -> None:
-        self.discount = discount
-
-
-class ProductPricing(Base):
-    __tablename__ = "product_pricing"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey(_PRODUCT_ID), primary_key=True)
-    price: Mapped[Price] = composite(
-        Price,
-        mapped_column("price_base", Float),
-        mapped_column("price_tax", Float),
-        mapped_column("price_tax_rate", Float),
-    )
-
-    discount_rows: Mapped[list[ProductDiscount]] = relationship(
-        cascade=_ROW_CASCADE, order_by=ProductDiscount.id
-    )
-    discounts: AssociationProxy[list[str]] = association_proxy(
-        "discount_rows", "discount", creator=ProductDiscount
-    )
-
-
-# --- Storage : ce qu'on a en stock, et où.
-
-
-@dataclass
-class Warehouse:
-    location: str | None = None
-
-
-class ProductStorage(Base):
-    __tablename__ = "product_storage"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey(_PRODUCT_ID), primary_key=True)
-    quantity: Mapped[int | None] = mapped_column(Integer)
-    stock: Mapped[int | None] = mapped_column(Integer)
-    warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))
-
-
-# --- Transport : ce qu'il faut savoir du produit pour l'expédier.
-
-
-class ProductTransport(Base):
-    __tablename__ = "product_transport"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey(_PRODUCT_ID), primary_key=True)
-    kilos: Mapped[float | None] = mapped_column(Float)
-    volume: Mapped[str | None] = mapped_column(String)
-
-
-# --- Supplier : qui fournit le produit, globalement et par région.
-
-
-@dataclass
-class RegionSupplier:
-    """`Product.Supplier` en Java : fournisseur embarqué, par région."""
-
-    name: str | None = None
-    siren: str | None = None
-    tva_id: str | None = None
-
-
-class ProductSupplierRegion(Base):
-    __tablename__ = "product_suppliers"
-
-    product_id: Mapped[str] = mapped_column(
-        ForeignKey("product_supply.product_id"), primary_key=True
-    )
-    region: Mapped[str] = mapped_column(String, primary_key=True)
-    supplier: Mapped[RegionSupplier] = composite(
-        RegionSupplier,
-        mapped_column("name", String),
-        mapped_column("siren", String),
-        mapped_column("tva_id", String),
-    )
-
-    def __init__(self, region: str, supplier: RegionSupplier) -> None:
-        self.region = region
-        self.supplier = supplier
-
-
-class ProductSupply(Base):
-    __tablename__ = "product_supply"
-
-    product_id: Mapped[str] = mapped_column(ForeignKey(_PRODUCT_ID), primary_key=True)
-    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
-
-    supplier_region_rows: Mapped[dict[str, ProductSupplierRegion]] = relationship(
-        collection_class=attribute_keyed_dict("region"), cascade=_ROW_CASCADE
-    )
-    suppliers_regions: AssociationProxy[dict[str, RegionSupplier]] = association_proxy(
-        "supplier_region_rows", "supplier", creator=ProductSupplierRegion
-    )

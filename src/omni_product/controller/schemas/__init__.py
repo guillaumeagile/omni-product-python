@@ -8,6 +8,7 @@
 from omni_product.controller.schemas.base import CamelModel
 from omni_product.controller.schemas.mapping import (
     product_to_schema,
+    schema_to_contexts,
     schema_to_product,
     supplier_to_schema,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "SupplierUpdateRequest",
     "WarehouseSchema",
     "product_to_schema",
+    "schema_to_contexts",
     "schema_to_product",
     "supplier_to_schema",
 ]

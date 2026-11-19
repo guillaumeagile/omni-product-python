@@ -1,21 +1,7 @@
-from dataclasses import dataclass
-
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from omni_product.database import Base
-
-
-@dataclass(frozen=True)
-class CatalogIdentity:
-    name: str
-    slug: str
-
-
-@dataclass(frozen=True)
-class Catalog:
-    identity: CatalogIdentity
-    images: dict[str, str | None]
 
 
 class ProductImage(Base):

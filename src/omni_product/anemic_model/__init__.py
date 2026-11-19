@@ -1,36 +1,32 @@
-from omni_product.anemic_model.catalog import Catalog, CatalogIdentity, ProductImage
-from omni_product.anemic_model.packaging import Packaging
-from omni_product.anemic_model.pricing import Price, Pricing, ProductDiscount
+from omni_product.anemic_model.catalog import ProductImage
+from omni_product.anemic_model.pricing import Price, ProductDiscount, ProductPricing
 from omni_product.anemic_model.product import (
     NonExpiringProduct,
     PerishableProduct,
     Product,
 )
-from omni_product.anemic_model.storage import Storage, Warehouse
+from omni_product.anemic_model.storage import ProductStorage, Warehouse
 from omni_product.anemic_model.supplier import Supplier
 from omni_product.anemic_model.supplier_context import (
+    ProductSupplierContext,
     ProductSupplierRegion,
     RegionSupplier,
-    SupplierContext,
 )
-from omni_product.anemic_model.transport import Transport
+from omni_product.anemic_model.transport import ProductTransport
 
 __all__ = [
-    "Catalog",
-    "CatalogIdentity",
     "NonExpiringProduct",
-    "Packaging",
     "PerishableProduct",
     "Price",
-    "Pricing",
     "Product",
     "ProductDiscount",
     "ProductImage",
+    "ProductPricing",
+    "ProductStorage",
+    "ProductSupplierContext",
     "ProductSupplierRegion",
+    "ProductTransport",
     "RegionSupplier",
-    "Storage",
     "Supplier",
-    "SupplierContext",
-    "Transport",
     "Warehouse",
 ]

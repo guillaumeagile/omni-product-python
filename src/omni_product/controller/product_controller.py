@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
+from omni_product.anemic_model import Product
 from omni_product.controller.schemas import (
     ProductSchema,
     product_to_schema,
+    schema_to_pricing,
     schema_to_product,
     schema_to_stock,
     schema_to_transport,
@@ -13,14 +15,20 @@ from omni_product.exception.product_name_exception import ProductNameException
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
+def _to_schema(product_service: ProductServiceDep, product: Product) -> ProductSchema:
+    return product_to_schema(
+        product,
+        product_service.find_transport(product.id),
+        product_service.find_stock(product.id),
+        product_service.find_pricing(product.id),
+    )
+
+
 @router.get("")
 def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
     if product_service is None:
         raise ProductNameException("The universe has collapsed: service is null")
-    return [
-        product_to_schema(p, product_service.find_transport(p.id), product_service.find_stock(p.id))
-        for p in product_service.find_all()
-    ]
+    return [_to_schema(product_service, p) for p in product_service.find_all()]
 
 
 @router.get("/{product_id}")
@@ -28,9 +36,7 @@ def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> Pr
     product = product_service.find_by_id(product_id)
     if product is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return product_to_schema(
-        product, product_service.find_transport(product_id), product_service.find_stock(product_id)
-    )
+    return _to_schema(product_service, product)
 
 
 @router.post("")
@@ -45,12 +51,9 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
                 schema_to_product(body, body.id),
                 schema_to_transport(body, body.id),
                 schema_to_stock(body, body.id),
+                schema_to_pricing(body, body.id),
             )
-            return product_to_schema(
-                product,
-                product_service.find_transport(body.id),
-                product_service.find_stock(body.id),
-            )
+            return _to_schema(product_service, product)
     raise ProductNameException("Something went wrong in the void")
 
 
@@ -65,10 +68,9 @@ def update_product(
         schema_to_product(body, product_id),
         schema_to_transport(body, product_id),
         schema_to_stock(body, product_id),
+        schema_to_pricing(body, product_id),
     )
-    return product_to_schema(
-        product, product_service.find_transport(product_id), product_service.find_stock(product_id)
-    )
+    return _to_schema(product_service, product)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

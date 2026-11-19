@@ -38,11 +38,14 @@ class RegionSupplier:
 
 
 # Équivalents des @ElementCollection + @CollectionTable.
+_ROW_CASCADE = "all, delete-orphan"
+
+
 class ProductDiscount(Base):
     __tablename__ = "product_discounts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[str] = mapped_column(ForeignKey("product_pricings.product_id"))
     discount: Mapped[str] = mapped_column(String)
 
     def __init__(self, discount: str) -> None:
@@ -108,7 +111,27 @@ class ProductStock(Base):
         self.warehouse = warehouse
 
 
-_ROW_CASCADE = "all, delete-orphan"
+class ProductPricing(Base):
+    __tablename__ = "product_pricings"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    price: Mapped[Price] = composite(
+        Price,
+        mapped_column("price_base", Float),
+        mapped_column("price_tax", Float),
+        mapped_column("price_tax_rate", Float),
+    )
+    discount_rows: Mapped[list[ProductDiscount]] = relationship(
+        cascade=_ROW_CASCADE, order_by=ProductDiscount.id
+    )
+    discounts: AssociationProxy[list[str]] = association_proxy(
+        "discount_rows", "discount", creator=ProductDiscount
+    )
+
+    def __init__(self, product_id: str, price: Price, discounts: list[str]) -> None:
+        self.product_id = product_id
+        self.price = price
+        self.discounts = discounts
 
 
 class Product(Base):
@@ -124,19 +147,9 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
 
-    price: Mapped[Price] = composite(
-        Price,
-        mapped_column("price_base", Float),
-        mapped_column("price_tax", Float),
-        mapped_column("price_tax_rate", Float),
-    )
-
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
     supplier: Mapped[Supplier | None] = relationship()
 
-    discount_rows: Mapped[list[ProductDiscount]] = relationship(
-        cascade=_ROW_CASCADE, order_by=ProductDiscount.id
-    )
     image_rows: Mapped[dict[str, ProductImage]] = relationship(
         collection_class=attribute_keyed_dict("image_key"), cascade=_ROW_CASCADE
     )
@@ -144,9 +157,6 @@ class Product(Base):
         collection_class=attribute_keyed_dict("region"), cascade=_ROW_CASCADE
     )
 
-    discounts: AssociationProxy[list[str]] = association_proxy(
-        "discount_rows", "discount", creator=ProductDiscount
-    )
     images: AssociationProxy[dict[str, str | None]] = association_proxy(
         "image_rows", "image_detail", creator=ProductImage
     )

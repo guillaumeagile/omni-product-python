@@ -28,7 +28,7 @@ def test_small_positive_distance_and_weight_are_accepted() -> None:
     ],
 )
 def test_invalid_request(mode: str, distance: float, weight: float, message: str) -> None:
-    with pytest.raises(ValueError, match=f"^{message}$"):
+    with pytest.raises(ValueError, match=rf"^{message}$"):
         TransportRequest(mode, distance, weight)
 
 
@@ -37,7 +37,7 @@ def test_invalid_request(mode: str, distance: float, weight: float, message: str
     [(-1.0, 10.0, 1.0), (1.0, -10.0, 1.0), (1.0, 10.0, -1.0)],
 )
 def test_negative_metrics_are_rejected(co2: float, distance: float, weight: float) -> None:
-    with pytest.raises(ValueError, match="^Carbon metrics cannot be negative$"):
+    with pytest.raises(ValueError, match=r"^Carbon metrics cannot be negative$"):
         TransportCarbonMetrics(co2, None, "truck", distance, weight)
 
 

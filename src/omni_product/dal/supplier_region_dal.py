@@ -1,25 +1,22 @@
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import ProductSupplierRegion, RegionSupplier
+from omni_product.dal.conversion import region_from_row, regions_to_rows
+from omni_product.dal.rows import ProductSupplierRegionRow
+from omni_product.domain.model.supplier_region import RegionSupplier
 
 
 def find_by_product_id(session: Session, product_id: str) -> dict[str, RegionSupplier]:
     rows = session.scalars(
-        select(ProductSupplierRegion).where(ProductSupplierRegion.product_id == product_id)
+        select(ProductSupplierRegionRow).where(ProductSupplierRegionRow.product_id == product_id)
     )
-    return {row.region: row.supplier for row in rows}
+    return {row.region: region_from_row(row) for row in rows}
 
 
 def replace_regions(session: Session, product_id: str, regions: dict[str, RegionSupplier]) -> None:
     """Remplace les fournisseurs régionaux du produit (comme `PUT` en Java)."""
     session.execute(
-        delete(ProductSupplierRegion).where(ProductSupplierRegion.product_id == product_id)
+        delete(ProductSupplierRegionRow).where(ProductSupplierRegionRow.product_id == product_id)
     )
-    session.add_all(
-        [
-            ProductSupplierRegion(product_id, region, supplier)
-            for region, supplier in regions.items()
-        ]
-    )
+    session.add_all(regions_to_rows(product_id, regions))
     session.commit()

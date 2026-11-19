@@ -1,57 +1,66 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, Supplier
+from omni_product.dal.conversion import supplier_from_row, supplier_to_row
+from omni_product.dal.rows import ProductRow, SupplierRow
+from omni_product.domain.model.supplier import Supplier
 
 
 def find_all(session: Session) -> list[Supplier]:
-    return list(session.scalars(select(Supplier).order_by(Supplier.id)))
+    return [
+        supplier_from_row(row)
+        for row in session.scalars(select(SupplierRow).order_by(SupplierRow.id))
+    ]
 
 
 def find_by_id(session: Session, supplier_id: str) -> Supplier | None:
-    return session.get(Supplier, supplier_id)
+    row = session.get(SupplierRow, supplier_id)
+    return None if row is None else supplier_from_row(row)
 
 
 def find_by_country(session: Session, country: str) -> list[Supplier]:
-    return _find_all_where(session, Supplier.country == country)
+    return _find_all_where(session, SupplierRow.country == country)
 
 
 def find_by_region(session: Session, region: str) -> list[Supplier]:
-    return _find_all_where(session, Supplier.region == region)
+    return _find_all_where(session, SupplierRow.region == region)
 
 
 def find_by_name(session: Session, name: str) -> Supplier | None:
-    return session.scalars(select(Supplier).where(Supplier.name == name)).first()
+    row = session.scalars(select(SupplierRow).where(SupplierRow.name == name)).first()
+    return None if row is None else supplier_from_row(row)
 
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
     statement = (
-        select(Supplier)
-        .join(Product, Product.supplier_id == Supplier.id)
-        .where(Product.id == product_id)
-        .order_by(Supplier.id)
+        select(SupplierRow)
+        .join(ProductRow, ProductRow.supplier_id == SupplierRow.id)
+        .where(ProductRow.id == product_id)
+        .order_by(SupplierRow.id)
     )
-    return list(session.scalars(statement))
+    return [supplier_from_row(row) for row in session.scalars(statement)]
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:
-    saved = session.merge(supplier)
+    session.merge(supplier_to_row(supplier))
     session.commit()
-    return saved
+    return supplier
 
 
 def delete(session: Session, supplier: Supplier) -> None:
-    session.delete(supplier)
-    session.commit()
+    row = session.get(SupplierRow, supplier.id)
+    if row is not None:
+        session.delete(row)
+        session.commit()
 
 
 def delete_all(session: Session) -> None:
-    for supplier in find_all(session):
-        session.delete(supplier)
+    for row in list(session.scalars(select(SupplierRow))):
+        session.delete(row)
     session.commit()
 
 
 def _find_all_where(session: Session, criterion: object) -> list[Supplier]:
-    statement = select(Supplier).where(criterion).order_by(Supplier.id)  # pyright: ignore[reportArgumentType]
-    return list(session.scalars(statement))
+    statement = select(SupplierRow).where(criterion).order_by(SupplierRow.id)  # pyright: ignore[reportArgumentType]
+    return [supplier_from_row(row) for row in session.scalars(statement)]

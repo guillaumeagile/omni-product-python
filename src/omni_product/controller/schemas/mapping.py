@@ -3,6 +3,10 @@ from omni_product.anemic_model import (
     PerishableProduct,
     Price,
     Product,
+    ProductCatalog,
+    ProductPricing,
+    ProductStock,
+    ProductTransport,
     RegionSupplier,
     Supplier,
     Warehouse,
@@ -25,27 +29,33 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
-def product_to_schema(product: Product) -> ProductSchema:
+def product_to_schema(
+    product: Product,
+    transport: ProductTransport | None = None,
+    stock: ProductStock | None = None,
+    pricing: ProductPricing | None = None,
+    catalog: ProductCatalog | None = None,
+) -> ProductSchema:
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
         kind=_kind_of(product),
         name=product.name,
-        slug=product.slug,
+        slug=catalog.slug if catalog else None,
         expiration_date=perishable.expiration_date if perishable else None,
         shelf_life_days=perishable.shelf_life_days if perishable else None,
-        price=PriceSchema.model_validate(product.price) if product.price else None,
-        discounts=list(product.discounts),
-        images=dict(product.images),
+        price=PriceSchema.model_validate(pricing.price) if pricing else None,
+        discounts=list(pricing.discounts) if pricing else [],
+        images=dict(catalog.images) if catalog else {},
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
             for region, supplier in product.suppliers_regions.items()
         },
-        kilos=product.kilos,
-        volume=product.volume,
-        quantity=product.quantity,
-        stock=product.stock,
-        warehouse=WarehouseSchema.model_validate(product.warehouse) if product.warehouse else None,
+        kilos=transport.kilos if transport else None,
+        volume=transport.volume if transport else None,
+        quantity=stock.quantity if stock else None,
+        stock=stock.stock if stock else None,
+        warehouse=WarehouseSchema.model_validate(stock.warehouse) if stock else None,
         supplier_id=product.supplier_id,
     )
 
@@ -57,30 +67,45 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = PerishableProduct(
                 id=product_id,
                 name=schema.name,
-                slug=schema.slug,
                 expiration_date=schema.expiration_date,
                 shelf_life_days=schema.shelf_life_days,
             )
         case "non_expiring":
-            product = NonExpiringProduct(id=product_id, name=schema.name, slug=schema.slug)
+            product = NonExpiringProduct(id=product_id, name=schema.name)
         case _:
-            product = Product(id=product_id, name=schema.name, slug=schema.slug)
-    product.kilos = schema.kilos
-    product.volume = schema.volume
-    product.quantity = schema.quantity if schema.quantity is not None else schema.stock
-    product.stock = schema.stock or 0
+            product = Product(id=product_id, name=schema.name)
     product.supplier_id = schema.supplier_id
-    if schema.price is not None:
-        product.price = Price(**schema.price.model_dump())
-    if schema.warehouse is not None:
-        product.warehouse = Warehouse(**schema.warehouse.model_dump())
-    product.discounts = schema.discounts or []
-    product.images = schema.images or {}
     product.suppliers_regions = {
         region: RegionSupplier(**supplier.model_dump())
         for region, supplier in (schema.suppliers_regions or {}).items()
     }
     return product
+
+
+def schema_to_transport(schema: ProductSchema, product_id: str) -> ProductTransport:
+    return ProductTransport(product_id=product_id, kilos=schema.kilos, volume=schema.volume)
+
+
+def schema_to_pricing(schema: ProductSchema, product_id: str) -> ProductPricing:
+    return ProductPricing(
+        product_id=product_id,
+        price=Price(**schema.price.model_dump()) if schema.price is not None else Price(),
+        discounts=schema.discounts or [],
+    )
+
+
+def schema_to_catalog(schema: ProductSchema, product_id: str) -> ProductCatalog:
+    # La présence du slug est vérifiée par le controller avant la conversion.
+    return ProductCatalog(product_id=product_id, slug=schema.slug or "", images=schema.images or {})
+
+
+def schema_to_stock(schema: ProductSchema, product_id: str) -> ProductStock:
+    return ProductStock(
+        product_id=product_id,
+        quantity=schema.quantity if schema.quantity is not None else schema.stock,
+        stock=schema.stock or 0,
+        warehouse=Warehouse(**schema.warehouse.model_dump()) if schema.warehouse else Warehouse(),
+    )
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

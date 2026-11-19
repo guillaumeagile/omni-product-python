@@ -38,11 +38,14 @@ class RegionSupplier:
 
 
 # Équivalents des @ElementCollection + @CollectionTable.
+_ROW_CASCADE = "all, delete-orphan"
+
+
 class ProductDiscount(Base):
     __tablename__ = "product_discounts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[str] = mapped_column(ForeignKey("product_pricings.product_id"))
     discount: Mapped[str] = mapped_column(String)
 
     def __init__(self, discount: str) -> None:
@@ -52,7 +55,9 @@ class ProductDiscount(Base):
 class ProductImage(Base):
     __tablename__ = "product_images"
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("product_catalogs.product_id"), primary_key=True
+    )
     image_key: Mapped[str] = mapped_column(String, primary_key=True)
     image_detail: Mapped[str | None] = mapped_column(String)
 
@@ -78,7 +83,75 @@ class ProductSupplierRegion(Base):
         self.supplier = supplier
 
 
-_ROW_CASCADE = "all, delete-orphan"
+class ProductTransport(Base):
+    __tablename__ = "product_transports"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    kilos: Mapped[float | None] = mapped_column(Float)
+    volume: Mapped[str | None] = mapped_column(String)
+
+    def __init__(self, product_id: str, kilos: float | None, volume: str | None) -> None:
+        self.product_id = product_id
+        self.kilos = kilos
+        self.volume = volume
+
+
+class ProductStock(Base):
+    __tablename__ = "product_stocks"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    quantity: Mapped[int | None] = mapped_column(Integer)
+    stock: Mapped[int | None] = mapped_column(Integer)
+    warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))
+
+    def __init__(
+        self, product_id: str, quantity: int | None, stock: int | None, warehouse: Warehouse
+    ) -> None:
+        self.product_id = product_id
+        self.quantity = quantity
+        self.stock = stock
+        self.warehouse = warehouse
+
+
+class ProductPricing(Base):
+    __tablename__ = "product_pricings"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    price: Mapped[Price] = composite(
+        Price,
+        mapped_column("price_base", Float),
+        mapped_column("price_tax", Float),
+        mapped_column("price_tax_rate", Float),
+    )
+    discount_rows: Mapped[list[ProductDiscount]] = relationship(
+        cascade=_ROW_CASCADE, order_by=ProductDiscount.id
+    )
+    discounts: AssociationProxy[list[str]] = association_proxy(
+        "discount_rows", "discount", creator=ProductDiscount
+    )
+
+    def __init__(self, product_id: str, price: Price, discounts: list[str]) -> None:
+        self.product_id = product_id
+        self.price = price
+        self.discounts = discounts
+
+
+class ProductCatalog(Base):
+    __tablename__ = "product_catalogs"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    image_rows: Mapped[dict[str, ProductImage]] = relationship(
+        collection_class=attribute_keyed_dict("image_key"), cascade=_ROW_CASCADE
+    )
+    images: AssociationProxy[dict[str, str | None]] = association_proxy(
+        "image_rows", "image_detail", creator=ProductImage
+    )
+
+    def __init__(self, product_id: str, slug: str, images: dict[str, str | None]) -> None:
+        self.product_id = product_id
+        self.slug = slug
+        self.images = images
 
 
 class Product(Base):
@@ -92,46 +165,17 @@ class Product(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     kind: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-
-    price: Mapped[Price] = composite(
-        Price,
-        mapped_column("price_base", Float),
-        mapped_column("price_tax", Float),
-        mapped_column("price_tax_rate", Float),
-    )
-    kilos: Mapped[float | None] = mapped_column(Float)
-    volume: Mapped[str | None] = mapped_column(String)
-    quantity: Mapped[int | None] = mapped_column(Integer)
-    stock: Mapped[int | None] = mapped_column(Integer)
-    warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))
 
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
-    supplier: Mapped[Supplier | None] = relationship(back_populates="products")
+    supplier: Mapped[Supplier | None] = relationship()
 
-    discount_rows: Mapped[list[ProductDiscount]] = relationship(
-        cascade=_ROW_CASCADE, order_by=ProductDiscount.id
-    )
-    image_rows: Mapped[dict[str, ProductImage]] = relationship(
-        collection_class=attribute_keyed_dict("image_key"), cascade=_ROW_CASCADE
-    )
     supplier_region_rows: Mapped[dict[str, ProductSupplierRegion]] = relationship(
         collection_class=attribute_keyed_dict("region"), cascade=_ROW_CASCADE
     )
 
-    discounts: AssociationProxy[list[str]] = association_proxy(
-        "discount_rows", "discount", creator=ProductDiscount
-    )
-    images: AssociationProxy[dict[str, str | None]] = association_proxy(
-        "image_rows", "image_detail", creator=ProductImage
-    )
     suppliers_regions: AssociationProxy[dict[str, RegionSupplier]] = association_proxy(
         "supplier_region_rows", "supplier", creator=ProductSupplierRegion
     )
-
-    def is_perishable(self) -> bool:
-        # La classe de base connaît sa sous-classe : une branche de plus à chaque nouveau type.
-        return isinstance(self, PerishableProduct)
 
 
 class PerishableProduct(Product):

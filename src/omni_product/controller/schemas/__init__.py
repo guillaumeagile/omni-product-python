@@ -2,7 +2,8 @@
 
 - `base` : la sérialisation commune (camelCase JSON).
 - `product` / `supplier` : les DTO, sans logique.
-- `mapping` : la conversion entre DTO et entités, seul endroit qui teste le type d'un produit.
+- `mapping` : la conversion entre DTO et entités. Les paramètres de chemin et les champs de requête
+  du fournisseur sont enveloppés dans les contrôleurs, avec `wrap_optional`.
 """
 
 from omni_product.controller.schemas.base import CamelModel
@@ -11,6 +12,7 @@ from omni_product.controller.schemas.mapping import (
     schema_to_details,
     schema_to_product,
     supplier_to_schema,
+    wrap_optional,
 )
 from omni_product.controller.schemas.product import (
     PriceSchema,
@@ -39,4 +41,5 @@ __all__ = [
     "schema_to_details",
     "schema_to_product",
     "supplier_to_schema",
+    "wrap_optional",
 ]

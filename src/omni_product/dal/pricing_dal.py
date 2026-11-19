@@ -3,19 +3,23 @@
 from sqlalchemy import Float, ForeignKey, String, delete, select
 from sqlalchemy.orm import Mapped, Session, composite, mapped_column
 
+from omni_product.dal.value_object_type import ValueObjectType
 from omni_product.database import Base
-from omni_product.domain.model.product import Price
+from omni_product.domain.model.pricing import Amount, Price, TaxRate
+from omni_product.domain.model.product import ProductId
 
 
 class ProductPrice(Base):
     __tablename__ = "product_prices"
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    product_id: Mapped[ProductId] = mapped_column(
+        ValueObjectType(ProductId, String()), ForeignKey("products.id"), primary_key=True
+    )
     price: Mapped[Price] = composite(
         Price,
-        mapped_column("base", Float),
-        mapped_column("tax", Float),
-        mapped_column("tax_rate", Float),
+        mapped_column("base", ValueObjectType(Amount, Float())),
+        mapped_column("tax", ValueObjectType(Amount, Float())),
+        mapped_column("tax_rate", ValueObjectType(TaxRate, Float())),
     )
 
 
@@ -23,20 +27,22 @@ class ProductDiscount(Base):
     __tablename__ = "product_discounts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[ProductId] = mapped_column(
+        ValueObjectType(ProductId, String()), ForeignKey("products.id")
+    )
     discount: Mapped[str] = mapped_column(String)
 
-    def __init__(self, product_id: str, discount: str) -> None:
+    def __init__(self, product_id: ProductId, discount: str) -> None:
         self.product_id = product_id
         self.discount = discount
 
 
-def find_price(session: Session, product_id: str) -> Price | None:
+def find_price(session: Session, product_id: ProductId) -> Price | None:
     row = session.get(ProductPrice, product_id)
     return row.price if row is not None else None
 
 
-def find_discounts(session: Session, product_id: str) -> list[str]:
+def find_discounts(session: Session, product_id: ProductId) -> list[str]:
     statement = (
         select(ProductDiscount.discount)
         .where(ProductDiscount.product_id == product_id)
@@ -45,7 +51,9 @@ def find_discounts(session: Session, product_id: str) -> list[str]:
     return list(session.scalars(statement))
 
 
-def replace(session: Session, product_id: str, price: Price | None, discounts: list[str]) -> None:
+def replace(
+    session: Session, product_id: ProductId, price: Price | None, discounts: list[str]
+) -> None:
     """Un prix absent laisse le prix en place ; les remises sont toujours remplacées."""
     if price is not None:
         row = session.get(ProductPrice, product_id)
@@ -59,6 +67,6 @@ def replace(session: Session, product_id: str, price: Price | None, discounts: l
     )
 
 
-def delete_for(session: Session, product_id: str) -> None:
+def delete_for(session: Session, product_id: ProductId) -> None:
     session.execute(delete(ProductDiscount).where(ProductDiscount.product_id == product_id))
     session.execute(delete(ProductPrice).where(ProductPrice.product_id == product_id))

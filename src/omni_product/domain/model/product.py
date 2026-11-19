@@ -2,11 +2,26 @@ from dataclasses import dataclass, field
 from datetime import date
 
 
+@dataclass(frozen=True)
+class ProductId:
+    value: str
+
+
+@dataclass(frozen=True)
+class Slug:
+    value: str
+
+
+@dataclass(frozen=True)
+class ShelfLifeDays:
+    value: int
+
+
 @dataclass
 class Product:
-    id: str
+    id: ProductId
     name: str
-    slug: str
+    slug: Slug
     supplier_id: str | None = None
     images: dict[str, str | None] = field(default_factory=lambda: dict[str, str | None]())
 
@@ -19,7 +34,7 @@ class PerishableProduct(Product):
     """Produit périssable."""
 
     expiration_date: date | None = None
-    shelf_life_days: int | None = None
+    shelf_life_days: ShelfLifeDays | None = None
 
 
 @dataclass

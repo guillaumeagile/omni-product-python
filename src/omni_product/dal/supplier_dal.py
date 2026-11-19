@@ -49,7 +49,7 @@ def save(session: Session, supplier: Supplier) -> Supplier:
 
 
 def delete(session: Session, supplier: Supplier) -> None:
-    row = session.get(SupplierRow, supplier.id)
+    row = session.get(SupplierRow, supplier.id.value)
     if row is not None:
         session.delete(row)
         session.commit()

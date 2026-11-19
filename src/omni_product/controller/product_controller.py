@@ -57,11 +57,11 @@ def update_product(
 def _to_schema(product: Product, product_service: ProductService) -> ProductSchema:
     return product_to_schema(
         product,
-        stock=product_service.find_stock(product.id),
-        shipment=product_service.find_shipment(product.id),
-        price=product_service.find_price(product.id),
-        discounts=product_service.find_discounts(product.id),
-        suppliers_regions=product_service.find_suppliers_regions(product.id),
+        stock=product_service.find_stock(product.id.value),
+        shipment=product_service.find_shipment(product.id.value),
+        price=product_service.find_price(product.id.value),
+        discounts=product_service.find_discounts(product.id.value),
+        suppliers_regions=product_service.find_suppliers_regions(product.id.value),
     )
 
 

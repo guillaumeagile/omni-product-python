@@ -44,3 +44,9 @@ def delete_all(session: Session) -> None:
     for product in find_all(session):
         session.delete(product)
     session.commit()
+
+
+def mark_for_deletion_by_supplier_id(session: Session, supplier_id: str) -> None:
+    """Marque les produits du fournisseur à supprimer. Pas de commit : l'appelant valide."""
+    for product in session.scalars(select(Product).where(Product.supplier_id == supplier_id)):
+        session.delete(product)

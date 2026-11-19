@@ -62,7 +62,10 @@ class SupplierService:
         return supplier_dal.save(self._session, supplier)
 
     def delete_supplier(self, supplier_id: str) -> None:
-        supplier_dal.delete(self._session, self._get_or_raise(supplier_id))
+        supplier = self._get_or_raise(supplier_id)
+        # Règle métier conservée : supprimer un fournisseur supprime ses produits.
+        product_dal.mark_for_deletion_by_supplier_id(self._session, supplier_id)
+        supplier_dal.delete(self._session, supplier)
 
     def _get_or_raise(self, supplier_id: str) -> Supplier:
         supplier = supplier_dal.find_by_id(self._session, supplier_id)

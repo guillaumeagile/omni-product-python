@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import PerishableProduct, Product
 from omni_product.dal import product_dal
 from omni_product.dal.product_dal import ProductRows
 from omni_product.domain.model.freshness import is_expired
+from omni_product.domain.model.product import PerishableProduct, Product
 
 
 class ProductService:
@@ -23,7 +23,7 @@ class ProductService:
             for product, *_ in self.find_all()
             if isinstance(product, PerishableProduct)
             and product.expiration_date is not None
-            and is_expired(product.expiration_date)
+            and is_expired(product.expiration_date.value)
         ]
 
     def save(self, rows: ProductRows) -> ProductRows:

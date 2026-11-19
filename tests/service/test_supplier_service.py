@@ -1,9 +1,18 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product
 from omni_product.dal import product_dal
 from omni_product.dal.product_dal import empty_rows
+from omni_product.domain.model.product import Product
+from omni_product.domain.model.product_values import (
+    Country,
+    ProductId,
+    ProductName,
+    Region,
+    Slug,
+    SupplierId,
+    SupplierName,
+)
 from omni_product.service.supplier_service import SupplierService
 
 
@@ -27,9 +36,9 @@ def test_should_create_supplier(supplier_service: SupplierService) -> None:
         "sup1", "Supplier A", "contact@suppliera.com", "+33123456789", "France", "Île-de-France"
     )
 
-    assert supplier.id == "sup1"
-    assert supplier.name == "Supplier A"
-    assert supplier.country == "France"
+    assert supplier.id == SupplierId("sup1")
+    assert supplier.name == SupplierName("Supplier A")
+    assert supplier.country == Country("France")
 
 
 def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
@@ -38,8 +47,8 @@ def test_should_get_supplier_by_id(supplier_service: SupplierService) -> None:
     found = supplier_service.get_supplier("sup1")
 
     assert found is not None
-    assert found.id == "sup1"
-    assert found.name == "Supplier A"
+    assert found.id == SupplierId("sup1")
+    assert found.name == SupplierName("Supplier A")
 
 
 def test_should_return_none_for_non_existent_supplier(supplier_service: SupplierService) -> None:
@@ -52,7 +61,7 @@ def test_should_get_all_suppliers(supplier_service: SupplierService) -> None:
 
     names = [s.name for s in supplier_service.get_all_suppliers()]
 
-    assert names == ["Supplier A", "Supplier B"]
+    assert names == [SupplierName("Supplier A"), SupplierName("Supplier B")]
 
 
 def test_should_get_suppliers_by_country(supplier_service: SupplierService) -> None:
@@ -61,7 +70,7 @@ def test_should_get_suppliers_by_country(supplier_service: SupplierService) -> N
 
     french = supplier_service.get_suppliers_by_country("France")
 
-    assert [s.name for s in french] == ["Supplier A"]
+    assert [s.name for s in french] == [SupplierName("Supplier A")]
 
 
 def test_should_get_suppliers_by_region(supplier_service: SupplierService) -> None:
@@ -70,7 +79,7 @@ def test_should_get_suppliers_by_region(supplier_service: SupplierService) -> No
 
     idf = supplier_service.get_suppliers_by_region("Île-de-France")
 
-    assert [s.name for s in idf] == ["Supplier A"]
+    assert [s.name for s in idf] == [SupplierName("Supplier A")]
 
 
 def test_should_update_supplier(supplier_service: SupplierService) -> None:
@@ -80,9 +89,9 @@ def test_should_update_supplier(supplier_service: SupplierService) -> None:
         "sup1", "Updated Supplier A", "newemail@suppliera.com", "+33111111111", "Germany", "Berlin"
     )
 
-    assert updated.name == "Updated Supplier A"
-    assert updated.country == "Germany"
-    assert updated.region == "Berlin"
+    assert updated.name == SupplierName("Updated Supplier A")
+    assert updated.country == Country("Germany")
+    assert updated.region == Region("Berlin")
 
 
 def test_should_raise_when_updating_non_existent_supplier(
@@ -116,7 +125,10 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     product_dal.save(
         session,
         empty_rows(
-            Product(id="prod1", name="Test Product", slug="test-product"), supplier_id="sup1"
+            Product(
+                id=ProductId("prod1"), name=ProductName("Test Product"), slug=Slug("test-product")
+            ),
+            supplier_id=SupplierId("sup1"),
         ),
     )
     assert product_dal.find_by_id(session, "prod1") is not None
@@ -135,13 +147,16 @@ def test_should_get_suppliers_by_product(
     product_dal.save(
         session,
         empty_rows(
-            Product(id="prod1", name="Test Product", slug="test-product"), supplier_id="sup1"
+            Product(
+                id=ProductId("prod1"), name=ProductName("Test Product"), slug=Slug("test-product")
+            ),
+            supplier_id=SupplierId("sup1"),
         ),
     )
 
     suppliers = supplier_service.get_suppliers_by_product("prod1")
 
-    assert [s.id for s in suppliers] == ["sup1"]
+    assert [s.id for s in suppliers] == [SupplierId("sup1")]
 
 
 def test_should_raise_when_getting_suppliers_of_unknown_product(

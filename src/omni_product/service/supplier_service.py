@@ -1,7 +1,15 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Supplier
 from omni_product.dal import product_dal, supplier_dal
+from omni_product.domain.model.product_values import (
+    ContactEmail,
+    ContactPhone,
+    Country,
+    Region,
+    SupplierId,
+    SupplierName,
+)
+from omni_product.domain.model.supplier import Supplier
 
 
 class SupplierService:
@@ -18,12 +26,12 @@ class SupplierService:
         region: str | None,
     ) -> Supplier:
         supplier = Supplier(
-            id=id,
-            name=name,
-            contact_email=contact_email,
-            contact_phone=contact_phone,
-            country=country,
-            region=region,
+            id=SupplierId(id),
+            name=None if name is None else SupplierName(name),
+            contact_email=None if contact_email is None else ContactEmail(contact_email),
+            contact_phone=None if contact_phone is None else ContactPhone(contact_phone),
+            country=None if country is None else Country(country),
+            region=None if region is None else Region(region),
         )
         return supplier_dal.save(self._session, supplier)
 
@@ -54,11 +62,12 @@ class SupplierService:
         region: str | None,
     ) -> Supplier:
         supplier = self._get_or_raise(id)
-        supplier.name = name or supplier.name
-        supplier.contact_email = contact_email
-        supplier.contact_phone = contact_phone
-        supplier.country = country
-        supplier.region = region
+        if name:
+            supplier.name = SupplierName(name)
+        supplier.contact_email = None if contact_email is None else ContactEmail(contact_email)
+        supplier.contact_phone = None if contact_phone is None else ContactPhone(contact_phone)
+        supplier.country = None if country is None else Country(country)
+        supplier.region = None if region is None else Region(region)
         return supplier_dal.save(self._session, supplier)
 
     def delete_supplier(self, supplier_id: str) -> None:

@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 from omni_product.anemic_model import (
     Product,
-    ProductAggregate,
     ProductDiscount,
     ProductPricing,
     ProductSourcing,
@@ -12,18 +11,45 @@ from omni_product.anemic_model import (
     ProductTransport,
 )
 
+# Un produit et les lignes de ses contextes, dans l'ordre : produit (Catalog), prix (Pricing),
+# stock (Storage), transport, fournisseur principal, remises (Pricing), fournisseurs par région.
+# Un tuple et non une classe : aucune classe du modèle ne mêle les contextes.
+type ProductRows = tuple[
+    Product,
+    ProductPricing,
+    ProductStorage,
+    ProductTransport,
+    ProductSourcing,
+    list[ProductDiscount],
+    list[ProductSupplierRegion],
+]
 
-def find_all(session: Session) -> list[ProductAggregate]:
+
+def empty_rows(product: Product, supplier_id: str | None = None) -> ProductRows:
+    """Lignes neuves, sans valeur dans les contextes : elles s'écrivent au premier `save`."""
+    product_id = product.id
+    return (
+        product,
+        ProductPricing(product_id=product_id),
+        ProductStorage(product_id=product_id),
+        ProductTransport(product_id=product_id),
+        ProductSourcing(product_id=product_id, supplier_id=supplier_id),
+        [],
+        [],
+    )
+
+
+def find_all(session: Session) -> list[ProductRows]:
     products = session.scalars(select(Product).order_by(Product.id)).all()
     return [_assemble(session, product) for product in products]
 
 
-def find_by_id(session: Session, product_id: str) -> ProductAggregate | None:
+def find_by_id(session: Session, product_id: str) -> ProductRows | None:
     product = session.get(Product, product_id)
     return None if product is None else _assemble(session, product)
 
 
-def find_by_slug(session: Session, slug: str) -> ProductAggregate | None:
+def find_by_slug(session: Session, slug: str) -> ProductRows | None:
     product = session.scalars(select(Product).where(Product.slug == slug)).first()
     return None if product is None else _assemble(session, product)
 
@@ -32,19 +58,20 @@ def exists_by_slug(session: Session, slug: str) -> bool:
     return find_by_slug(session, slug) is not None
 
 
-def save(session: Session, aggregate: ProductAggregate) -> ProductAggregate:
-    product_id = aggregate.product.id
-    session.merge(aggregate.product)
-    session.merge(aggregate.pricing)
-    session.merge(aggregate.storage)
-    session.merge(aggregate.transport)
-    session.merge(aggregate.sourcing)
+def save(session: Session, rows: ProductRows) -> ProductRows:
+    product, pricing, storage, transport, sourcing, discounts, regions = rows
+    product_id = product.id
+    saved = session.merge(product)
+    session.merge(pricing)
+    session.merge(storage)
+    session.merge(transport)
+    session.merge(sourcing)
     # Les listes (remises, fournisseurs par région) se remplacent en entier, comme avant.
     _delete_list_rows(session, product_id)
-    session.add_all(aggregate.discounts)
-    session.add_all(aggregate.suppliers_regions)
+    session.add_all(discounts)
+    session.add_all(regions)
     session.commit()
-    return _assemble(session, aggregate.product)
+    return _assemble(session, saved)
 
 
 def delete_by_id(session: Session, product_id: str) -> None:
@@ -66,26 +93,28 @@ def delete_all(session: Session) -> None:
         delete_by_id(session, product.id)
 
 
-def _assemble(session: Session, product: Product) -> ProductAggregate:
+def _assemble(session: Session, product: Product) -> ProductRows:
     product_id = product.id
-    aggregate = ProductAggregate.of(product)
-    aggregate.pricing = session.get(ProductPricing, product_id) or aggregate.pricing
-    aggregate.storage = session.get(ProductStorage, product_id) or aggregate.storage
-    aggregate.transport = session.get(ProductTransport, product_id) or aggregate.transport
-    aggregate.sourcing = session.get(ProductSourcing, product_id) or aggregate.sourcing
-    aggregate.discounts = list(
-        session.scalars(
-            select(ProductDiscount)
-            .where(ProductDiscount.product_id == product_id)
-            .order_by(ProductDiscount.id)
-        )
+    _, pricing, storage, transport, sourcing, _, _ = empty_rows(product)
+    return (
+        product,
+        session.get(ProductPricing, product_id) or pricing,
+        session.get(ProductStorage, product_id) or storage,
+        session.get(ProductTransport, product_id) or transport,
+        session.get(ProductSourcing, product_id) or sourcing,
+        list(
+            session.scalars(
+                select(ProductDiscount)
+                .where(ProductDiscount.product_id == product_id)
+                .order_by(ProductDiscount.id)
+            )
+        ),
+        list(
+            session.scalars(
+                select(ProductSupplierRegion).where(ProductSupplierRegion.product_id == product_id)
+            )
+        ),
     )
-    aggregate.suppliers_regions = list(
-        session.scalars(
-            select(ProductSupplierRegion).where(ProductSupplierRegion.product_id == product_id)
-        )
-    )
-    return aggregate
 
 
 def _delete_list_rows(session: Session, product_id: str) -> None:

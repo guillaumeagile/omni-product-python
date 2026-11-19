@@ -4,7 +4,8 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import NonExpiringProduct, PerishableProduct, ProductAggregate
+from omni_product.anemic_model import NonExpiringProduct, PerishableProduct
+from omni_product.dal.product_dal import empty_rows
 from omni_product.domain.model import freshness
 from omni_product.service.product_service import ProductService
 
@@ -18,21 +19,19 @@ def test_find_expired_returns_only_perishable_products_past_their_date(
     product_service: ProductService,
 ) -> None:
     product_service.save(
-        ProductAggregate.of(
+        empty_rows(
             PerishableProduct(id="p1", name="Lait", slug="lait", expiration_date=date(2026, 11, 1))
         )
     )
     product_service.save(
-        ProductAggregate.of(
+        empty_rows(
             PerishableProduct(
                 id="p2", name="Yaourt", slug="yaourt", expiration_date=date(2026, 12, 1)
             )
         )
     )
-    product_service.save(
-        ProductAggregate.of(PerishableProduct(id="p3", name="Beurre", slug="beurre"))
-    )
-    product_service.save(ProductAggregate.of(NonExpiringProduct(id="p4", name="Sel", slug="sel")))
+    product_service.save(empty_rows(PerishableProduct(id="p3", name="Beurre", slug="beurre")))
+    product_service.save(empty_rows(NonExpiringProduct(id="p4", name="Sel", slug="sel")))
 
     # Legacy : l'horloge se fige avec `patch`.
     # La règle 6 supprime ce besoin : l'heure passe en paramètre.

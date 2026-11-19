@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Product, ProductAggregate
+from omni_product.anemic_model import Product
 from omni_product.dal import product_dal
+from omni_product.dal.product_dal import empty_rows
 from omni_product.service.supplier_service import SupplierService
 
 
@@ -114,7 +115,7 @@ def test_should_cascade_delete_products_when_supplier_deleted(
     _create(supplier_service, "sup1", "Supplier A")
     product_dal.save(
         session,
-        ProductAggregate.of(
+        empty_rows(
             Product(id="prod1", name="Test Product", slug="test-product"), supplier_id="sup1"
         ),
     )
@@ -133,7 +134,7 @@ def test_should_get_suppliers_by_product(
     _create(supplier_service, "sup2", "Supplier B")
     product_dal.save(
         session,
-        ProductAggregate.of(
+        empty_rows(
             Product(id="prod1", name="Test Product", slug="test-product"), supplier_id="sup1"
         ),
     )

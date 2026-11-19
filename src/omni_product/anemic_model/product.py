@@ -172,33 +172,3 @@ class ProductSupplierRegion(Base):
         self.product_id = product_id
         self.region = region
         self.supplier = supplier
-
-
-# --- Agrégat : un produit et ses contextes, assemblés par identifiant -----------------------
-
-
-@dataclass
-class ProductAggregate:
-    """Un produit et les lignes de ses autres contextes, assemblés par identifiant."""
-
-    product: Product
-    pricing: ProductPricing
-    storage: ProductStorage
-    transport: ProductTransport
-    sourcing: ProductSourcing
-    discounts: list[ProductDiscount]
-    suppliers_regions: list[ProductSupplierRegion]
-
-    @classmethod
-    def of(cls, product: Product, supplier_id: str | None = None) -> ProductAggregate:
-        """Agrégat neuf, sans valeur dans les contextes : les lignes se créent au premier `save`."""
-        product_id = product.id
-        return cls(
-            product=product,
-            pricing=ProductPricing(product_id=product_id),
-            storage=ProductStorage(product_id=product_id),
-            transport=ProductTransport(product_id=product_id),
-            sourcing=ProductSourcing(product_id=product_id, supplier_id=supplier_id),
-            discounts=[],
-            suppliers_regions=[],
-        )

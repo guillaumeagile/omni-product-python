@@ -3,13 +3,8 @@ from omni_product.anemic_model import (
     PerishableProduct,
     Price,
     Product,
-    ProductAggregate,
     ProductDiscount,
-    ProductPricing,
-    ProductSourcing,
-    ProductStorage,
     ProductSupplierRegion,
-    ProductTransport,
     RegionSupplier,
     Supplier,
     Warehouse,
@@ -22,6 +17,7 @@ from omni_product.controller.schemas.product import (
     WarehouseSchema,
 )
 from omni_product.controller.schemas.supplier import SupplierSchema
+from omni_product.dal.product_dal import ProductRows, empty_rows
 
 
 def _kind_of(product: Product) -> ProductKind:
@@ -32,12 +28,8 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
-def product_to_schema(aggregate: ProductAggregate) -> ProductSchema:
-    product = aggregate.product
-    pricing: ProductPricing = aggregate.pricing
-    storage: ProductStorage = aggregate.storage
-    transport: ProductTransport = aggregate.transport
-    sourcing: ProductSourcing = aggregate.sourcing
+def product_to_schema(rows: ProductRows) -> ProductSchema:
+    product, pricing, storage, transport, sourcing, discounts, regions = rows
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
@@ -47,11 +39,10 @@ def product_to_schema(aggregate: ProductAggregate) -> ProductSchema:
         expiration_date=perishable.expiration_date if perishable else None,
         shelf_life_days=perishable.shelf_life_days if perishable else None,
         price=PriceSchema.model_validate(pricing.price) if pricing.price else None,
-        discounts=[row.discount for row in aggregate.discounts],
+        discounts=[row.discount for row in discounts],
         images=dict(product.images),
         suppliers_regions={
-            row.region: RegionSupplierSchema.model_validate(row.supplier)
-            for row in aggregate.suppliers_regions
+            row.region: RegionSupplierSchema.model_validate(row.supplier) for row in regions
         },
         kilos=transport.kilos,
         volume=transport.volume,
@@ -62,8 +53,8 @@ def product_to_schema(aggregate: ProductAggregate) -> ProductSchema:
     )
 
 
-def schema_to_product(schema: ProductSchema, product_id: str) -> ProductAggregate:
-    """Construit un agrégat neuf ; `save` le fusionne avec l'existant (comme `PUT` en Java)."""
+def schema_to_product(schema: ProductSchema, product_id: str) -> ProductRows:
+    """Construit des lignes neuves ; `save` les fusionne avec les existantes (comme `PUT`)."""
     match schema.kind:
         case "perishable":
             product: Product = PerishableProduct(
@@ -79,20 +70,20 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> ProductAggregat
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
     product.images = schema.images or {}
 
-    aggregate = ProductAggregate.of(product, supplier_id=schema.supplier_id)
-    aggregate.transport.kilos = schema.kilos
-    aggregate.transport.volume = schema.volume
-    aggregate.storage.quantity = schema.quantity if schema.quantity is not None else schema.stock
-    aggregate.storage.stock = schema.stock or 0
+    _, pricing, storage, transport, sourcing, _, _ = empty_rows(product, schema.supplier_id)
+    transport.kilos = schema.kilos
+    transport.volume = schema.volume
+    storage.quantity = schema.quantity if schema.quantity is not None else schema.stock
+    storage.stock = schema.stock or 0
     if schema.price is not None:
-        aggregate.pricing.price = Price(**schema.price.model_dump())
+        pricing.price = Price(**schema.price.model_dump())
     if schema.warehouse is not None:
-        aggregate.storage.warehouse = Warehouse(**schema.warehouse.model_dump())
-    aggregate.discounts = [
+        storage.warehouse = Warehouse(**schema.warehouse.model_dump())
+    discounts = [
         ProductDiscount(product_id=product_id, discount=discount)
         for discount in schema.discounts or []
     ]
-    aggregate.suppliers_regions = [
+    regions = [
         ProductSupplierRegion(
             product_id=product_id,
             region=region,
@@ -100,7 +91,7 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> ProductAggregat
         )
         for region, supplier in (schema.suppliers_regions or {}).items()
     ]
-    return aggregate
+    return (product, pricing, storage, transport, sourcing, discounts, regions)
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

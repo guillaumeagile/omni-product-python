@@ -6,6 +6,7 @@ from omni_product.controller.schemas import (
     product_to_schema,
     schema_to_price,
     schema_to_product,
+    schema_to_regions,
     schema_to_shipment,
     schema_to_stock,
 )
@@ -60,6 +61,7 @@ def _to_schema(product: Product, product_service: ProductService) -> ProductSche
         shipment=product_service.find_shipment(product.id),
         price=product_service.find_price(product.id),
         discounts=product_service.find_discounts(product.id),
+        suppliers_regions=product_service.find_suppliers_regions(product.id),
     )
 
 
@@ -69,6 +71,7 @@ def _save(body: ProductSchema, product_id: str, product_service: ProductService)
     product_service.save_shipment(schema_to_shipment(body, product_id))
     product_service.save_price(schema_to_price(body, product_id))
     product_service.replace_discounts(product_id, body.discounts or [])
+    product_service.replace_suppliers_regions(product_id, schema_to_regions(body))
     return _to_schema(product, product_service)
 
 

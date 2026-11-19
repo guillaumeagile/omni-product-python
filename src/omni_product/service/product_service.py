@@ -6,8 +6,9 @@ from omni_product.anemic_model import (
     ProductPrice,
     ProductShipment,
     ProductStock,
+    RegionSupplier,
 )
-from omni_product.dal import pricing_dal, product_dal, shipment_dal, stock_dal
+from omni_product.dal import pricing_dal, product_dal, shipment_dal, stock_dal, supplier_region_dal
 from omni_product.domain.model.freshness import is_expired
 
 
@@ -57,6 +58,14 @@ class ProductService:
 
     def replace_discounts(self, product_id: str, discounts: list[str]) -> None:
         pricing_dal.replace_discounts(self._session, product_id, discounts)
+
+    def find_suppliers_regions(self, product_id: str) -> dict[str, RegionSupplier]:
+        return supplier_region_dal.find_by_product_id(self._session, product_id)
+
+    def replace_suppliers_regions(
+        self, product_id: str, regions: dict[str, RegionSupplier]
+    ) -> None:
+        supplier_region_dal.replace_regions(self._session, product_id, regions)
 
     def delete_by_id(self, product_id: str) -> None:
         product_dal.delete_by_id(self._session, product_id)

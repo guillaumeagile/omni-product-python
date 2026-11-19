@@ -7,6 +7,7 @@ from omni_product.anemic_model import (
     ProductPrice,
     ProductShipment,
     ProductStock,
+    ProductSupplierRegion,
 )
 
 
@@ -56,7 +57,13 @@ def delete_by_supplier_id(session: Session, supplier_id: str) -> None:
 
 
 def delete_all(session: Session) -> None:
-    for table in (ProductStock, ProductShipment, ProductPrice, ProductDiscount):
+    for table in (
+        ProductStock,
+        ProductShipment,
+        ProductPrice,
+        ProductDiscount,
+        ProductSupplierRegion,
+    ):
         session.execute(delete(table))
     for product in find_all(session):
         session.delete(product)
@@ -65,5 +72,11 @@ def delete_all(session: Session) -> None:
 
 def _delete_details(session: Session, product_id: str) -> None:
     """Supprime les lignes liées au produit (stock, expédition) avant le produit lui-même."""
-    for table in (ProductStock, ProductShipment, ProductPrice, ProductDiscount):
+    for table in (
+        ProductStock,
+        ProductShipment,
+        ProductPrice,
+        ProductDiscount,
+        ProductSupplierRegion,
+    ):
         session.execute(delete(table).where(table.product_id == product_id))

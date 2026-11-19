@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from omni_product.anemic_model import (
     NonExpiringProduct,
@@ -36,6 +36,7 @@ def product_to_schema(
     shipment: ProductShipment | None = None,
     price: ProductPrice | None = None,
     discounts: Sequence[str] = (),
+    suppliers_regions: Mapping[str, RegionSupplier] | None = None,
 ) -> ProductSchema:
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
@@ -50,7 +51,7 @@ def product_to_schema(
         images=dict(product.images),
         suppliers_regions={
             region: RegionSupplierSchema.model_validate(supplier)
-            for region, supplier in product.suppliers_regions.items()
+            for region, supplier in (suppliers_regions or {}).items()
         },
         kilos=shipment.kilos if shipment else None,
         volume=shipment.volume if shipment else None,
@@ -80,10 +81,6 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
     product.supplier_id = schema.supplier_id
     product.images = schema.images or {}
-    product.suppliers_regions = {
-        region: RegionSupplier(**supplier.model_dump())
-        for region, supplier in (schema.suppliers_regions or {}).items()
-    }
     return product
 
 
@@ -105,6 +102,13 @@ def schema_to_shipment(schema: ProductSchema, product_id: str) -> ProductShipmen
 def schema_to_price(schema: ProductSchema, product_id: str) -> ProductPrice:
     price = Price(**schema.price.model_dump()) if schema.price is not None else None
     return ProductPrice(product_id=product_id, price=price)
+
+
+def schema_to_regions(schema: ProductSchema) -> dict[str, RegionSupplier]:
+    return {
+        region: RegionSupplier(**supplier.model_dump())
+        for region, supplier in (schema.suppliers_regions or {}).items()
+    }
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

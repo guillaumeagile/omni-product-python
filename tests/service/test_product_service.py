@@ -11,6 +11,7 @@ from omni_product.anemic_model import (
     ProductPrice,
     ProductShipment,
     ProductStock,
+    RegionSupplier,
     Warehouse,
 )
 from omni_product.domain.model import freshness
@@ -35,6 +36,15 @@ def test_should_delete_stock_and_shipment_with_their_product(
 
     assert product_service.find_stock("p1") is None
     assert product_service.find_shipment("p1") is None
+
+
+def test_should_replace_suppliers_regions_on_each_save(product_service: ProductService) -> None:
+    product_service.save(NonExpiringProduct(id="p1", name="Sel", slug="sel"))
+    product_service.replace_suppliers_regions("p1", {"Nord": RegionSupplier(name="A")})
+
+    product_service.replace_suppliers_regions("p1", {"Nord": RegionSupplier(name="B")})
+
+    assert product_service.find_suppliers_regions("p1") == {"Nord": RegionSupplier(name="B")}
 
 
 def test_should_delete_price_and_discounts_with_their_product(

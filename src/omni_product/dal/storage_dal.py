@@ -3,26 +3,32 @@
 from sqlalchemy import ForeignKey, Integer, String, delete
 from sqlalchemy.orm import Mapped, Session, composite, mapped_column
 
+from omni_product.dal.value_object_type import ValueObjectType
 from omni_product.database import Base
-from omni_product.domain.model.product import Warehouse
+from omni_product.domain.model.product import ProductId
+from omni_product.domain.model.storage import Location, Warehouse
 
 
 class ProductStock(Base):
     __tablename__ = "product_stocks"
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    product_id: Mapped[ProductId] = mapped_column(
+        ValueObjectType(ProductId, String()), ForeignKey("products.id"), primary_key=True
+    )
     quantity: Mapped[int | None] = mapped_column(Integer)
     stock: Mapped[int | None] = mapped_column(Integer)
-    warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))
+    warehouse: Mapped[Warehouse] = composite(
+        Warehouse, mapped_column("warehouse_location", ValueObjectType(Location, String()))
+    )
 
 
-def find(session: Session, product_id: str) -> ProductStock | None:
+def find(session: Session, product_id: ProductId) -> ProductStock | None:
     return session.get(ProductStock, product_id)
 
 
 def replace(
     session: Session,
-    product_id: str,
+    product_id: ProductId,
     quantity: int | None,
     stock: int | None,
     warehouse: Warehouse | None,
@@ -40,5 +46,5 @@ def replace(
         row.warehouse = warehouse
 
 
-def delete_for(session: Session, product_id: str) -> None:
+def delete_for(session: Session, product_id: ProductId) -> None:
     session.execute(delete(ProductStock).where(ProductStock.product_id == product_id))

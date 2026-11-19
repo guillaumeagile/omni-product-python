@@ -7,7 +7,7 @@ from omni_product.controller.schemas import (
     schema_to_product,
 )
 from omni_product.dependencies import ProductServiceDep
-from omni_product.domain.model.product import Product
+from omni_product.domain.model.product import Product, ProductId
 from omni_product.exception.product_name_exception import ProductNameException
 from omni_product.service.product_service import ProductService
 
@@ -23,7 +23,7 @@ def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
 
 @router.get("/{product_id}")
 def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> ProductSchema:
-    product = product_service.find_by_id(product_id)
+    product = product_service.find_by_id(ProductId(product_id))
     if product is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     return _read(product_service, product)
@@ -45,7 +45,7 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
 def update_product(
     product_id: str, body: ProductSchema, product_service: ProductServiceDep
 ) -> ProductSchema:
-    if product_service.find_by_id(product_id) is None:
+    if product_service.find_by_id(ProductId(product_id)) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     # L'id du chemin prévaut sur celui du corps.
     return _save(product_service, product_id, body)
@@ -53,9 +53,9 @@ def update_product(
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: str, product_service: ProductServiceDep) -> Response:
-    if product_service.find_by_id(product_id) is None:
+    if product_service.find_by_id(ProductId(product_id)) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    product_service.delete_by_id(product_id)
+    product_service.delete_by_id(ProductId(product_id))
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -64,5 +64,7 @@ def _read(product_service: ProductService, product: Product) -> ProductSchema:
 
 
 def _save(product_service: ProductService, product_id: str, body: ProductSchema) -> ProductSchema:
-    saved = product_service.save(schema_to_product(body, product_id), schema_to_details(body))
+    saved = product_service.save(
+        schema_to_product(body, ProductId(product_id)), schema_to_details(body)
+    )
     return _read(product_service, saved)

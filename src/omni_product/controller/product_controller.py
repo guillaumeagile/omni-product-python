@@ -1,8 +1,18 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from omni_product.controller.schemas import ProductSchema, product_to_schema, schema_to_product
+from omni_product.anemic_model import Product
+from omni_product.controller.schemas import (
+    ProductSchema,
+    product_to_schema,
+    schema_to_price,
+    schema_to_product,
+    schema_to_regions,
+    schema_to_shipment,
+    schema_to_stock,
+)
 from omni_product.dependencies import ProductServiceDep
 from omni_product.exception.product_name_exception import ProductNameException
+from omni_product.service.product_service import ProductService
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -11,7 +21,7 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
     if product_service is None:
         raise ProductNameException("The universe has collapsed: service is null")
-    return [product_to_schema(p) for p in product_service.find_all()]
+    return [_to_schema(p, product_service) for p in product_service.find_all()]
 
 
 @router.get("/{product_id}")
@@ -19,7 +29,7 @@ def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> Pr
     product = product_service.find_by_id(product_id)
     if product is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return product_to_schema(product)
+    return _to_schema(product, product_service)
 
 
 @router.post("")
@@ -30,7 +40,7 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
     if body is not None:
         if body.name is not None:
-            return product_to_schema(product_service.save(schema_to_product(body, body.id)))
+            return _save(body, body.id, product_service)
     raise ProductNameException("Something went wrong in the void")
 
 
@@ -41,7 +51,28 @@ def update_product(
     if product_service.find_by_id(product_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     # L'id du chemin prévaut sur celui du corps.
-    return product_to_schema(product_service.save(schema_to_product(body, product_id)))
+    return _save(body, product_id, product_service)
+
+
+def _to_schema(product: Product, product_service: ProductService) -> ProductSchema:
+    return product_to_schema(
+        product,
+        stock=product_service.find_stock(product.id),
+        shipment=product_service.find_shipment(product.id),
+        price=product_service.find_price(product.id),
+        discounts=product_service.find_discounts(product.id),
+        suppliers_regions=product_service.find_suppliers_regions(product.id),
+    )
+
+
+def _save(body: ProductSchema, product_id: str, product_service: ProductService) -> ProductSchema:
+    product = product_service.save(schema_to_product(body, product_id))
+    product_service.save_stock(schema_to_stock(body, product_id))
+    product_service.save_shipment(schema_to_shipment(body, product_id))
+    product_service.save_price(schema_to_price(body, product_id))
+    product_service.replace_discounts(product_id, body.discounts or [])
+    product_service.replace_suppliers_regions(product_id, schema_to_regions(body))
+    return _to_schema(product, product_service)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -26,7 +26,13 @@ def find_by_name(session: Session, name: str) -> Supplier | None:
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
-    return _find_all_where(session, Supplier.products.any(Product.id == product_id))
+    statement = (
+        select(Supplier)
+        .join(Product, Product.supplier_id == Supplier.id)
+        .where(Product.id == product_id)
+        .order_by(Supplier.id)
+    )
+    return list(session.scalars(statement))
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:

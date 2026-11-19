@@ -1,7 +1,14 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import PerishableProduct, Product
-from omni_product.dal import product_dal
+from omni_product.anemic_model import (
+    PerishableProduct,
+    Product,
+    ProductPrice,
+    ProductShipment,
+    ProductStock,
+    RegionSupplier,
+)
+from omni_product.dal import pricing_dal, product_dal, shipment_dal, stock_dal, supplier_region_dal
 from omni_product.domain.model.freshness import is_expired
 
 
@@ -27,6 +34,38 @@ class ProductService:
 
     def save(self, product: Product) -> Product:
         return product_dal.save(self._session, product)
+
+    def find_stock(self, product_id: str) -> ProductStock | None:
+        return stock_dal.find_by_product_id(self._session, product_id)
+
+    def save_stock(self, stock: ProductStock) -> ProductStock:
+        return stock_dal.save(self._session, stock)
+
+    def find_shipment(self, product_id: str) -> ProductShipment | None:
+        return shipment_dal.find_by_product_id(self._session, product_id)
+
+    def save_shipment(self, shipment: ProductShipment) -> ProductShipment:
+        return shipment_dal.save(self._session, shipment)
+
+    def find_price(self, product_id: str) -> ProductPrice | None:
+        return pricing_dal.find_price(self._session, product_id)
+
+    def save_price(self, price: ProductPrice) -> ProductPrice:
+        return pricing_dal.save_price(self._session, price)
+
+    def find_discounts(self, product_id: str) -> list[str]:
+        return pricing_dal.find_discounts(self._session, product_id)
+
+    def replace_discounts(self, product_id: str, discounts: list[str]) -> None:
+        pricing_dal.replace_discounts(self._session, product_id, discounts)
+
+    def find_suppliers_regions(self, product_id: str) -> dict[str, RegionSupplier]:
+        return supplier_region_dal.find_by_product_id(self._session, product_id)
+
+    def replace_suppliers_regions(
+        self, product_id: str, regions: dict[str, RegionSupplier]
+    ) -> None:
+        supplier_region_dal.replace_regions(self._session, product_id, regions)
 
     def delete_by_id(self, product_id: str) -> None:
         product_dal.delete_by_id(self._session, product_id)

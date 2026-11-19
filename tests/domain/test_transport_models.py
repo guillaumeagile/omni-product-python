@@ -2,12 +2,13 @@ import pytest
 
 from omni_product.domain.model.transport_carbon_metrics import TransportCarbonMetrics
 from omni_product.domain.model.transport_request import TransportRequest
+from omni_product.domain.model.transport_values import Co2Kg, Distance, TransportMode, Weight
 
 
 def test_valid_request() -> None:
-    request = TransportRequest("truck", 120.0, 3.5)
+    request = TransportRequest(TransportMode("truck"), Distance(120.0), Weight(3.5))
 
-    assert request.transport_mode == "truck"
+    assert request.transport_mode == TransportMode("truck")
 
 
 @pytest.mark.parametrize(
@@ -21,9 +22,11 @@ def test_valid_request() -> None:
 )
 def test_invalid_request(mode: str, distance: float, weight: float, message: str) -> None:
     with pytest.raises(ValueError, match=message):
-        TransportRequest(mode, distance, weight)
+        TransportRequest(TransportMode(mode), Distance(distance), Weight(weight))
 
 
 def test_negative_metrics_are_rejected() -> None:
     with pytest.raises(ValueError, match="cannot be negative"):
-        TransportCarbonMetrics(-1.0, None, "truck", 10.0, 1.0)
+        TransportCarbonMetrics(
+            Co2Kg(-1.0), None, TransportMode("truck"), Distance(10.0), Weight(1.0)
+        )

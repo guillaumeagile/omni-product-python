@@ -4,7 +4,13 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import NonExpiringProduct, PerishableProduct, ProductStock, Warehouse
+from omni_product.anemic_model import (
+    NonExpiringProduct,
+    PerishableProduct,
+    ProductShipment,
+    ProductStock,
+    Warehouse,
+)
 from omni_product.domain.model import freshness
 from omni_product.service.product_service import ProductService
 
@@ -14,15 +20,19 @@ def product_service(session: Session) -> ProductService:
     return ProductService(session)
 
 
-def test_should_delete_stock_with_its_product(product_service: ProductService) -> None:
+def test_should_delete_stock_and_shipment_with_their_product(
+    product_service: ProductService,
+) -> None:
     product_service.save(NonExpiringProduct(id="p1", name="Sel", slug="sel"))
     product_service.save_stock(
         ProductStock(product_id="p1", quantity=3, stock=2, warehouse=Warehouse(location="Nord"))
     )
+    product_service.save_shipment(ProductShipment(product_id="p1", kilos=1.5, volume="10x10"))
 
     product_service.delete_by_id("p1")
 
     assert product_service.find_stock("p1") is None
+    assert product_service.find_shipment("p1") is None
 
 
 def test_find_expired_returns_only_perishable_products_past_their_date(

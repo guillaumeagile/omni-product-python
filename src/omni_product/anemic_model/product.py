@@ -95,8 +95,6 @@ class Product(Base):
         mapped_column("price_tax", Float),
         mapped_column("price_tax_rate", Float),
     )
-    kilos: Mapped[float | None] = mapped_column(Float)
-    volume: Mapped[str | None] = mapped_column(String)
 
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
     supplier: Mapped[Supplier | None] = relationship()

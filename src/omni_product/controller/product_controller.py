@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
+from omni_product.anemic_model import Product
 from omni_product.controller.schemas import (
     ProductSchema,
     product_to_schema,
     schema_to_product,
+    schema_to_shipment,
     schema_to_stock,
 )
 from omni_product.dependencies import ProductServiceDep
@@ -17,9 +19,7 @@ router = APIRouter(prefix="/api/products", tags=["products"])
 def get_all_products(product_service: ProductServiceDep) -> list[ProductSchema]:
     if product_service is None:
         raise ProductNameException("The universe has collapsed: service is null")
-    return [
-        product_to_schema(p, product_service.find_stock(p.id)) for p in product_service.find_all()
-    ]
+    return [_to_schema(p, product_service) for p in product_service.find_all()]
 
 
 @router.get("/{product_id}")
@@ -27,7 +27,7 @@ def get_product_by_id(product_id: str, product_service: ProductServiceDep) -> Pr
     product = product_service.find_by_id(product_id)
     if product is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return product_to_schema(product, product_service.find_stock(product_id))
+    return _to_schema(product, product_service)
 
 
 @router.post("")
@@ -52,10 +52,19 @@ def update_product(
     return _save(body, product_id, product_service)
 
 
+def _to_schema(product: Product, product_service: ProductService) -> ProductSchema:
+    return product_to_schema(
+        product,
+        product_service.find_stock(product.id),
+        product_service.find_shipment(product.id),
+    )
+
+
 def _save(body: ProductSchema, product_id: str, product_service: ProductService) -> ProductSchema:
     product = product_service.save(schema_to_product(body, product_id))
     stock = product_service.save_stock(schema_to_stock(body, product_id))
-    return product_to_schema(product, stock)
+    shipment = product_service.save_shipment(schema_to_shipment(body, product_id))
+    return product_to_schema(product, stock, shipment)
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

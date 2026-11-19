@@ -3,6 +3,7 @@ from omni_product.anemic_model import (
     PerishableProduct,
     Price,
     Product,
+    ProductShipment,
     ProductStock,
     RegionSupplier,
     Supplier,
@@ -26,7 +27,11 @@ def _kind_of(product: Product) -> ProductKind:
     return "standard"
 
 
-def product_to_schema(product: Product, stock: ProductStock | None = None) -> ProductSchema:
+def product_to_schema(
+    product: Product,
+    stock: ProductStock | None = None,
+    shipment: ProductShipment | None = None,
+) -> ProductSchema:
     perishable = product if isinstance(product, PerishableProduct) else None
     return ProductSchema(
         id=product.id,
@@ -42,8 +47,8 @@ def product_to_schema(product: Product, stock: ProductStock | None = None) -> Pr
             region: RegionSupplierSchema.model_validate(supplier)
             for region, supplier in product.suppliers_regions.items()
         },
-        kilos=product.kilos,
-        volume=product.volume,
+        kilos=shipment.kilos if shipment else None,
+        volume=shipment.volume if shipment else None,
         quantity=stock.quantity if stock else None,
         stock=stock.stock if stock else None,
         warehouse=WarehouseSchema.model_validate(stock.warehouse)
@@ -68,8 +73,6 @@ def schema_to_product(schema: ProductSchema, product_id: str) -> Product:
             product = NonExpiringProduct(id=product_id, name=schema.name, slug=schema.slug)
         case _:
             product = Product(id=product_id, name=schema.name, slug=schema.slug)
-    product.kilos = schema.kilos
-    product.volume = schema.volume
     product.supplier_id = schema.supplier_id
     if schema.price is not None:
         product.price = Price(**schema.price.model_dump())
@@ -91,6 +94,10 @@ def schema_to_stock(schema: ProductSchema, product_id: str) -> ProductStock:
         if schema.warehouse is not None
         else None,
     )
+
+
+def schema_to_shipment(schema: ProductSchema, product_id: str) -> ProductShipment:
+    return ProductShipment(product_id=product_id, kilos=schema.kilos, volume=schema.volume)
 
 
 def supplier_to_schema(supplier: Supplier) -> SupplierSchema:

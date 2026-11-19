@@ -1,15 +1,12 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import (
-    PerishableProduct,
-    Product,
-    ProductPrice,
-    ProductShipment,
-    ProductStock,
-    RegionSupplier,
-)
 from omni_product.dal import pricing_dal, product_dal, shipment_dal, stock_dal, supplier_region_dal
 from omni_product.domain.model.freshness import is_expired
+from omni_product.domain.model.pricing import ProductPrice
+from omni_product.domain.model.product import PerishableProduct, Product
+from omni_product.domain.model.shipment import ProductShipment
+from omni_product.domain.model.stock import ProductStock
+from omni_product.domain.model.supplier_region import RegionSupplier
 
 
 class ProductService:

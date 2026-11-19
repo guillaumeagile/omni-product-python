@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from omni_product.anemic_model import Product
 from omni_product.controller.schemas import (
     ProductSchema,
     product_to_schema,
@@ -11,6 +10,7 @@ from omni_product.controller.schemas import (
     schema_to_stock,
 )
 from omni_product.dependencies import ProductServiceDep
+from omni_product.domain.model.product import Product
 from omni_product.exception.product_name_exception import ProductNameException
 from omni_product.service.product_service import ProductService
 
@@ -57,11 +57,11 @@ def update_product(
 def _to_schema(product: Product, product_service: ProductService) -> ProductSchema:
     return product_to_schema(
         product,
-        stock=product_service.find_stock(product.id),
-        shipment=product_service.find_shipment(product.id),
-        price=product_service.find_price(product.id),
-        discounts=product_service.find_discounts(product.id),
-        suppliers_regions=product_service.find_suppliers_regions(product.id),
+        stock=product_service.find_stock(product.id.value),
+        shipment=product_service.find_shipment(product.id.value),
+        price=product_service.find_price(product.id.value),
+        discounts=product_service.find_discounts(product.id.value),
+        suppliers_regions=product_service.find_suppliers_regions(product.id.value),
     )
 
 

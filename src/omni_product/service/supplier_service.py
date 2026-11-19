@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import Supplier
 from omni_product.dal import product_dal, supplier_dal
+from omni_product.domain.model.supplier import Country, Email, Phone, Region, Supplier, SupplierId
+from omni_product.domain.model.value import wrap
 
 
 class SupplierService:
@@ -18,12 +19,12 @@ class SupplierService:
         region: str | None,
     ) -> Supplier:
         supplier = Supplier(
-            id=id,
+            id=SupplierId(id),
             name=name,
-            contact_email=contact_email,
-            contact_phone=contact_phone,
-            country=country,
-            region=region,
+            contact_email=wrap(Email, contact_email),
+            contact_phone=wrap(Phone, contact_phone),
+            country=wrap(Country, country),
+            region=wrap(Region, region),
         )
         return supplier_dal.save(self._session, supplier)
 
@@ -55,10 +56,10 @@ class SupplierService:
     ) -> Supplier:
         supplier = self._get_or_raise(id)
         supplier.name = name or supplier.name
-        supplier.contact_email = contact_email
-        supplier.contact_phone = contact_phone
-        supplier.country = country
-        supplier.region = region
+        supplier.contact_email = wrap(Email, contact_email)
+        supplier.contact_phone = wrap(Phone, contact_phone)
+        supplier.country = wrap(Country, country)
+        supplier.region = wrap(Region, region)
         return supplier_dal.save(self._session, supplier)
 
     def delete_supplier(self, supplier_id: str) -> None:

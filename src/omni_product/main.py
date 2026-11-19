@@ -5,9 +5,9 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from omni_product import anemic_model  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from omni_product.config import Settings
 from omni_product.controller import product_controller, supplier_controller
+from omni_product.dal import mapping  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from omni_product.database import Base, create_db_engine, create_session_factory
 from omni_product.exception.product_name_exception import ProductNameException
 

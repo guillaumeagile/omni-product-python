@@ -10,19 +10,19 @@ from omni_product.database import Base
 
 
 # Équivalents des @Embeddable Java : valeurs portées par les tables de leur contexte (voir dal/).
-@dataclass
+@dataclass(frozen=True)
 class Price:
     base: float | None = None
     tax: float | None = None
     tax_rate: float | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class Warehouse:
     location: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class RegionSupplier:
     """`Product.Supplier` en Java : fournisseur embarqué, par région."""
 

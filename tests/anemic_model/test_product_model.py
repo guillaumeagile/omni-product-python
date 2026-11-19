@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import NonExpiringProduct, PerishableProduct, Product
+from omni_product.dal import product_dal
+from omni_product.domain.model.product import NonExpiringProduct, PerishableProduct, Product
 
 
 def test_is_perishable_is_true_only_for_perishable_products() -> None:
@@ -21,14 +22,9 @@ def test_perishable_fields_are_optional_in_memory() -> None:
 
 
 def test_kind_is_written_from_the_python_class(session: Session) -> None:
-    session.add_all(
-        [
-            Product(id="p1", name="Stylo", slug="stylo"),
-            PerishableProduct(id="p2", name="Lait", slug="lait"),
-            NonExpiringProduct(id="p3", name="Sel", slug="sel"),
-        ]
-    )
-    session.commit()
+    product_dal.save(session, Product(id="p1", name="Stylo", slug="stylo"))
+    product_dal.save(session, PerishableProduct(id="p2", name="Lait", slug="lait"))
+    product_dal.save(session, NonExpiringProduct(id="p3", name="Sel", slug="sel"))
 
     kinds = dict(session.execute(text("SELECT id, kind FROM products ORDER BY id")).all())
     assert kinds == {"p1": "standard", "p2": "perishable", "p3": "non_expiring"}
@@ -36,20 +32,20 @@ def test_kind_is_written_from_the_python_class(session: Session) -> None:
 
 def test_row_is_loaded_back_as_its_subclass(app: FastAPI) -> None:
     with app.state.session_factory() as writer:
-        writer.add(
+        product_dal.save(
+            writer,
             PerishableProduct(
                 id="p1",
                 name="Lait",
                 slug="lait",
                 expiration_date=date(2026, 12, 1),
                 shelf_life_days=7,
-            )
+            ),
         )
-        writer.commit()
 
     # Une session neuve : on recharge la ligne au lieu de réutiliser l'objet en mémoire.
     with app.state.session_factory() as reader:
-        loaded = reader.get(Product, "p1")
+        loaded = product_dal.find_by_id(reader, "p1")
 
         assert isinstance(loaded, PerishableProduct)
         assert loaded.expiration_date == date(2026, 12, 1)
@@ -58,8 +54,7 @@ def test_row_is_loaded_back_as_its_subclass(app: FastAPI) -> None:
 
 
 def test_single_table_leaves_perishable_columns_null_for_other_kinds(session: Session) -> None:
-    session.add(NonExpiringProduct(id="p1", name="Sel", slug="sel"))
-    session.commit()
+    product_dal.save(session, NonExpiringProduct(id="p1", name="Sel", slug="sel"))
 
     expiration = session.execute(
         text("SELECT expiration_date FROM products WHERE id = 'p1'")

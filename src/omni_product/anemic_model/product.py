@@ -24,11 +24,6 @@ class Price:
 
 
 @dataclass
-class Warehouse:
-    location: str | None = None
-
-
-@dataclass
 class RegionSupplier:
     """`Product.Supplier` en Java : fournisseur embarqué, par région."""
 
@@ -102,9 +97,6 @@ class Product(Base):
     )
     kilos: Mapped[float | None] = mapped_column(Float)
     volume: Mapped[str | None] = mapped_column(String)
-    quantity: Mapped[int | None] = mapped_column(Integer)
-    stock: Mapped[int | None] = mapped_column(Integer)
-    warehouse: Mapped[Warehouse] = composite(Warehouse, mapped_column("warehouse_location", String))
 
     supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
     supplier: Mapped[Supplier | None] = relationship()

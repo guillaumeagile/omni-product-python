@@ -4,8 +4,8 @@ from omni_product.anemic_model.product import (
     Price,
     Product,
     RegionSupplier,
-    Warehouse,
 )
+from omni_product.anemic_model.stock import ProductStock, Warehouse
 from omni_product.anemic_model.supplier import Supplier
 
 __all__ = [
@@ -13,6 +13,7 @@ __all__ = [
     "PerishableProduct",
     "Price",
     "Product",
+    "ProductStock",
     "RegionSupplier",
     "Supplier",
     "Warehouse",

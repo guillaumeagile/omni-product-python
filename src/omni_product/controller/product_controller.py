@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from omni_product.controller.schemas import ProductSchema, product_to_schema, schema_to_product
+from omni_product.controller.schemas import (
+    ProductSchema,
+    product_to_schema,
+    schema_to_product_record,
+)
 from omni_product.dependencies import ProductServiceDep
 from omni_product.exception.product_name_exception import ProductNameException
 
@@ -30,7 +34,8 @@ def create_product(body: ProductSchema, product_service: ProductServiceDep) -> P
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Product id is missing")
     if body is not None:
         if body.name is not None:
-            return product_to_schema(product_service.save(schema_to_product(body, body.id)))
+            record = schema_to_product_record(body, body.id)
+            return product_to_schema(product_service.save_record(record))
     raise ProductNameException("Something went wrong in the void")
 
 
@@ -41,7 +46,8 @@ def update_product(
     if product_service.find_by_id(product_id) is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     # L'id du chemin prévaut sur celui du corps.
-    return product_to_schema(product_service.save(schema_to_product(body, product_id)))
+    record = schema_to_product_record(body, product_id)
+    return product_to_schema(product_service.save_record(record))
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)

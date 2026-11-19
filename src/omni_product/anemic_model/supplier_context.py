@@ -1,9 +1,19 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, composite, mapped_column
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
+from sqlalchemy.orm import Mapped, composite, mapped_column, relationship
+from sqlalchemy.orm.collections import attribute_keyed_dict
 
 from omni_product.database import Base
+
+_ROW_CASCADE = "all, delete-orphan"
+
+
+def _create_region_supplier(region: str, supplier: RegionSupplier) -> ProductSupplierRegion:
+    return ProductSupplierRegion(region, supplier)
 
 
 @dataclass(frozen=True)
@@ -15,16 +25,28 @@ class RegionSupplier:
     tva_id: str | None = None
 
 
-@dataclass(frozen=True)
-class SupplierContext:
-    supplier_id: str | None
-    suppliers_by_region: dict[str, RegionSupplier]
+class ProductSupplierContext(Base):
+    __tablename__ = "product_supplier_contexts"
+
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
+
+    supplier_region_rows: Mapped[dict[str, ProductSupplierRegion]] = relationship(
+        collection_class=attribute_keyed_dict("region"), cascade=_ROW_CASCADE
+    )
+    suppliers_regions: AssociationProxy[dict[str, RegionSupplier]] = association_proxy(
+        "supplier_region_rows",
+        "supplier",
+        creator=_create_region_supplier,
+    )
 
 
 class ProductSupplierRegion(Base):
-    __tablename__ = "product_suppliers"
+    __tablename__ = "product_supplier_regions"
 
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), primary_key=True)
+    product_id: Mapped[str] = mapped_column(
+        ForeignKey("product_supplier_contexts.product_id"), primary_key=True
+    )
     region: Mapped[str] = mapped_column(String, primary_key=True)
     supplier: Mapped[RegionSupplier] = composite(
         RegionSupplier,

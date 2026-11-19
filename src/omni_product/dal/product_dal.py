@@ -3,9 +3,10 @@
 from sqlalchemy import ForeignKey, String, delete, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
-from omni_product.anemic_model import Product
 from omni_product.dal import pricing_dal, storage_dal, supplier_dal, transport_dal
+from omni_product.dal.model_mapping import products
 from omni_product.database import Base
+from omni_product.domain.model.product import Product
 
 
 class ProductImage(Base):
@@ -22,7 +23,7 @@ class ProductImage(Base):
 
 
 def find_all(session: Session) -> list[Product]:
-    return list(session.scalars(select(Product).order_by(Product.id)))
+    return list(session.scalars(select(Product).order_by(products.c.id)))
 
 
 def find_by_id(session: Session, product_id: str) -> Product | None:
@@ -30,13 +31,13 @@ def find_by_id(session: Session, product_id: str) -> Product | None:
 
 
 def find_by_slug(session: Session, slug: str) -> Product | None:
-    return session.scalars(select(Product).where(Product.slug == slug)).first()
+    return session.scalars(select(Product).where(products.c.slug == slug)).first()
 
 
 def find_by_supplier_id(session: Session, supplier_id: str) -> list[Product]:
     return list(
         session.scalars(
-            select(Product).where(Product.supplier_id == supplier_id).order_by(Product.id)
+            select(Product).where(products.c.supplier_id == supplier_id).order_by(products.c.id)
         )
     )
 

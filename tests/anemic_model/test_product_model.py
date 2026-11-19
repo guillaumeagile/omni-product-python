@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import NonExpiringProduct, PerishableProduct, Product
+from omni_product.domain.model.product import NonExpiringProduct, PerishableProduct, Product
 
 
 def test_is_perishable_is_true_only_for_perishable_products() -> None:

@@ -2,9 +2,15 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import PerishableProduct, Price, Product, RegionSupplier, Warehouse
 from omni_product.dal import pricing_dal, product_dal, storage_dal, supplier_dal, transport_dal
 from omni_product.domain.model.freshness import is_expired
+from omni_product.domain.model.product import (
+    PerishableProduct,
+    Price,
+    Product,
+    RegionSupplier,
+    Warehouse,
+)
 
 
 @dataclass

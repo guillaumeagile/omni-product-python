@@ -3,11 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
-
-from omni_product.database import Base
-
 
 # Équivalents des @Embeddable Java : valeurs portées par les tables de leur contexte (voir dal/).
 @dataclass(frozen=True)
@@ -31,38 +26,28 @@ class RegionSupplier:
     tva_id: str | None = None
 
 
-class Product(Base):
+# eq=False : égalité par identité, comme les classes déclaratives d'origine.
+@dataclass(eq=False)
+class Product:
     """Contexte Catalog. Les données des autres contextes sont liées par `id` (dal/)."""
 
-    __tablename__ = "products"
-    # Héritage mono-table : toutes les sous-classes partagent la table `products`.
-    __mapper_args__ = {  # noqa: RUF012
-        "polymorphic_on": "kind",
-        "polymorphic_identity": "standard",
-    }
-
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    kind: Mapped[str] = mapped_column(String, nullable=False)
-    name: Mapped[str] = mapped_column(String, nullable=False)
-    slug: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-
-    supplier_id: Mapped[str | None] = mapped_column(ForeignKey("suppliers.id"))
+    id: str
+    name: str
+    slug: str
+    supplier_id: str | None = None
 
     def is_perishable(self) -> bool:
         # La classe de base connaît sa sous-classe : une branche de plus à chaque nouveau type.
         return isinstance(self, PerishableProduct)
 
 
+@dataclass(eq=False)
 class PerishableProduct(Product):
     """Produit périssable. Ses colonnes sont dans `products`, donc nulles pour les autres types."""
 
-    __mapper_args__ = {"polymorphic_identity": "perishable"}  # noqa: RUF012
-
-    expiration_date: Mapped[date | None] = mapped_column(Date)
-    shelf_life_days: Mapped[int | None] = mapped_column(Integer)
+    expiration_date: date | None = None
+    shelf_life_days: int | None = None
 
 
 class NonExpiringProduct(Product):
     """Produit sans date limite. Aucun champ propre : la classe ne sert qu'à porter un type."""
-
-    __mapper_args__ = {"polymorphic_identity": "non_expiring"}  # noqa: RUF012

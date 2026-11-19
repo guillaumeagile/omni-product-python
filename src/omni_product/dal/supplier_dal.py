@@ -2,8 +2,10 @@ from sqlalchemy import ForeignKey, String, select
 from sqlalchemy import delete as delete_rows
 from sqlalchemy.orm import Mapped, Session, composite, mapped_column
 
-from omni_product.anemic_model import Product, RegionSupplier, Supplier
+from omni_product.dal.model_mapping import products, suppliers
 from omni_product.database import Base
+from omni_product.domain.model.product import RegionSupplier
+from omni_product.domain.model.supplier import Supplier
 
 
 class ProductSupplierRegion(Base):
@@ -27,7 +29,7 @@ class ProductSupplierRegion(Base):
 
 
 def find_all(session: Session) -> list[Supplier]:
-    return list(session.scalars(select(Supplier).order_by(Supplier.id)))
+    return list(session.scalars(select(Supplier).order_by(suppliers.c.id)))
 
 
 def find_by_id(session: Session, supplier_id: str) -> Supplier | None:
@@ -35,21 +37,21 @@ def find_by_id(session: Session, supplier_id: str) -> Supplier | None:
 
 
 def find_by_country(session: Session, country: str) -> list[Supplier]:
-    return _find_all_where(session, Supplier.country == country)
+    return _find_all_where(session, suppliers.c.country == country)
 
 
 def find_by_region(session: Session, region: str) -> list[Supplier]:
-    return _find_all_where(session, Supplier.region == region)
+    return _find_all_where(session, suppliers.c.region == region)
 
 
 def find_by_name(session: Session, name: str) -> Supplier | None:
-    return session.scalars(select(Supplier).where(Supplier.name == name)).first()
+    return session.scalars(select(Supplier).where(suppliers.c.name == name)).first()
 
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Requête SQL à la place du filtrage en mémoire qui causait le lazy loading Java."""
-    supplier_ids = select(Product.supplier_id).where(Product.id == product_id)
-    return _find_all_where(session, Supplier.id.in_(supplier_ids))
+    supplier_ids = select(products.c.supplier_id).where(products.c.id == product_id)
+    return _find_all_where(session, suppliers.c.id.in_(supplier_ids))
 
 
 def find_regions(session: Session, product_id: str) -> dict[str, RegionSupplier]:
@@ -91,5 +93,5 @@ def delete_all(session: Session) -> None:
 
 
 def _find_all_where(session: Session, criterion: object) -> list[Supplier]:
-    statement = select(Supplier).where(criterion).order_by(Supplier.id)  # pyright: ignore[reportArgumentType]
+    statement = select(Supplier).where(criterion).order_by(suppliers.c.id)  # pyright: ignore[reportArgumentType]
     return list(session.scalars(statement))

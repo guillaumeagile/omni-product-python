@@ -4,8 +4,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import NonExpiringProduct, PerishableProduct
-from omni_product.domain.model import freshness
+from omni_product.domain.model import NonExpiringProduct, PerishableProduct, freshness
 from omni_product.service.product_service import ProductService
 
 

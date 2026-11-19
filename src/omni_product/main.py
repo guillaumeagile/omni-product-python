@@ -5,10 +5,10 @@ import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from omni_product import anemic_model  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from omni_product.config import Settings
 from omni_product.controller import product_controller, supplier_controller
-from omni_product.database import Base, create_db_engine, create_session_factory
+from omni_product.dal.mapping import metadata
+from omni_product.database import create_db_engine, create_session_factory
 from omni_product.exception.product_name_exception import ProductNameException
 
 FAILED_DEPENDENCY = 424
@@ -20,14 +20,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
-        Base.metadata.create_all(engine)  # ddl-auto: create-drop
+        metadata.create_all(engine)  # ddl-auto: create-drop
         timeout = httpx.Timeout(
             settings.external_api_read_timeout, connect=settings.external_api_connect_timeout
         )
         with httpx.Client(timeout=timeout) as http_client:
             app.state.http_client = http_client
             yield
-        Base.metadata.drop_all(engine)
+        metadata.drop_all(engine)
         engine.dispose()
 
     app = FastAPI(title="Omni Product", lifespan=lifespan)

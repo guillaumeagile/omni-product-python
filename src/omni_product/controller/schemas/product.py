@@ -25,8 +25,9 @@ class RegionSupplierSchema(CamelModel):
 class ProductSchema(CamelModel):
     id: str | None = None
     kind: ProductKind | None = None
-    name: str | None = None
-    slug: str | None = None
+    # Le modèle exige un nom et un slug : le contrat d'API aussi.
+    name: str
+    slug: str
     price: PriceSchema | None = None
     discounts: list[str] | None = None
     images: dict[str, str | None] | None = None

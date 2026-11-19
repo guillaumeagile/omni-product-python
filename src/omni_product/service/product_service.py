@@ -2,9 +2,9 @@ from collections.abc import Iterable
 
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import PerishableProduct, Product
 from omni_product.dal import product_dal
 from omni_product.dal.product_dal import ProductContext
+from omni_product.domain.model import PerishableProduct, Product
 from omni_product.domain.model.freshness import is_expired
 
 

@@ -1,12 +1,13 @@
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
 from sqlalchemy.orm import Session
 
-from omni_product.anemic_model import ProductSupply, Supplier
 from omni_product.dal import product_dal
+from omni_product.dal.mapping import product_supply, suppliers
+from omni_product.domain.model import Supplier
 
 
 def find_all(session: Session) -> list[Supplier]:
-    return list(session.scalars(select(Supplier).order_by(Supplier.id)))
+    return list(session.scalars(select(Supplier).order_by(suppliers.c.id)))
 
 
 def find_by_id(session: Session, supplier_id: str) -> Supplier | None:
@@ -14,25 +15,25 @@ def find_by_id(session: Session, supplier_id: str) -> Supplier | None:
 
 
 def find_by_country(session: Session, country: str) -> list[Supplier]:
-    return _find_all_where(session, Supplier.country == country)
+    return _find_all_where(session, suppliers.c.country == country)
 
 
 def find_by_region(session: Session, region: str) -> list[Supplier]:
-    return _find_all_where(session, Supplier.region == region)
+    return _find_all_where(session, suppliers.c.region == region)
 
 
 def find_by_name(session: Session, name: str) -> Supplier | None:
-    return session.scalars(select(Supplier).where(Supplier.name == name)).first()
+    return session.scalars(select(Supplier).where(suppliers.c.name == name)).first()
 
 
 def find_by_product_id(session: Session, product_id: str) -> list[Supplier]:
     """Le lien passe par l'identifiant du fournisseur que porte `ProductSupply`."""
     supplier_id = (
-        select(ProductSupply.supplier_id)
-        .where(ProductSupply.product_id == product_id)
+        select(product_supply.c.supplier_id)
+        .where(product_supply.c.product_id == product_id)
         .scalar_subquery()
     )
-    return _find_all_where(session, Supplier.id == supplier_id)
+    return _find_all_where(session, suppliers.c.id == supplier_id)
 
 
 def save(session: Session, supplier: Supplier) -> Supplier:
@@ -55,6 +56,6 @@ def delete_all(session: Session) -> None:
     session.commit()
 
 
-def _find_all_where(session: Session, criterion: object) -> list[Supplier]:
-    statement = select(Supplier).where(criterion).order_by(Supplier.id)  # pyright: ignore[reportArgumentType]
+def _find_all_where(session: Session, criterion: ColumnElement[bool]) -> list[Supplier]:
+    statement = select(Supplier).where(criterion).order_by(suppliers.c.id)
     return list(session.scalars(statement))
